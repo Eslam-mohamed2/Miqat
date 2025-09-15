@@ -2,7 +2,7 @@
   height: 85vh ;
 }
 .content-spacing {
-  padding-left: 40px !important;
+  padding-left: 100px !important;
 }
 .vh-100 {
   height: 91.5vh !important;
@@ -32,12 +32,15 @@
 .bg-Home {
 background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important;
 }
-
+.content-Info {
+  font-size: 90px !important;
+  margin-bottom: 25px !important;
+}
 .clock-rain {
   position: absolute;
   top: -50px;
   left: 50%;
-  width: 45%;
+  width: 50%;
   height: 104% !important;
   pointer-events: none;
   overflow: hidden;
@@ -80,7 +83,7 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
+
   max-width: 600px;
   width: 70%;
   z-index: 100 !important;
@@ -90,10 +93,15 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
-
+  border-bottom: 1px solid;
+  padding-bottom: 10px;
+  background-color: var(--color-primary);
+  color: white;
+  padding: 0 1.5rem;
+  margin-bottom: 5px !important;
   span {
     font-weight: 600;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
   }
 
   button {
@@ -101,11 +109,8 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
     border: none;
     font-size: 2rem;
     cursor: pointer;
-    color: #333;
+    color: #ffffff;
 
-    &:hover {
-      color: var(--color-primary, #0a6663);
-    }
   }
 }
 
