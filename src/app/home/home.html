@@ -1,0 +1,61 @@
+<main class="">
+<div class="w-100 bg--light position-relative h-auto">
+  <div class="container-fluid w-90">
+    <div class="row">
+      <div class="col-6 pe-0 ps-4 d-flex flex-column align-items-start justify-content-center bg-Custom vh-100 position-relative content-spacing overflow-hidden">
+        <h1 class=" display-1 c-light">Welcome to <span class="d-block c-accent fw-medium">Miqat</span></h1>
+        <p class="lead fs-5 C-gray" >Your digital calendar platform designed for time, <br> productivity, and growth.</p>
+        <div class="d-flex gap-3 ">
+          <button class="btn btn-primary bg--primary c-light border-0 rounded-2 btn-lg mt-3 btn-custom">Get Started</button>
+          <button class="btn btn-primary bg--light c-primary border-c rounded-2 btn-lg mt-3 btn-customx">Learn More</button>
+        </div>
+        <div class="Active-clock position-absolute translate-middle top-100 start-100">
+            <!-- <i class="fa-regular fa-circle C-light"></i> -->
+        </div>
+      </div>
+      <div class="col-6 p-0 d-flex justify-content-center align-content-center vh-100 bg-white">
+        <div class="calendar-container m-auto">
+          <div class="calendar-header">
+            <button (click)="prevMonth()">&#10094;</button>
+            <span>{{ monthYear }}</span>
+            <button (click)="nextMonth()">&#10095;</button>
+          </div>
+
+          <div class="calendar-weekdays">
+            <div *ngFor="let d of ['S','M','T','W','T','F','S']">{{ d }}</div>
+          </div>
+
+          <div class="calendar-days">
+            <ng-container *ngFor="let week of weeks">
+              <div *ngFor="let day of week"
+                  (click)="selectDate(day)"
+                  [class.today]="isToday(day)"
+                  [class.selected]="day && selectedDate && day.toDateString() === selectedDate.toDateString()">
+                {{ day ? day.getDate() : '' }}
+              </div>
+            </ng-container>
+          </div>
+
+          <div class="calendar-events" *ngIf="getEventsForSelected().length > 0">
+            <div class="event" *ngFor="let e of getEventsForSelected()" [style.borderLeftColor]="e.color">
+              <span class="dot" [style.backgroundColor]="e.color"></span>
+              <div>
+                <div class="title">{{ e.title }}</div>
+                <div class="time">{{ e.time }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="clock-rain">
+          <ng-container *ngFor="let i of [].constructor(numOfClocks); let idx = index">
+            <img src="../../assets/SVG icons/clock-slash-svgrepo-com (1).svg" class="clock opacity-50" />
+            <img src="../../assets/SVG icons/download.svg" class="clock opacity-50"/>
+            <img src="../../assets/SVG icons/clock-two-thirty-svgrepo-com (1).svg " class="clock opacity-50" />
+          </ng-container>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  </div>
+</main>

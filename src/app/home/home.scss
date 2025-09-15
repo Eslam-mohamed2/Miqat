@@ -1,0 +1,188 @@
+.house-Container {
+  height: 85vh ;
+}
+.content-spacing {
+  padding-left: 40px !important;
+}
+.vh-100 {
+  height: 91.5vh !important;
+}
+.Content-information {
+  font-size: 70px !important;
+}
+.border-c {
+  border-color: #0a6663 !important;
+}
+.btn-custom {
+  transition: all 1s ease;
+}
+.btn-custom:hover {
+  background-color: var(--color-light) !important;
+  color: var(--color-primary) !important;
+  transform: scale(1.05);
+}
+.btn-customx {
+  transition: all 1s ease;
+}
+.btn-customx:hover {
+  background-color: var(--color-primary) !important;
+  color: var(--color-light) !important;
+  transform: scale(1.05);
+}
+.bg-Home {
+background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important;
+}
+
+.clock-rain {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  width: 45%;
+  height: 104% !important;
+  pointer-events: none;
+  overflow: hidden;
+}
+.clock {
+  position: absolute;
+  top: -50px;
+  width: 30px;
+  height: 30px;
+  animation: fall linear infinite;
+}
+// Randomize animation for multiple clocks
+@for $i from 1 through 50 {
+  .clock:nth-child(#{$i}) {
+    left: random(100) * 1%;
+    animation-duration: (random(10) + 5) * 1s;
+    animation-delay: random(10) * 1s;
+  }
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(360deg);
+    opacity: 0.8;
+  }
+}
+.Active-clock {
+    font-size: 280px;
+    color: white !important;
+    left: 100% !important;
+    top: 10% !important;
+    z-index: 0 !important;
+}
+
+.calendar-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  max-width: 600px;
+  width: 70%;
+  z-index: 100 !important;
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+
+  span {
+    font-weight: 600;
+    font-size: 1.2rem;
+  }
+
+  button {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #333;
+
+    &:hover {
+      color: var(--color-primary, #0a6663);
+    }
+  }
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.5rem;
+
+  div {
+    padding: 0.5rem 0;
+  }
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 100px; // each box equal height
+  gap: 2px; // thin gap between cells
+
+  div {
+    border: 1px solid #e5e5e5;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    position: relative;
+    background: #fafafa;
+
+    &:hover {
+      background: #f0fdfa; // subtle hover with greenish tint
+    }
+
+    &.today {
+      border: 2px solid var(--color-primary, #0a6663);
+      font-weight: bold;
+    }
+
+    &.selected {
+      background: var(--color-primary, #0a6663);
+      color: #fff;
+      border-radius: 6px;
+    }
+  }
+}
+
+.calendar-events {
+  margin-top: 1.5rem;
+
+    .event {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem;
+      background: #f9f9f9;
+      border-left: 4px solid;
+      margin-bottom: 0.5rem;
+      border-radius: 6px;
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+      }
+
+      .title {
+        font-weight: 600;
+      }
+
+      .time {
+        font-size: 0.85rem;
+        color: #666;
+      }
+    }
+  }
+}

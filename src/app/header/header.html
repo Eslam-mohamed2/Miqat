@@ -1,0 +1,28 @@
+<nav class="navbar navbar-expand-lg bg-dark navbar-primary overflow-hidden position-sticky top-0 w-100 ">
+  <div class="container-fluid Custmizable-Header d-flex justify-content-between">
+    <img src="../../assets/Light-mode-logo.png" class="w-10" alt="">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <div class="navbar-nav ms-3">
+        <a class="nav-link active position-relative " aria-current="page" href="#">Home</a>
+        <a class="nav-link position-relative " href="#">Features</a>
+        <a class="nav-link position-relative " href="#">Contact US</a>
+      </div>
+      <div class="clock m-auto rounded">
+        {{ time }}
+      </div>
+      <div class="Authentication-Buttons d-flex ms-auto ">
+        <button class="btn btn-login me-2">Login <i class="fa-solid fa-right-to-bracket fa-beat"></i></button>
+        <button class="btn btn-join-us">Get Started</button>
+      </div>
+    </div>
+  </div>
+   <div class="clock-falls" aria-hidden="true">
+    <span class="mini-clock C-Primary" *ngFor="let clock of clocks">
+      <img [src]="clock" alt="clock icon">
+    </span>
+  </div>
+</nav>
+
