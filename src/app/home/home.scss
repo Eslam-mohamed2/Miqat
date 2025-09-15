@@ -80,10 +80,9 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
 }
 
 .calendar-container {
-  background: #fff;
+  background: #fafafa8f;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
   max-width: 600px;
   width: 70%;
   z-index: 100 !important;
@@ -119,7 +118,7 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
   font-weight: 600;
-  color: #666;
+  color: #666666a2 !important;
   margin-bottom: 0.5rem;
 
   div {
@@ -134,7 +133,7 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   gap: 2px; // thin gap between cells
 
   div {
-    border: 1px solid #e5e5e5;
+    border: 1px solid #e5e5e59a !important;
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
@@ -142,7 +141,7 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
     font-size: 0.9rem;
     cursor: pointer;
     position: relative;
-    background: #fafafa;
+    background: #fafafa8f;
 
     &:hover {
       background: #f0fdfa; // subtle hover with greenish tint
@@ -168,7 +167,7 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
       display: flex;
       align-items: center;
       padding: 0.5rem;
-      background: #f9f9f9;
+      background: #f9f9f99c;
       border-left: 4px solid;
       margin-bottom: 0.5rem;
       border-radius: 6px;
