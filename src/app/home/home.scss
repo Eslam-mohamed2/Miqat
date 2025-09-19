@@ -38,7 +38,7 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
 }
 .clock-rain {
   position: absolute;
-  top: -50px;
+  top: -40px;
   left: 50%;
   width: 50%;
   height: 104% !important;
@@ -189,4 +189,32 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
       }
     }
   }
+}
+
+////////////////////////////
+.Info-Contanier::after{
+  content: '';
+
+}
+.Animationaly::after{
+  content: "";
+  position: absolute;
+  top: 75%;
+  left: 73%;
+  width: 30%;
+  z-index: -10;
+  height: 50%;
+  background: #0a6663c9;
+  border-radius: 100%;
+}
+.Animationaly::before{
+  content: "";
+  position: absolute;
+  top: 75%;
+  left: 73%;
+  width: 20%;
+  z-index: -10;
+  height: 40%;
+  background: var(--color-accent);
+  border-radius: 100%;
 }
