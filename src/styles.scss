@@ -7,6 +7,7 @@
   --color-secondary: #212529;
   --color-accent: #ffc107;
   --color-light: #f8f9fa;
+  --color-lighter: rgb(215 216 217 / 14%);
   --color-dark: #000000;
   --color-gray: #807f7f;
 }
@@ -40,6 +41,9 @@ li {
 .w-80 {
   width: 80% !important;
 }
+.w-85 {
+  width: 85% !important;
+}
 .w-70 {
   width: 70% !important;
 }
@@ -53,8 +57,14 @@ li {
 .bg--primary {
   background-color: var(--color-primary) !important;
 }
+.bg--white {
+  background-color: #fff !important;
+}
 .bg--light {
   background-color: var(--color-light) !important;
+}
+.bg--lighter {
+  background-color: var(--color-lighter) !important;
 }
 .bg--dark {
   background-color: var(--color-dark) !important;
@@ -72,6 +82,9 @@ li {
 // Fixed Coloring Classes
 .C-Primary {
   color: var(--color-primary) !important;
+}
+.C-white {
+  color: #fff !important;
 }
 .c-light {
   color: var(--color-light) !important;
