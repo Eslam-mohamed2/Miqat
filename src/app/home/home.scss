@@ -52,7 +52,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   height: 30px;
   animation: fall linear infinite;
 }
-// Randomize animation for multiple clocks
 @for $i from 1 through 50 {
   .clock:nth-child(#{$i}) {
     left: random(100) * 1%;
@@ -60,7 +59,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
     animation-delay: random(10) * 1s;
   }
 }
-
 @keyframes fall {
   0% {
     transform: translateY(-100px) rotate(0deg);
@@ -78,7 +76,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
     top: 10% !important;
     z-index: 0 !important;
 }
-
 .calendar-container {
   background: #fafafac5;
   border-radius: 12px;
@@ -86,7 +83,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   max-width: 600px;
   width: 70%;
   z-index: 100 !important;
-
 .calendar-header {
   display: flex;
   align-items: center;
@@ -102,7 +98,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
     font-weight: 600;
     font-size: 1.4rem;
   }
-
   button {
     background: none;
     border: none;
@@ -112,7 +107,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
 
   }
 }
-
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -125,7 +119,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
     padding: 0.5rem 0;
   }
 }
-
 .calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -159,7 +152,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
     }
   }
 }
-
 .calendar-events {
   margin-top: 1.5rem;
 
@@ -190,8 +182,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
     }
   }
 }
-
-////////////////////////////
 .main-Title {
   margin-bottom: 10px !important;
 }
@@ -209,7 +199,6 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
 .p-Custom {
   padding: 10px !important;
 }
-
 .Animationaly::after{
   content: "";
   position: absolute;
