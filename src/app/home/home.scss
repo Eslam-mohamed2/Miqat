@@ -198,9 +198,9 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
 .main-Title::after{
   content: "";
   position: absolute;
-  width: 80%;
+  width: 70%;
   bottom: -20%;
-  left: 10%;
+  left: 15%;
   height: 4px;
   margin-top: 10px;
   border-radius: 2px;
@@ -259,9 +259,37 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   border-radius: 100%;
   margin-right: 10px;
   margin-top: 10px;
+  position: relative;
 }
 
 .icon i {
-padding: 7px 6px !important;
-color: white !important;
+  position: absolute;
+  left: 18%;
+  top: 22%;
+  color: white !important;
+  z-index: 1;
+}
+.Title {
+  display: inline-block !important;
+  position: relative;
+  margin-bottom: 15px !important;
+}
+.Title::after{
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 60% !important;
+  bottom: 8px;
+  left: -10px;
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 5px;
+  background-color: var(--color-accent);
+}
+.cards h4 i {
+  font-size: 12px !important;
+  margin-right: 5px !important;
+}
+.cards span {
+  font-size: 12px !important;
 }
