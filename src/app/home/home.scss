@@ -298,3 +298,43 @@
   height: 50px;
   padding: 15px;
 }
+.Card {
+  justify-content: center !important;
+  align-items: anchor-center;
+}
+.Card h4 {
+  font-size: 25px !important;
+  font-weight: 500 !important;
+  margin-bottom: 5px !important;
+}
+.Card p {
+  text-align: center !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+}
+.Card .icon {
+ width: 90px !important;
+ height: 90px !important;
+ position: relative;
+ margin-bottom: 10px !important;
+}
+.Card .icon i {
+  font-size: 30px !important;
+  position: absolute;
+  top: 30px !important;
+  left: 25px !important;
+}
+.Card-Bg {
+  background-image: url('../../assets/stacked-waves-haikei.png') !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+
+}
+.Card-animation{
+  transition: all 1s ease;
+}
+.Card-animation:hover{
+  transform: scale(1.09);
+  // box-shadow: 0 3px 6px rgba(0, 0, 0, 0.10);
+}
+
