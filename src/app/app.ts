@@ -6,7 +6,7 @@ import { Home } from './home/home';
 import { Footer } from "./footer/footer";
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header, FontAwesomeModule, Home, Footer],
+  imports: [Header, FontAwesomeModule, Home, Footer],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
