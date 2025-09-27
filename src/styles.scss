@@ -1,12 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Montserrat:wght@100..900&family=Raleway:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bungee+Spice&family=Cinzel:wght@400..900&family=Gruppo&family=Luckiest+Guy&family=Oswald:wght@200..700&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 :root {
   // Font Family
   --font-Main: "Raleway", sans-serif;
 
   // Color Pallet
-  --color-primary: #0a6663;
-  --color-secondary: #212529;
-  --color-accent: #ffc107;
-  --color-light: #f8f9fa;
+--color-primary: #2E6670;   /* teal/blue-green */
+  --color-secondary: #2F3D3B; /* dark greenish charcoal */
+  --color-accent: #F8E6A0;    /* soft beige/yellow */
+  --color-light: #FAF9F5;
   --color-lighter: rgb(215 216 217 / 14%);
   --color-dark: #000000;
   --color-gray: #807f7f;
@@ -24,7 +26,10 @@
   --task-launch-dot: #454a4e;     // dark gray
 }
 body {
-  font-family: var(--font-Main);
+  // font-family: "Rubik", sans-serif;
+  // font-optical-sizing: auto;
+  // font-weight: 400;
+  // font-style: normal;
   margin: 0%;
   padding: 0%;
 }
@@ -45,7 +50,11 @@ li {
   margin: 0px !important;
   padding: 0px !important;
 }
-
+.Font-Title {
+  font-family: "Luckiest Guy", cursive !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
 // Fixed Sizing Classes
 .w-95 {
   width: 95% !important;
@@ -91,7 +100,7 @@ li {
   background-color: var(--color-accent) !important;
 }
 .bg-Custom {
-  background-image:url('./assets/Simple\ Shiny.svg') !important;
+  background-image:url('./assets/blob-scene-haikei.png') !important;
   background-size: cover !important;
 }
 .bg-baby-blue {

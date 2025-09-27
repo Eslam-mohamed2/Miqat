@@ -29,9 +29,6 @@
   color: var(--color-light) !important;
   transform: scale(1.05);
 }
-.bg-Home {
-background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important;
-}
 .content-Info {
   font-size: 90px !important;
   margin-bottom: 25px !important;
@@ -122,8 +119,8 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
 .calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-auto-rows: 100px; // each box equal height
-  gap: 2px; // thin gap between cells
+  grid-auto-rows: 70px; // each box equal height
+  gap: 3px; // thin gap between cells
 
   div {
     border: 1px solid #e5e5e59a !important;
@@ -207,7 +204,7 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   width: 23%;
   z-index: -10;
   height: 40%;
-  background: rgb(10 102 99);
+  background: var(--color-primary);
   border-radius:100%;
 }
 .Animationaly::before{
@@ -232,8 +229,10 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
   // padding : 30px 9!important;
 }
 .Cards-Bg {
-  background-color: var(--color-primary) !important;
-  background-image: url('../../assets/blob-haikei.png') !important;
+  background-image: url('../../assets/stacked-waves-haikei.png') !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  height: 430px !important;
   transition: all 1s ease;
 }
 .Cards-Bg:hover{
@@ -281,4 +280,7 @@ background-image: url('../../assets/floating-cogs/floating-cogs.svg') !important
 }
 .cards span {
   font-size: 12px !important;
+}
+.bg-image {
+  background-image: url(../../assets/low-poly-grid-haikei.png) !important;
 }
