@@ -282,8 +282,19 @@
   font-size: 12px !important;
 }
 .bg-image {
-  background-image: url(../../assets/low-poly-grid-haikei.png) !important;
+  background-image: url(../../assets/circle-scatter-haikei.png) !important;
+  background-position: center !important;
 }
 .py-custom-cards {
   padding: 60px 0px;
+}
+.bg-dots {
+  padding: 15px 25px;
+  border-radius: 25px;
+  background-color: rgb(255 255 255 / 88%)
+}
+.Squares {
+  width: 50px;
+  height: 50px;
+  padding: 15px;
 }
