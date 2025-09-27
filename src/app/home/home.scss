@@ -338,4 +338,25 @@
   transform: scale(1.09);
   // box-shadow: 0 3px 6px rgba(0, 0, 0, 0.10);
 }
-
+.btn-custom-end {
+  color: var(--color-primary) !important;
+  background-color: var(--color-light) !important;
+  transition: all 1s ease !important;
+}
+.btn-custom-end:hover {
+  background-color: var(--color-primary) !important;
+  border: 2px solid var(--color-light) !important;
+  color: var(--color-light) !important;
+}
+.first {
+  left: -6.5%;
+    top: -30%;
+    font-size: 325px;
+    color: white;
+}
+.second {
+  top: 25% !important;
+  left: 85% ;
+  font-size: 350px !important;
+  color: white !important;
+}
