@@ -1,64 +1,72 @@
-<div class="auth-container">
-  <div class="switch-buttons">
-    <button [class.active]="activeForm === 'login'"(click)="switchForm('login')">Login</button>
-    <button [class.active]="activeForm === 'register'"(click)="switchForm('register')">Register</button>
+<div class="m-0 p-0">
+  <div class="row d-flex m-0 p-0">
+      <div class="col-4 p-0">
+        <div class="auth-container">
+          <div class="switch-buttons">
+            <button [class.active]="activeForm === 'login'"(click)="switchForm('login')">Login</button>
+            <button [class.active]="activeForm === 'register'"(click)="switchForm('register')">Register</button>
+          </div>
+          <!-- ✅ LOGIN FORM -->
+          <form
+            *ngIf="activeForm === 'login'"
+            [formGroup]="loginForm"
+            (ngSubmit)="onLogin()"
+            class="form-container"
+          >
+            <label>Email</label>
+            <input type="email" formControlName="email" />
+            <small *ngIf="getFieldError(loginForm, 'email')" class="error">
+              {{ getFieldError(loginForm, 'email') }}
+            </small>
+
+            <label>Password</label>
+            <input type="password" formControlName="password" />
+            <small *ngIf="getFieldError(loginForm, 'password')" class="error">
+              {{ getFieldError(loginForm, 'password') }}
+            </small>
+
+            <button type="submit" [disabled]="loginForm.invalid">Login</button>
+          </form>
+          <!-- ✅ REGISTER FORM -->
+          <form
+            *ngIf="activeForm === 'register'"
+            [formGroup]="registerForm"
+            (ngSubmit)="onRegister()"
+            class="form-container"
+          >
+            <label>Username</label>
+            <input type="text" formControlName="username" />
+            <small *ngIf="getFieldError(registerForm, 'username')" class="error">
+              {{ getFieldError(registerForm, 'username') }}
+            </small>
+
+            <label>Email</label>
+            <input type="email" formControlName="email" />
+            <small *ngIf="getFieldError(registerForm, 'email')" class="error">
+              {{ getFieldError(registerForm, 'email') }}
+            </small>
+
+            <label>Password</label>
+            <input type="password" formControlName="password" />
+            <small *ngIf="getFieldError(registerForm, 'password')" class="error">
+              {{ getFieldError(registerForm, 'password') }}
+            </small>
+
+            <label>Confirm Password</label>
+            <input type="password" formControlName="confirmPassword" />
+            <small *ngIf="getFieldError(registerForm, 'confirmPassword')" class="error">
+              {{ getFieldError(registerForm, 'confirmPassword') }}
+            </small>
+
+            <button type="submit" [disabled]="registerForm.invalid">
+              Register
+            </button>
+          </form>
   </div>
-
-  <!-- ✅ LOGIN FORM -->
-  <form
-    *ngIf="activeForm === 'login'"
-    [formGroup]="loginForm"
-    (ngSubmit)="onLogin()"
-    class="form-container"
-  >
-    <label>Email</label>
-    <input type="email" formControlName="email" />
-    <small *ngIf="getFieldError(loginForm, 'email')" class="error">
-      {{ getFieldError(loginForm, 'email') }}
-    </small>
-
-    <label>Password</label>
-    <input type="password" formControlName="password" />
-    <small *ngIf="getFieldError(loginForm, 'password')" class="error">
-      {{ getFieldError(loginForm, 'password') }}
-    </small>
-
-    <button type="submit" [disabled]="loginForm.invalid">Login</button>
-  </form>
-
-  <!-- ✅ REGISTER FORM -->
-  <form
-    *ngIf="activeForm === 'register'"
-    [formGroup]="registerForm"
-    (ngSubmit)="onRegister()"
-    class="form-container"
-  >
-    <label>Username</label>
-    <input type="text" formControlName="username" />
-    <small *ngIf="getFieldError(registerForm, 'username')" class="error">
-      {{ getFieldError(registerForm, 'username') }}
-    </small>
-
-    <label>Email</label>
-    <input type="email" formControlName="email" />
-    <small *ngIf="getFieldError(registerForm, 'email')" class="error">
-      {{ getFieldError(registerForm, 'email') }}
-    </small>
-
-    <label>Password</label>
-    <input type="password" formControlName="password" />
-    <small *ngIf="getFieldError(registerForm, 'password')" class="error">
-      {{ getFieldError(registerForm, 'password') }}
-    </small>
-
-    <label>Confirm Password</label>
-    <input type="password" formControlName="confirmPassword" />
-    <small *ngIf="getFieldError(registerForm, 'confirmPassword')" class="error">
-      {{ getFieldError(registerForm, 'confirmPassword') }}
-    </small>
-
-    <button type="submit" [disabled]="registerForm.invalid">
-      Register
-    </button>
-  </form>
+    </div>
+      <div class="col-8 p-0 vh-100 m-0 p-0">
+        <app-flip-clock></app-flip-clock>
+        
+      </div>
+  </div>
 </div>

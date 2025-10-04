@@ -7,12 +7,12 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-
+import { FlipClock } from '../flip-clock/flip-clock';
 import { Authservice } from '../authservice';
 
 @Component({
   selector: 'app-authentication',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule ,FlipClock],
   templateUrl: './authentication.html',
   styleUrl: './authentication.scss'
 })

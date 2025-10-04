@@ -1,0 +1,37 @@
+.flip-clock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: url('../../assets/blob-scene-haikei.png') no-repeat center center/cover !important;
+  color:var(--color-accent);
+  font-family: 'Raleway', monospace;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  text-align: center;
+  padding: 20px 0;
+
+  .time {
+    font-size: 140px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    background: var(--color-secondary);
+    border-radius: 12px;
+    padding: 30px 80px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+    // border: 2px solid #1e1e1e;
+    text-shadow: 0 0 20px #222;
+    transition: all 0.4s ease-in-out;
+  }
+}
+
+
+.flip {
+  animation: flip 0.4s ease-in-out;
+}
+
+@keyframes flip {
+  0% { transform: rotateX(0); }
+  50% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0); }
+}
