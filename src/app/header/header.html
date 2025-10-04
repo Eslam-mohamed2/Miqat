@@ -14,8 +14,8 @@
         {{ time }}
       </div>
       <div class="Authentication-Buttons d-flex ms-auto ">
-        <button class="btn btn-login me-2 Font-Title">Login <i class="fa-solid fa-right-to-bracket fa-beat"></i></button>
-        <button class="btn btn-join-us Font-Title">Get Started</button>
+        <button  class="btn btn-login me-2 Font-Title" (click)="authLogic.goToLogin()">Login <i class="fa-solid fa-right-to-bracket fa-beat"></i></button>
+        <button class="btn btn-join-us Font-Title" (click)="authLogic.goToRegister()">Get Started</button>
       </div>
     </div>
   </div>

@@ -2,17 +2,24 @@ import { Component, OnInit } from '@angular/core';
 import { interval } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { CalendarEvent } from '../calendar-event';
-
+import { Router, RouterModule } from '@angular/router';
+import { AuthLogic } from '../authentication/auth-logic.service';
 @Component({
   selector: 'app-home',
-  imports: [CommonModule],
+  imports: [CommonModule,RouterModule],
   templateUrl: './home.html',
+  standalone: true,
   styleUrl: './home.scss'
 })
+
 export class Home implements OnInit {
   currentDate = new Date();
   weeks: (Date | null)[][] = [];
   selectedDate: Date | null = null;
+
+  constructor(public authLogic: AuthLogic) {
+     this.generateCalendar();
+  }
 
 
   numOfClocks = 25;
@@ -27,9 +34,6 @@ export class Home implements OnInit {
     ]
   };
 
-  constructor() {
-    this.generateCalendar();
-  }
 
   ngOnInit() {
     this.days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -114,4 +118,15 @@ export class Home implements OnInit {
     this.selectedDay = day;
     this.selectedDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), day);
   }
+
+  // // Navagation to Auth Page
+  //  goToLogin() {
+  //   this.router.navigate(['/auth'], { queryParams: { form: 'login' } });
+  // }
+
+  // goToRegister() {
+  //   this.router.navigate(['/auth'], { queryParams: { form: 'register' } });
+  // }
+
 }
+
