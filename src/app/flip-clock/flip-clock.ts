@@ -1,33 +1,38 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { inject } from '@angular/core';
 @Component({
   selector: 'app-flip-clock',
-  imports: [],
+  imports: [CommonModule] ,
   templateUrl: './flip-clock.html',
   styleUrl: './flip-clock.scss'
 })
 export class FlipClock implements OnInit, OnDestroy{
   time: string = '';
+  isFlipping = false;
   Timer = inject(ChangeDetectorRef);
-  private timer: any;
   private intervalId: any;
+
   ngOnInit(): void {
     this.updateTime();
     this.intervalId = setInterval(() => this.updateTime(), 1000);
   }
 
   ngOnDestroy(): void {
-      if (this.intervalId)
-      clearInterval(this.intervalId);
+    if (this.intervalId) clearInterval(this.intervalId);
   }
 
   private updateTime(): void {
-   const now = new Date();
+    this.isFlipping = true; // start flip animation
+    const now = new Date();
     const hours = this.formatTime(now.getHours());
     const minutes = this.formatTime(now.getMinutes());
     const seconds = this.formatTime(now.getSeconds());
-    this.time = `${hours}:${minutes }:${seconds}`;
+    this.time = `${hours}:${minutes}:${seconds}`;
     this.Timer.detectChanges();
+
+    // stop animation after it completes (0.6s)
+    setTimeout(() => (this.isFlipping = false), 600);
   }
 
   private formatTime(num: number): string {
