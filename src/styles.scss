@@ -1,30 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Montserrat:wght@100..900&family=Raleway:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Bungee+Spice&family=Cinzel:wght@400..900&family=Gruppo&family=Luckiest+Guy&family=Oswald:wght@200..700&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
 :root {
   // Font Family
   --font-Main: "Raleway", sans-serif;
 
   // Color Pallet
---color-primary: #2E6670;   /* teal/blue-green */
-  --color-secondary: #2F3D3B; /* dark greenish charcoal */
-  --color-accent: #F8E6A0;    /* soft beige/yellow */
+  --color-primary: #2E6670;
+  /* teal/blue-green */
+  --color-secondary: #2F3D3B;
+  /* dark greenish charcoal */
+  --color-accent: #F8E6A0;
+  /* soft beige/yellow */
   --color-light: #FAF9F5;
   --color-lighter: rgb(215 216 217 / 14%);
   --color-dark: #000000;
   --color-gray: #807f7f;
   --color-baby-blue: #e6fdfc;
-   // ✅ Task Background Colors
+  // ✅ Task Background Colors
   --task-research-bg: #e0f7f6;
   --task-design-bg: #f1f3f5;
   --task-development-bg: #fff4d1;
   --task-launch-bg: #ffeede;
 
   // ✅ Task Dot Colors
-  --task-research-dot: #0a6663;   // teal
-  --task-design-dot: #807f7f;     // gray
+  --task-research-dot: #0a6663; // teal
+  --task-design-dot: #807f7f; // gray
   --task-development-dot: #ffc107; // accent yellow
-  --task-launch-dot: #454a4e;     // dark gray
+  --task-launch-dot: #454a4e; // dark gray
 }
+
 body {
   // font-family: "Rubik", sans-serif;
   // font-optical-sizing: auto;
@@ -33,164 +38,214 @@ body {
   margin: 0%;
   padding: 0%;
 }
-a{
+
+a {
   text-decoration: none !important;
   color: var(--color-primary) !important;
 }
+
 .btn {
   color: var(--color-primary) !important;
 }
+
 ul {
   list-style: none !important;
   padding: 0px !important;
   margin: 0px !important;
 }
+
 li {
   list-style: none !important;
   margin: 0px !important;
   padding: 0px !important;
 }
+
 .Font-Title {
   font-family: "Luckiest Guy", cursive !important;
   font-weight: 400 !important;
   font-style: normal !important;
 }
+
 // Fixed Sizing Classes
 .w-95 {
   width: 95% !important;
 }
+
 .w-90 {
   width: 90% !important;
 }
+
 .w-80 {
   width: 80% !important;
 }
+
 .w-85 {
   width: 85% !important;
 }
+
 .w-70 {
   width: 70% !important;
 }
+
 .w-40 {
   width: 40%;
 }
+
 .w-35 {
   width: 35%;
 }
+
 .w-30 {
   width: 30%;
 }
-.w-20{
+
+.w-20 {
   width: 20% !important;
 }
-.w-10{
+
+.w-10 {
   width: 10% !important;
 }
+
 // Fixed Background Coloring Classes
 .bg--primary {
   background-color: var(--color-primary) !important;
 }
+
 .bg--white {
   background-color: #fff !important;
 }
+
 .bg--light {
   background-color: var(--color-light) !important;
 }
+
 .bg--lighter {
   background-color: var(--color-lighter) !important;
 }
+
 .bg--dark {
   background-color: var(--color-dark) !important;
 }
+
 .bg--secondary {
   background-color: var(--color-secondary) !important;
 }
+
 .bg--accent {
   background-color: var(--color-accent) !important;
 }
+
 .bg-Custom {
-  background-image:url('./assets/blob-scene-haikei.png') !important;
+  background-image: url('./assets/blob-scene-haikei.png') !important;
   background-size: cover !important;
 }
+
 .bg-baby-blue {
   background-color: var(--color-baby-blue) !important;
 }
+
 .bg-research {
   background-color: var(--task-research-bg) !important;
 }
+
 .bg-design {
   background-color: var(--task-design-bg) !important;
 }
+
 .bg-development {
   background-color: var(--task-development-bg) !important;
 }
+
 .bg-launch {
   background-color: var(--task-launch-bg) !important;
 }
+
 // Fixed Coloring Classes
 .C-Primary {
   color: var(--color-primary) !important;
 }
+
 .C-white {
   color: #fff !important;
 }
+
 .c-light {
   color: var(--color-light) !important;
 }
+
 .c-dark {
   color: var(--color-dark) !important;
 }
+
 .c-secondary {
   color: var(--color-secondary) !important;
 }
+
 .c-accent {
   color: var(--color-accent) !important;
 }
+
 .C-gray {
   color: var(--color-gray);
 }
+
 .C-research-dot {
   color: var(--task-research-dot) !important;
 }
+
 .C-design-dot {
   color: var(--task-design-dot) !important;
 }
+
 .C-development-dot {
   color: var(--task-development-dot) !important;
 }
+
 .C-launch-dot {
   color: var(--task-launch-dot) !important;
 }
+
 .border-right-c-primary {
   border-right: 5px solid var(--color-primary) !important;
 }
+
 .border-right-c-secondary {
   border-right: 5px solid var(--color-secondary) !important;
 }
+
 .border-right-c-dark {
   border-right: 5px solid var(--color-dark) !important;
 }
+
 .border-right-c-light {
   border-right: 5px solid var(--color-light) !important;
 }
+
 .border-right-c- {
   border-right: 5px solid var(--color-lighter) !important;
 }
+
 .border-right-c-accent {
   border-right: 5px solid var(--color-accent) !important;
 }
+
 .border-right-c-gray {
   border-right: 5px solid var(--color-gray) !important;
 }
+
 .border-right-c-research-dot {
   border-right: 5px solid var(--task-research-dot) !important;
 }
+
 .border-right-c-design-dot {
   border-right: 5px solid var(--task-design-dot) !important;
 }
+
 .border-right-c-development-dot {
   border-right: 5px solid var(--task-development-dot) !important;
 }
+
 .border-right-c-launch {
-  border-right: 5px solid #eeb682!important;
+  border-right: 5px solid #eeb682 !important;
 }

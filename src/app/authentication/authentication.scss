@@ -1,3 +1,71 @@
+/* Make the form neat */
+.form-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.form-control:focus {
+  border-color: #2e6670 !important;
+  box-shadow: 0 0 0 0.2rem rgba(46, 102, 112, 0.25) !important;
+}
+.form-select:focus {
+  border-color: #2e6670 !important;
+  box-shadow: 0 0 0 0.2rem rgba(46, 102, 112, 0.25) !important;
+}
+.switch-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.switch {
+  position: relative;
+  background: #e9ecef;
+  border-radius: 25px;
+  display: flex;
+  width: 220px;
+  height: 40px;
+  align-items: center;
+  overflow: hidden;
+}
+
+.switch button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #555;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.switch button.active {
+  color: #fff;
+}
+
+.switch-indicator {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 105px;
+  height: 34px;
+  background-color: #2e6670;
+  border-radius: 25px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+/* move indicator to the right */
+.switch-indicator.move-right {
+  left: calc(100% - 108px);
+}
+
 .flip-clock {
   display: flex;
   align-items: center;
@@ -25,7 +93,8 @@
     align-items: center;
     justify-content: center;
 
-    .top, .bottom {
+    .top,
+    .bottom {
       position: absolute;
       width: 100%;
       height: 50%;
@@ -55,4 +124,13 @@
     font-weight: bold;
     color: #aaa;
   }
+}
+.bg-image {
+  background-image: url('../../assets/stacked-waves-haikei.png') !important;
+  background-position: center !important;
+  background-size:cover !important;
+  font-weight: 600 !important;
+  font-size: 18px  !important;
+  border: 1px solid #2e6670 !important;
+
 }

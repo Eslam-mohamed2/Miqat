@@ -24,7 +24,7 @@ export class Header implements OnInit, OnDestroy {
     'assets/SVG icons/clock-two-thirty-svgrepo-com.svg',
     '../../assets/SVG icons/clock-lines-svgrepo-com.svg'
   ];
-  constructor(public authLogic: AuthLogic) {}
+  constructor(public authLogic: AuthLogic) { }
   private intervalId: any;
 
   ngOnInit(): void {
