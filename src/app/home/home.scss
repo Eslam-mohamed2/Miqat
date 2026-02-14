@@ -582,8 +582,11 @@
 }
 
 @media (max-width: 576px) {
-  .content-Info {
-    font-size: 1.65rem !important;
+  .container-fluid {
+    padding: 0 !important;
+  }
+  .calendar-container {
+    padding: 0px 20px !important;
   }
   .content-spacing {
     padding-left: 0.75rem !important;
@@ -597,5 +600,78 @@
   }
   .calendar-container .calendar-days div {
     font-size: 0.8rem;
+  }
+  .content-Info {
+    font-size: 2.5rem !important;
+    display: block !important;
+    margin-bottom: 10px !important;
+    text-align: center !important;
+    width: 100% !important;
+    padding: 0 10px !important;
+    box-sizing: border-box !important;
+    border-radius: 10px !important;
+  }
+  .content-Info p {
+    font-size: 10px !important;
+  }
+  .bg-Custom {
+    width: 100% !important;
+  }
+  .content-spacing {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
+    padding: 55px 25px !important;
+  }
+  .clock-rain {
+    position: absolute;
+    top: 335px;
+    left: 0%;
+    width: 100%;
+    height: 104% !important;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .hero-lead-in {
+    font-size: 14px !important;
+  }
+
+  .reveal-item{
+    width: 90% !important;
+    margin: 10px !important;
+  }
+  .reveal-from-left{
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .reveal-from-left .w-90 {
+    width: 100% !important;
+  }
+  .reveal-from-right{
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .reveal-from-right .w-90 {
+    width: 100% !important;
+  }
+  .reveal-group{
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .first {
+    left: -25%;
+    top: -32%;
+    font-size: 230px;
+    color: white;
+  }
+  .second {
+    top: 65% !important;
+    left: 55%;
+    font-size: 240px !important;
+    color: white !important;
+
   }
 }

@@ -124,5 +124,17 @@ img {
 }
 
 @media (max-width: 576px) {
-  // Small mobile
+  .clock-falls {
+    position: absolute;
+    top: 0;
+    left: -1%;
+    height: 100%;
+    width: 100px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .w-10 {
+    width: 35% !important;
+  }
+
 }
