@@ -1,15 +1,16 @@
 import { Component, OnInit } from '@angular/core';
-import { interval } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { CalendarEvent } from '../calendar-event';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { AuthLogic } from '../authentication/auth-logic.service';
+import { RevealOnScrollDirective } from '../directives/reveal-on-scroll.directive';
+
 @Component({
   selector: 'app-home',
-  imports: [CommonModule,RouterModule],
+  imports: [CommonModule, RouterModule, RevealOnScrollDirective],
   templateUrl: './home.html',
   standalone: true,
-  styleUrl: './home.scss'
+  styleUrl: './home.scss',
 })
 
 export class Home implements OnInit {
@@ -119,14 +120,6 @@ export class Home implements OnInit {
     this.selectedDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), day);
   }
 
-  // // Navagation to Auth Page
-  //  goToLogin() {
-  //   this.router.navigate(['/auth'], { queryParams: { form: 'login' } });
-  // }
-
-  // goToRegister() {
-  //   this.router.navigate(['/auth'], { queryParams: { form: 'register' } });
-  // }
 
 }
 

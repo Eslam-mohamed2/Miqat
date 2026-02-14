@@ -1,0 +1,56 @@
+// Footer logo - responsive sizing
+.footer-logo {
+  height: 56px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+}
+
+footer {
+  .w-85 {
+    max-width: 100%;
+  }
+}
+
+// Tablet
+@media (max-width: 991px) {
+  .footer-logo {
+    height: 48px;
+    max-width: 150px;
+  }
+  footer .row {
+    gap: 0.5rem;
+  }
+}
+
+// Mobile
+@media (max-width: 767px) {
+  .footer-logo {
+    height: 40px;
+    max-width: 130px;
+  }
+  footer {
+    padding-top: 2.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  footer .col-md-4,
+  footer .col-md-2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  footer .col-md-4 div {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 575px) {
+  .footer-logo {
+    height: 36px;
+    max-width: 110px;
+  }
+  footer .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+}

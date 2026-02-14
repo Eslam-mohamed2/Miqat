@@ -5,12 +5,14 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:client": "ng build --configuration=client",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:Miqat": "node dist/Miqat/server/server.mjs"
   },
   "private": true,
   "dependencies": {
+    "@angular/animations": "^20.3.16",
     "@angular/common": "^20.0.0",
     "@angular/compiler": "^20.0.0",
     "@angular/core": "^20.0.0",
@@ -24,6 +26,7 @@
     "bootstrap": "^5.3.8",
     "express": "^5.1.0",
     "fontawesome": "^5.6.3",
+    "gsap": "^3.14.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -33,6 +36,7 @@
     "@angular/cli": "^20.0.0",
     "@angular/compiler-cli": "^20.0.0",
     "@types/express": "^5.0.1",
+    "@types/gsap": "^1.20.2",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^20.17.19",
     "jasmine-core": "~5.7.0",

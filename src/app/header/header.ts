@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthLogic } from '../authentication/auth-logic.service';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule], // gives access to *ngFor, *ngIf, etc.
+  imports: [CommonModule, RouterModule], // gives access to *ngFor, *ngIf, routerLink, etc.
   templateUrl: './header.html',
   styleUrl: './header.scss'
 })

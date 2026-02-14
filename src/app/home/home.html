@@ -2,10 +2,10 @@
 <div class="w-100 bg--light position-relative h-auto">
   <div class="container-fluid">
     <div class="row">
-      <div class="col-6 pe-0 ps-4 d-flex flex-column align-items-start justify-content-center bg-Custom vh-100 position-relative content-spacing overflow-hidden">
-        <h1 class="c-light content-Info Font-Title">Welcome to <span class="d-block c-accent fw-medium">Miqat</span></h1>
-        <p class="lead fs-5 c-light" >Your digital calendar platform designed for time, <br> productivity, and growth.</p>
-        <div class="d-flex gap-3 ">
+      <div class="col-12 col-lg-6 pe-0 ps-4 d-flex flex-column align-items-start justify-content-center bg-Custom vh-100 position-relative content-spacing overflow-hidden">
+        <h1 class="c-light content-Info Font-Title hero-fade-in">Welcome to <span class="d-block c-accent fw-medium">Miqat</span></h1>
+        <p class="lead fs-5 c-light hero-lead-in">Your digital calendar platform designed for time, <br> productivity, and growth.</p>
+        <div class="d-flex gap-3 hero-buttons-in">
           <button class="btn btn-primary bg--primary c-light border-0 rounded-2 btn-lg mt-3 btn-custom Font-Title" (click)="authLogic.goToRegister()">Get Started</button>
           <button class="btn btn-primary bg--light c-primary border-c rounded-2 btn-lg mt-3 btn-customx Font-Title" (click)="authLogic.goToRegister()">Learn More</button>
         </div>
@@ -13,7 +13,7 @@
             <!-- <i class="fa-regular fa-circle C-light"></i> -->
         </div>
       </div>
-      <div class="col-6 p-0 d-flex justify-content-center align-content-center vh-100 bg-white">
+      <div class="col-12 col-lg-6 p-0 d-flex justify-content-center align-content-center vh-100 bg-white">
         <div class="calendar-container m-auto">
           <div class="calendar-header">
             <button (click)="prevMonth()">&#10094;</button>
@@ -48,9 +48,9 @@
         </div>
         <div class="clock-rain">
           <ng-container *ngFor="let i of [].constructor(numOfClocks); let idx = index">
-            <img src="../../assets/SVG icons/clock-slash-svgrepo-com (1).svg" class="clock opacity-50" />
-            <img src="../../assets/SVG icons/download.svg" class="clock opacity-50"/>
-            <img src="../../assets/SVG icons/clock-two-thirty-svgrepo-com (1).svg " class="clock opacity-50" />
+            <img src="../../assets/SVG icons/clock-slash-svgrepo-com (1).svg" class="clock" />
+            <img src="../../assets/SVG icons/download.svg" class="clock"/>
+            <img src="../../assets/SVG icons/clock-two-thirty-svgrepo-com (1).svg " class="clock" />
           </ng-container>
         </div>
 
@@ -60,12 +60,12 @@
   </div>
 </main>
 <section id="about us">
-  <div class="d-flex flex-column align-items-center justify-content-center text-center gap-4 my-4 py-4 container">
-    <h2 class="display-4 Info-Contenter m-0 main-Title position-relative Font-Title">What is Miqat</h2>
-    <p class="fs-5 C-gray">Miqat is a smart calendar application that helps you manage your schedule in a completely <br> new way. Beyond just dates and times, Miqat brings interactive flows and a visual whiteboard <br> to your calendar, so you can plan, connect, and create with clarity.</p>
-    <div class="d-flex align-content-center gap-5">
+  <div class="d-flex flex-column align-items-center justify-content-center text-center gap-4 my-4 py-4 container reveal-group" appRevealOnScroll>
+    <h2 class="display-4 Info-Contenter m-0 main-Title position-relative Font-Title reveal-item stagger-0">What is Miqat</h2>
+    <p class="fs-5 C-gray reveal-item stagger-1">Miqat is a smart calendar application that helps you manage your schedule in a completely<br class="d-none d-md-inline"> new way. Beyond just dates and times, Miqat brings interactive flows and a visual whiteboard<br class="d-none d-md-inline"> to your calendar, so you can plan, connect, and create with clarity.</p>
+    <div class="d-flex flex-column flex-lg-row align-content-center gap-5">
       <div class="d-flex flex-column m-auto">
-        <div class="d-flex align-self-center ">
+        <div class="d-flex align-self-center reveal-item stagger-2">
           <div class="align-content-center p-Custom bg--primary rounded-4 m-auto  h-75">
             <i class="fa-solid fa-brain text-light fs-1"></i>
           </div>
@@ -74,7 +74,7 @@
             <p class="fs-6 C-gray">AI-powered scheduling that learns your patterns and optimizes your time automatically.</p>
           </div>
         </div>
-        <div class="d-flex align-self-center ">
+        <div class="d-flex align-self-center reveal-item stagger-3">
           <div class="align-content-center p-Custom bg--primary rounded-4 m-auto h-75">
             <i class="fa-solid fa-share-nodes text-light fs-1"></i>
           </div>
@@ -83,7 +83,7 @@
             <p class="fs-6 C-gray">See how your tasks and events connect in a visual flow that makes sense.</p>
           </div>
         </div>
-        <div class="d-flex align-self-center ">
+        <div class="d-flex align-self-center reveal-item stagger-4">
           <div class="align-content-center p-Custom bg--primary rounded-4 m-auto h-75">
             <i class="fa-solid fa-paintbrush text-light fs-1"></i>
           </div>
@@ -93,18 +93,18 @@
           </div>
         </div>
       </div>
-      <div class="d-flex justify-content-center align-content-center position-relative Animationaly">
+      <div class="d-flex justify-content-center align-content-center position-relative Animationaly reveal-item stagger-5">
         <img src="../../assets/information-section.webp" class="w-75 rounded-3 " alt="">
       </div>
     </div>
   </div>
 </section>
 <section class="bg--lighter w-100 m-Custom" id="Services">
-  <div class="w-80 m-auto py-custom-cards">
-    <h2 class="text-center display-4 Cusotm-Changes main-Title position-relative Font-Title">Key Services</h2>
-    <p class="text-center fs-5 C-gray mt-4">Discover the powerful features that make Miqat your ultimate productivity companion</p>
+  <div class="w-80 m-auto py-custom-cards reveal-group" appRevealOnScroll>
+    <h2 class="text-center display-4 Cusotm-Changes main-Title position-relative Font-Title reveal-item stagger-0">Key Services</h2>
+    <p class="text-center fs-5 C-gray mt-4 reveal-item stagger-1">Discover the powerful features that make Miqat your ultimate productivity companion</p>
     <div class="row d-flex justify-content-evenly py-5">
-      <div class="col-3 text-center p-5 rounded-4 Cards-Bg">
+      <div class="col-3 text-center p-5 rounded-4 Cards-Bg reveal-item stagger-2">
         <div  class="d-sm-inline-block my-3">
           <i class="fa-solid fa-calendar-days c-accent fs-1 px-1 py-2 rounded-3 bg--white"></i>
         </div>
@@ -116,7 +116,7 @@
           <li class="C-white fw-light"><i class="fa-solid fa-check c-accent me-2"></i>Sync across devices</li>
         </ul>
       </div>
-      <div class="col-3 text-center p-5 rounded-4 Cards-Bg">
+      <div class="col-3 text-center p-5 rounded-4 Cards-Bg reveal-item stagger-3">
         <div  class="d-sm-inline-block my-3">
           <i class="fa-solid fa-code-merge c-accent fs-1 px-1 py-2 rounded-3 bg--white"></i>
         </div>
@@ -128,7 +128,7 @@
           <li class="C-white fw-light"><i class="fa-solid fa-check c-accent me-2"></i>Progress visualization</li>
         </ul>
       </div>
-      <div class="col-3 text-center p-5 rounded-4 Cards-Bg">
+      <div class="col-3 text-center p-5 rounded-4 Cards-Bg reveal-item stagger-4">
         <div  class="d-sm-inline-block my-3">
           <i class="fa-solid fa-palette c-accent fs-1 px-1 py-2 rounded-3 bg--white"></i>
         </div>
@@ -145,9 +145,11 @@
 </section>
 <section class="w-100 bg--white py-5 bg-image" id="Features">
   <div class="w-80 m-auto bg-dots">
-    <h2 class="text-center display-3 Cusotm-Changes main-Title position-relative Font-Title">Features in Depth</h2>
-    <div class="row d-flex justify-content-between align-content-between py-4 mt-5 ">
-      <div class="col-6 d-flex flex-column justify-content-center ">
+    <div class="reveal-group" appRevealOnScroll>
+      <h2 class="text-center display-3 Cusotm-Changes main-Title position-relative Font-Title reveal-item stagger-0">Features in Depth</h2>
+    </div>
+    <div class="row d-flex justify-content-between align-content-between py-4 mt-5 reveal-group" appRevealOnScroll>
+      <div class="col-12 col-lg-6 d-flex flex-column justify-content-center reveal-item reveal-from-left stagger-0">
         <h3 class="display-6 Title fw-bold">Node Flow on Calendar</h3>
         <p class="fs-5 C-gray ">Transform the way you see time. View your events and tasks as part of a connected flow not isolated boxes.</p>
         <div class="d-flex flex-column">
@@ -174,8 +176,8 @@
           </div>
         </div>
       </div>
-      <div class="col-6 m-auto d-flex justify-content-end ">
-        <div class="w-90 ms-4 bg--white p-3 rounded-4 ">
+      <div class="col-12 col-lg-6 m-auto d-flex justify-content-end reveal-item reveal-from-right stagger-1 mt-4 mt-lg-0">
+        <div class="w-90 ms-0 ms-lg-4 bg--white p-3 rounded-4 ">
           <div class="cards rounded-2 p-3 my-2 bg-research border-right-c-research-dot">
             <h4 class="C-gray fs-5"><i class="fa-solid fa-circle C-research-dot"></i>Research Phase</h4>
             <span class="C-gray">Jan 15 - Jan 20</span>
@@ -195,8 +197,8 @@
         </div>
       </div>
     </div>
-    <div class="row d-flex justify-content-between align-content-between py-4 mt-5">
-      <div class="col-6 m-auto d-flex justify-content-start p-o">
+    <div class="row d-flex justify-content-between align-content-between py-4 mt-5 reveal-group" appRevealOnScroll>
+      <div class="col-12 col-lg-6 m-auto d-flex justify-content-start p-o reveal-item reveal-from-left stagger-0 order-2 order-lg-1">
         <div class="w-90  bg--white p-3 rounded-4 ">
           <div class="cards rounded-2 p-4 my-2 bg-research">
             <h4 class="C-gray fs-5">💡 New Feature Ideas</h4>
@@ -214,7 +216,7 @@
           </div>
         </div>
       </div>
-      <div class="col-6 ">
+      <div class="col-12 col-lg-6 reveal-item reveal-from-right stagger-1 order-1 order-lg-2 mt-4 mt-lg-0">
         <h3 class="display-6 Title">Whiteboard Integration</h3>
         <p class="fs-5 C-gray">Express your ideas with drawing tools, shapes, and unlimited canvas space.</p>
         <div class="d-flex flex-column">
@@ -242,8 +244,8 @@
         </div>
       </div>
     </div>
-    <div class="row d-flex justify-content-between align-content-between py-4 mt-5">
-      <div class="col-6 ">
+    <div class="row d-flex justify-content-between align-content-between py-4 mt-5 reveal-group" appRevealOnScroll>
+      <div class="col-12 col-lg-6 reveal-item reveal-from-left stagger-0">
         <h3 class="display-6 Title">Smart Reminders & Alerts</h3>
         <p class="fs-5 C-gray">Never miss what matters with intelligent notifications tailored to your workflow.</p>
         <div class="d-flex flex-column">
@@ -270,8 +272,8 @@
           </div>
         </div>
       </div>
-      <div class="col-6 m-auto d-flex justify-content-end">
-        <div class="w-90 ms-4 bg--white p-3 rounded-4">
+      <div class="col-12 col-lg-6 m-auto d-flex justify-content-end reveal-item reveal-from-right stagger-1 mt-4 mt-lg-0">
+        <div class="w-90 ms-0 ms-lg-4 bg--white p-3 rounded-4">
           <div class="cards rounded-2 p-3 my-2 bg-research border-right-c-research-dot">
             <h4 class="C-gray fs-5"><i class="fa-solid fa-calendar C-research-dot"></i>Meeting in 15 minutes</h4>
             <span class="C-gray">Jan 15 - Jan 20</span>
@@ -291,31 +293,31 @@
 </section>
 <section>
   <div class="w-100 bg--light">
-    <h2 class="text-center display-3 Cusotm-Changes main-Title position-relative Font-Title pt-5 mt-0">Why Choose Miqat</h2>
-    <div class="w-85 m-auto py-5">
+    <div class="w-85 m-auto py-5 reveal-group" appRevealOnScroll>
+      <h2 class="text-center display-3 Cusotm-Changes main-Title position-relative Font-Title pt-5 mt-0 reveal-item stagger-0">Why Choose Miqat</h2>
       <div class="row d-flex align-content-center justify-content-center">
-        <div class="col-3 d-flex justify-content-center flex-column Card Card-animation">
+        <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-center flex-column Card Card-animation reveal-item stagger-1">
           <div class="icon Card-Bg">
             <i class="fa-solid fa-eye"></i>
           </div>
           <h4>Clean & Minimal Design</h4>
           <p class="C-gray">Clean and minimal design for easy focus. Every element is crafted for clarity and simplicity.</p>
         </div>
-        <div class="col-3 d-flex justify-content-center  flex-column Card Card-animation">
+        <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-center  flex-column Card Card-animation reveal-item stagger-2">
           <div class="icon Card-Bg">
             <i class="fa-solid fa-rocket"></i>
           </div>
           <h4>Time-Saving Tools</h4>
           <p class="C-gray">Tools that save time and simplify productivity. Automate repetitive tasks and focus on what matters.</p>
         </div>
-        <div class="col-3 d-flex justify-content-center flex-column Card Card-animation">
+        <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-center flex-column Card Card-animation reveal-item stagger-3">
           <div class="icon Card-Bg">
             <i class="fa-solid fa-paintbrush"></i>
           </div>
           <h4>Visual-First Approach</h4>
           <p class="C-gray">Visual-first approach: flows + whiteboard inside your calendar. See your schedule in a whole new way.</p>
         </div>
-        <div class="col-3 d-flex justify-content-center flex-column Card Card-animation">
+        <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-center flex-column Card Card-animation reveal-item stagger-4">
           <div class="icon Card-Bg">
             <i class="fa-solid fa-circle-half-stroke"></i>
           </div>
@@ -329,13 +331,13 @@
 </section>
 <section>
   <div class="bg--primary">
-    <div class=" d-flex flex-column align-items-center py-5 position-relative overflow-hidden">
-      <h3 class="display-2 text-white Font-Title pt-5">Time is precious.</h3>
-      <p class="text-white text-center fs-4">Let Miqat help you make the most of it. Join thousands of users <br> who have transformed their productivity.</p>
-      <div class="py-4">
+    <div class=" d-flex flex-column align-items-center py-5 position-relative overflow-hidden reveal-group" appRevealOnScroll>
+      <h3 class="display-2 text-white Font-Title pt-5 reveal-item stagger-0">Time is precious.</h3>
+      <p class="text-white text-center fs-4 reveal-item stagger-1">Let Miqat help you make the most of it. Join thousands of users<br class="d-none d-md-inline"> who have transformed their productivity.</p>
+      <div class="py-4 reveal-item stagger-2">
         <button class="btn rounded-2 btn-lg btn-custom-end Font-Title py-3 px-5" (click)="authLogic.goToRegister()">Get Started</button>
       </div>
-      <span class="text-white pb-5">✓ No credit card required ✓ 14-day free trial ✓ Cancel anytime</span>
+      <span class="text-white pb-5 reveal-item stagger-3">✓ No credit card required ✓ 14-day free trial ✓ Cancel anytime</span>
       <div class="position-absolute first">
         <i class="fa-regular fa-clock fa-spin-pulse"></i>
       </div>

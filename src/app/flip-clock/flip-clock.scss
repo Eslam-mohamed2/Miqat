@@ -44,3 +44,31 @@
     transform: rotateX(0);
   }
 }
+
+// Media queries: Tablet & Mobile
+@media (max-width: 991px) {
+  .flip-clock .time {
+    font-size: 100px;
+    padding: 24px 50px;
+    width: 85% !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .flip-clock {
+    padding: 16px 0;
+    .time {
+      font-size: 64px;
+      padding: 20px 30px;
+      width: 95% !important;
+      letter-spacing: 2px;
+    }
+  }
+}
+
+@media (max-width: 575px) {
+  .flip-clock .time {
+    font-size: 48px;
+    padding: 16px 20px;
+  }
+}

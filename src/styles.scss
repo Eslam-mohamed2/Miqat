@@ -249,3 +249,25 @@ li {
 .border-right-c-launch {
   border-right: 5px solid #eeb682 !important;
 }
+
+// ========== Responsive: prevent horizontal overflow ==========
+@media (max-width: 1024px) {
+  body, html {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  body, html {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  body, html {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+}
