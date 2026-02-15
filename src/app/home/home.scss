@@ -643,6 +643,9 @@
     width: 70% !important;
     margin: 15px 5px !important;
   }
+  .reveal-group {
+    padding: 20px 15px !important;
+  }
   .reveal-from-left{
     width: 100% !important;
     margin: 0 !important;
@@ -662,16 +665,19 @@
     margin: 0 !important;
   }
   .first {
-    left: -25%;
-    top: -32%;
-    font-size: 230px;
+    left: -22%;
+    top: -34%;
+    font-size: 165px;
     color: white;
   }
   .second {
-    top: 65% !important;
-    left: 55%;
-    font-size: 240px !important;
+    top: 70% !important;
+    left: 75%;
+    font-size: 145px !important;
     color: white !important;
 
+  }
+  .test-sizing{
+    font-size: 14px !important;
   }
 }
