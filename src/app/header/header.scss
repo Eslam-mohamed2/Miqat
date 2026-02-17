@@ -116,7 +116,29 @@ img {
 
 // ========== Responsive breakpoints (add overrides below; base styles unchanged) ==========
 @media (max-width: 1024px) {
-  // Tablet
+  .clock {
+    display: none;
+  }
+  .Custmizable-Header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .Authentication-Buttons {
+    margin-left: auto !important;
+  }
+  .w-10 {
+    width: 17% !important;
+  }
+  .clock-falls {
+    position: absolute;
+    top: 0;
+    left: -5%;
+    height: 100%;
+    width: 160px;
+    pointer-events: none;
+    z-index: 0;
+  }
 }
 
 @media (max-width: 768px) {
