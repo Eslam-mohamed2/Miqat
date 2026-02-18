@@ -716,7 +716,56 @@
   .test-sizing {
     font-size: 14px !important;
   }
-  
+  .about-sizef {
+    width: 455px !important;
+  }
+  .about-sizes {
+    width: 455px !important;
+  }
+  .Service-Card {
+    width: 28% !important;
+  }
+  .Service-Card h3 {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+  }
+  .Service-Card p {
+    font-size: 14px !important;
+  }
+  .Service-Card ul li {
+    font-size: 14px !important;
+  }
+  .Service-Card {
+    padding: 20px 10px !important;
+  }
+  .first {
+    left: -27.5%;
+    top: -35%;
+    font-size: 325px;
+    color: white;
+  }
+  .second {
+    top: 25% !important;
+    left: 71%;
+    font-size: 350px !important;
+    color: white !important;
+
+  }
+  .container-fluid {
+    padding: 0% !important;
+  }
+  .bg-Custom {
+    text-align: center;
+    align-self: center;
+    align-content: center;
+    align-items: center !important;
+  }
+  .bg-Custom h1 {
+    font-size: 60px !important;
+  }
+  .bg-Custom p {
+    font-size: 18px !important;
+  }
 }
 
 @media (max-width: 576px) {
@@ -817,5 +866,9 @@
   }
   .test-sizing{
     font-size: 14px !important;
+  }
+  .styling{
+    display: flex;
+    flex-direction: column !important;
   }
 }

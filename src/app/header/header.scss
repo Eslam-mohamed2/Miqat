@@ -142,7 +142,19 @@ img {
 }
 
 @media (max-width: 768px) {
-  // Mobile
+  .w-10 {
+    width: 20% !important;
+  }
+  .clock-falls {
+    position: absolute;
+    top: 0;
+    left: -8%;
+    height: 100%;
+    width: 160px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
 }
 
 @media (max-width: 576px) {
