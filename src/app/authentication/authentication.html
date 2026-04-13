@@ -2,47 +2,60 @@
   <div class="row d-flex m-0 p-0">
     <div class="col-4 p-0">
       <div class="auth-container d-flex flex-column justify-content-center align-items-center vh-100 ">
+
+        <!-- Error & Success Messages -->
+        <div *ngIf="errorMessage" class="alert alert-danger w-80 text-center py-2">{{ errorMessage }}</div>
+        <div *ngIf="successMessage" class="alert alert-success w-80 text-center py-2">{{ successMessage }}</div>
+
         <form *ngIf="activeForm === 'login'" [formGroup]="loginForm" (ngSubmit)="onLogin()"
           class="form-container m-0 w-80">
           <div class="mb-3">
             <label for="loginEmail" class="form-label fw-medium">Email</label>
-            <input id="loginEmail" type="email" formControlName="email" class="form-control rounded-0" />
+            <input id="loginEmail" type="email" formControlName="email" class="form-control rounded-0" [ngClass]="{'is-invalid': isFieldInvalid(loginForm, 'email')}" />
+            <div class="invalid-feedback">A valid email is required.</div>
           </div>
           <div class="mb-3">
             <label for="loginPassword" class="form-label fw-medium">Password</label>
-            <input id="loginPassword" type="password" formControlName="password" class="form-control rounded-0" />
+            <input id="loginPassword" type="password" formControlName="password" class="form-control rounded-0" [ngClass]="{'is-invalid': isFieldInvalid(loginForm, 'password')}" />
+            <div class="invalid-feedback">Password must be at least 6 characters.</div>
           </div>
           <div class="d-flex justify-content-center">
-            <button type="submit" class="btn text-white bg-image py-2 px-5 my-2" >Login</button>
+            <button type="submit" class="btn text-white bg-image py-2 px-5 my-2 d-flex align-items-center" [disabled]="isLoading">
+               <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+               {{ isLoading ? 'Processing...' : 'Login' }}
+            </button>
           </div>
         </form>
+
         <form *ngIf="activeForm === 'register'" [formGroup]="registerForm" (ngSubmit)="onRegister()" class="form-container w-80 align-content-center">
           <div class="mb-3">
             <label for="fullName" class="form-label fw-medium">Full Name</label>
-            <input type="text" id="fullName" formControlName="fullName" class="form-control rounded-0" />
+            <input type="text" id="fullName" formControlName="fullName" class="form-control rounded-0" [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'fullName')}" />
+            <div class="invalid-feedback">Full name is required (min 3 chars).</div>
           </div>
           <div class="mb-3">
             <label for="email" class="form-label fw-medium">Email address</label>
-            <input type="email" id="email" formControlName="email" class="form-control rounded-0" />
+            <input type="email" id="email" formControlName="email" class="form-control rounded-0" [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'email')}" />
+            <div class="invalid-feedback">A valid email is required.</div>
           </div>
           <div class="mb-3">
             <label for="password" class="form-label fw-medium">Password</label>
-            <input type="password" id="password" formControlName="password" class="form-control rounded-0" />
+            <input type="password" id="password" formControlName="password" class="form-control rounded-0" [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'password')}" />
+            <div class="invalid-feedback" style="font-size: 0.8rem;">Minimum 8 chars with uppercase, number, and special character.</div>
           </div>
           <div class="mb-3">
-            <label for="gender" class="form-label fw-medium">Gender</label>
-            <select id="gender" formControlName="gender" class="form-select rounded-0">
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
+            <label for="phoneNumber" class="form-label fw-medium">Phone Number</label>
+            <input type="text" id="phoneNumber" formControlName="phoneNumber" class="form-control rounded-0" [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'phoneNumber')}" />
+            <div class="invalid-feedback">Phone number is required.</div>
           </div>
           <div class="mb-3">
-            <label for="dob" class="form-label fw-medium">Date of Birth</label>
-            <input type="date" id="dob" formControlName="dob" class="form-control rounded-0" />
+            <label for="country" class="form-label fw-medium">Country</label>
+            <input type="text" id="country" formControlName="country" class="form-control rounded-0" [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'country')}" />
+            <div class="invalid-feedback">Country is required.</div>
           </div>
           <div class="mb-3">
-            <label for="timezone" class="form-label fw-medium">Time Zone</label>
-            <select id="timezone" formControlName="timezone" class="form-select">
+            <label for="timeZone" class="form-label fw-medium">Time Zone</label>
+            <select id="timeZone" formControlName="timeZone" class="form-select rounded-0" [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'timeZone')}">
               <option value="">Select Time Zone</option>
               <option value="UTC+0">UTC</option>
               <option value="UTC+2">Cairo (UTC+2)</option>
@@ -50,9 +63,12 @@
               <option value="UTC+5:30">India (UTC+5:30)</option>
               <option value="UTC-5">New York (UTC-5)</option>
             </select>
+            <div class="invalid-feedback">Time Zone is required.</div>
           </div>
           <div class="d-flex justify-content-center">
-            <button type="submit" class="btn text-white bg-image py-2 px-5 my-2" >Register</button>
+            <button type="submit" class="btn text-white bg-image py-2 px-5 my-2" [disabled]="isLoading">
+               {{ isLoading ? 'Processing...' : 'Register' }}
+            </button>
           </div>
         </form>
         <div class="switch-wrapper mt-2">
@@ -78,5 +94,26 @@
   <div class="position-absolute custom-desgin align-content-center">
       <a href="" class="p-5"><i class="fa-solid fa-house fs-3" routerLink="/home"></i></a>
   </div>
-</div>
 
+  <!-- OTP Verification Popup Modal -->
+  <div *ngIf="showOtpPopup" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.6); z-index: 1050; backdrop-filter: blur(4px);">
+    <div class="bg-white p-5 rounded-4 shadow-lg text-center border-0 mx-3" style="max-width: 450px; width: 100%;">
+      <h3 class="fw-bold mb-2">Verify Your Email</h3>
+      <p class="text-muted mb-4 fs-6">We've sent a 6-digit passcode to<br><strong class="text-dark">{{ registeredEmail }}</strong></p>
+      
+      <!-- Inside the modal we can show specific error/success messages for verification -->
+      <div *ngIf="errorMessage" class="alert alert-danger px-2 py-1 mb-3 lh-sm">{{ errorMessage }}</div>
+      <div *ngIf="successMessage && isVerifyingOtp" class="alert alert-success px-2 py-1 mb-3 lh-sm">{{ successMessage }}</div>
+
+      <div class="mb-4">
+        <input type="text" class="form-control form-control-lg text-center fw-bold rounded-3 fs-3 shadow-none border-1" placeholder="Enter Code" maxlength="6" [value]="otpCode" (input)="onOtpCodeChange($event)" style="letter-spacing: 0.5rem; outline: none !important;">
+      </div>
+
+      <button class="btn text-white bg-image w-100 py-3 rounded-3 fw-bold mb-3 fs-5" [disabled]="isVerifyingOtp || otpCode.length < 4" (click)="submitOtp()">
+        {{ isVerifyingOtp ? 'Verifying...' : 'Submit Code' }}
+      </button>
+      
+      <p class="text-muted m-0">Didn't receive the code? <br><a href="javascript:void(0)" class="text-decoration-none fw-bold" style="color: #6a11cb;" (click)="requestResendOtp()">Resend OTP</a></p>
+    </div>
+  </div>
+</div>

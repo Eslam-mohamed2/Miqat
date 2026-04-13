@@ -21,8 +21,9 @@ export class App {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: any) => {
-        // 👇 Hide header/footer on auth routes
-        this.showLayout = !(event.url.startsWith('/auth'));
+        // 👇 Only show layout (header/footer) on the Home route
+        const urlExp = event.url.split('?')[0];
+        this.showLayout = urlExp === '/' || urlExp.startsWith('/home');
       });
   }
 }

@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { inject } from '@angular/core';
-import { AuthLogic } from '../authentication/auth-logic.service';
+import { Router } from '@angular/router';
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -25,8 +25,16 @@ export class Header implements OnInit, OnDestroy {
     'assets/SVG icons/clock-two-thirty-svgrepo-com.svg',
     '../../assets/SVG icons/clock-lines-svgrepo-com.svg'
   ];
-  constructor(public authLogic: AuthLogic) { }
+  constructor(private router: Router) { }
   private intervalId: any;
+
+  goToLogin() {
+    this.router.navigate(['/authentication'], { queryParams: { form: 'login' } });
+  }
+
+  goToRegister() {
+    this.router.navigate(['/authentication'], { queryParams: { form: 'register' } });
+  }
 
   ngOnInit(): void {
     this.updateTime();

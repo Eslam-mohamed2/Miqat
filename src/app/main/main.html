@@ -1,0 +1,70 @@
+<div class="d-flex flex-column min-vh-100" style="background-color: #f7f9fc;">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg px-4 shadow-sm" style="background: linear-gradient(265deg, #0a6663 0%, #3a7a84 100%);">
+    <a class="navbar-brand fw-bold text-white fs-3 d-flex align-items-center" href="#">
+      <i class="fa-solid fa-calendar-check me-2"></i> Miqat Dashboard
+    </a>
+    <div class="ms-auto">
+      <button class="btn btn-outline-light fw-bold" (click)="logout()">Logout <i class="fa-solid fa-arrow-right-from-bracket ms-1"></i></button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container-fluid flex-grow-1 p-4 d-flex justify-content-center align-items-center">
+    
+    <div class="calendar-wrapper shadow-lg rounded-4 overflow-hidden bg-white" style="width: 100%; max-width: 800px; border: 1px solid rgba(0,0,0,0.05);">
+      <!-- Header -->
+      <div class="calendar-header text-white p-4 d-flex justify-content-between align-items-center" style="background: linear-gradient(265deg, #0a6663 0%, #3a7a84 100%);">
+        <button class="btn btn-light bg-opacity-25 text-white border-0 rounded-3 fs-5" (click)="prevMonth()" style="width: 45px; height: 45px;">&#10094;</button>
+        <span class="fs-3 fw-bold" style="letter-spacing: 0.05rem;">{{ monthYear }}</span>
+        <button class="btn btn-light bg-opacity-25 text-white border-0 rounded-3 fs-5" (click)="nextMonth()" style="width: 45px; height: 45px;">&#10095;</button>
+      </div>
+
+      <!-- Weekdays -->
+      <div class="calendar-weekdays d-grid text-center fw-bold p-3" style="grid-template-columns: repeat(7, 1fr); color: #0a6663;">
+        <div *ngFor="let d of ['S','M','T','W','T','F','S']" class="fs-5">{{ d }}</div>
+      </div>
+
+      <!-- Days Grid -->
+      <div class="calendar-days d-grid gap-2 px-4 pb-4" style="grid-template-columns: repeat(7, 1fr);">
+        <ng-container *ngFor="let week of weeks">
+          <div *ngFor="let day of week"
+              (click)="selectDate(day)"
+              class="day-cell d-flex justify-content-center align-items-center rounded-3 fs-5"
+              [ngClass]="{
+                'border border-2 border-primary fw-bold': isToday(day) && !(day && selectedDate && day.toDateString() === selectedDate.toDateString()),
+                'bg-active text-white shadow fw-bold': day && selectedDate && day.toDateString() === selectedDate.toDateString(),
+                'bg-light text-muted opacity-50': !day,
+                'bg-light bg-opacity-50 text-dark border hover-effect': day && !(day && selectedDate && day.toDateString() === selectedDate.toDateString())
+              }"
+              style="min-height: 70px; cursor: pointer; transition: 0.3s; box-sizing: border-box;">
+            {{ day ? day.getDate() : '' }}
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Events List -->
+      <div class="calendar-events px-4 pb-4 bg-white" *ngIf="getEventsForSelected().length > 0">
+        <h5 class="fw-bold mb-3 text-dark d-flex align-items-center"><i class="fa-regular fa-bell me-2" style="color: #0a6663;"></i> Daily Events</h5>
+        <div class="event p-3 mb-2 bg-light rounded-3 shadow-sm" *ngFor="let e of getEventsForSelected()" [style.borderLeft]="'6px solid ' + e.color">
+          <div class="d-flex align-items-center">
+            <span class="dot rounded-circle me-3" [style.backgroundColor]="e.color" style="width: 14px; height: 14px; box-shadow: 0 0 5px rgba(0,0,0,0.2);"></span>
+            <div>
+              <div class="title fw-bold text-dark fs-5">{{ e.title }}</div>
+              <div class="time text-muted fw-semibold">{{ e.time }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Empty State -->
+      <div class="px-4 pb-4 text-center text-muted" *ngIf="getEventsForSelected().length === 0 && selectedDate">
+        <div class="p-4 bg-light rounded-3">
+          <i class="fa-regular fa-calendar-xmark fs-1 mb-2 opacity-50"></i>
+          <p class="mb-0 fw-semibold fs-5 opacity-75">No events scheduled for this day.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

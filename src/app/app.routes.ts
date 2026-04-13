@@ -1,11 +1,28 @@
 import { Routes } from '@angular/router';
-import { Home } from './home/home';
-import { Authentication } from './authentication/authentication';
+import { authGuard } from './core/guards/auth-guard';
+import { Main } from './main/main';
 
 export const routes: Routes = [
-  //default route (when user visits `/`)
-  { path: '', redirectTo: 'home', pathMatch: 'full' },
-  //  main routes
-  { path: 'home', component: Home },
-  { path: 'auth', component: Authentication },
+  {
+    path: 'authentication',
+    loadComponent: () =>
+      import('./authentication/authentication')
+        .then(m => m.Authentication)
+  },
+  {
+    path: 'home',
+    loadComponent: () =>
+      import('./home/home')
+        .then(m => m.Home)
+  },
+  {
+    path: '',
+    redirectTo: 'home',
+    pathMatch: 'full'
+  },
+  { 
+    path: 'main', 
+    component: Main,
+    canActivate: [authGuard]
+  }
 ];

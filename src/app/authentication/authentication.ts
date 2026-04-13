@@ -1,89 +1,179 @@
-import { Component } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  ReactiveFormsModule,
-  FormBuilder,
-  FormGroup,
-  Validators,
+  ReactiveFormsModule, FormBuilder,
+  FormGroup, Validators
 } from '@angular/forms';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { AuthService } from '../core/services/auth.service';
 import { FlipClock } from '../flip-clock/flip-clock';
-import { Authservice } from '../authservice';
 
 @Component({
-  selector: 'app-authentication',
-  imports: [CommonModule, ReactiveFormsModule ,FlipClock],
+  selector: 'authentication',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, FlipClock],
   templateUrl: './authentication.html',
   styleUrl: './authentication.scss'
 })
-export class Authentication {
-  activeForm: 'login' | 'register' = 'login';
-  loginForm: FormGroup;
-  registerForm: FormGroup;
+export class Authentication implements OnInit {
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
-  constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {
+  activeForm: 'login' | 'register' = 'login';
+  isLoading = false;
+  errorMessage = '';
+  successMessage = '';
+  showPassword = false;
+
+  showOtpPopup = false;
+  otpCode = '';
+  isVerifyingOtp = false;
+  registeredEmail = '';
+
+  loginForm!: FormGroup;
+  registerForm!: FormGroup;
+
+  ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      if (params['form'] === 'register') {
+        this.activeForm = 'register';
+      } else if (params['form'] === 'login') {
+        this.activeForm = 'login';
+      }
+    });
+
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(6)]]
     });
 
     this.registerForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3)]],
+      fullName: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', [Validators.required]],
-    });
-
-    this.route.queryParams.subscribe((params) => {
-      const formType = params['form'];
-      this.activeForm = formType === 'register' ? 'register' : 'login';
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      phoneNumber: ['', [Validators.required]],
+      country: ['', [Validators.required]],
+      timeZone: ['', [Validators.required]]
     });
   }
 
-  switchForm(form: 'login' | 'register') {
+  switchForm(form: 'login' | 'register'): void {
     this.activeForm = form;
-    this.router.navigate(['/auth'], { queryParams: { form } });
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.loginForm.reset();
+    this.registerForm.reset();
   }
 
-  onLogin() {
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  onLogin(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    console.log('✅ Login Data:', this.loginForm.value);
-    alert('Login successful! 🚀');
+    this.authService.login(this.loginForm.value).subscribe({
+      next: (res) => {
+        this.isLoading = false;
+        this.router.navigate(['/main']);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = this.extractErrorMessage(err, 'Login failed. Please try again.');
+      }
+    });
   }
 
-  onRegister() {
+  onRegister(): void {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       return;
     }
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    const { password, confirmPassword } = this.registerForm.value;
-    if (password !== confirmPassword) {
-      alert('❌ Passwords do not match');
-      return;
-    }
-
-    console.log('✅ Register Data:', this.registerForm.value);
-    alert('Registration successful! 🎉');
+    this.authService.register(this.registerForm.value).subscribe({
+      next: (res) => {
+        this.isLoading = false;
+        this.successMessage = 'Account created! Please enter the OTP sent to your email.';
+        this.registeredEmail = this.registerForm.value.email;
+        this.showOtpPopup = true;
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
+      }
+    });
   }
 
-  getFieldError(form: FormGroup, field: string): string | null {
+  onOtpCodeChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.otpCode = input.value;
+  }
+
+  submitOtp(): void {
+    if (!this.otpCode) return;
+    this.isVerifyingOtp = true;
+
+    this.authService.verifyOtp({ email: this.registeredEmail, code: this.otpCode, purpose: 'EmailVerification' }).subscribe({
+      next: () => {
+        const loginData = {
+          email: this.registeredEmail,
+          password: this.registerForm.value.password // Using verified password in memory
+        };
+
+        this.authService.login(loginData).subscribe({
+          next: () => {
+            this.isVerifyingOtp = false;
+            this.showOtpPopup = false;
+            this.router.navigate(['/main']);
+          },
+          error: () => {
+            // Failsafe: Email verified, but auto-login blocked.
+            this.isVerifyingOtp = false;
+            this.showOtpPopup = false;
+            this.switchForm('login');
+            this.successMessage = 'Account verified! Please login.';
+          }
+        });
+      },
+      error: (err) => {
+        this.isVerifyingOtp = false;
+        this.errorMessage = this.extractErrorMessage(err, 'Invalid code. Please try again.');
+      }
+    });
+  }
+
+  requestResendOtp(): void {
+    this.authService.resendOtp({ email: this.registeredEmail, purpose: 'Registration' }).subscribe({
+      next: (res) => {
+        this.successMessage = 'A new code has been sent to your email!';
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Failed to resend OTP.';
+      }
+    });
+  }
+
+  isFieldInvalid(form: FormGroup, field: string): boolean {
     const control = form.get(field);
-    if (!control || !control.touched || !control.errors) return null;
+    return !!(control && control.invalid && control.touched);
+  }
 
-    if (control.errors['required']) return 'This field is required';
-    if (control.errors['email']) return 'Please enter a valid email';
-    if (control.errors['minlength'])
-      return `Must be at least ${control.errors['minlength'].requiredLength} characters`;
-
-    return null;
+  private extractErrorMessage(err: any, defaultMsg: string): string {
+    if (typeof err === 'string') return err;
+    if (typeof err.error === 'string') return err.error;
+    if (err.error?.errors) {
+      const firstKey = Object.keys(err.error.errors)[0];
+      return err.error.errors[firstKey][0] || defaultMsg;
+    }
+    return err.error?.message || err.error?.title || defaultMsg;
   }
 }

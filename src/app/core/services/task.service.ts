@@ -1,0 +1,51 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+export interface TaskDto {
+  id?: string;
+  title: string;
+  description?: string;
+  status?: string; // Pending, InProgress, Completed
+  priority?: string; // Low, Medium, High
+  dueDate?: string; // ISO 8601 string
+  tags?: string;
+  recurrence?: string;
+  recurrenceEndDate?: string;
+  userId?: string;
+  ownerName?: string;
+  assignedToUserId?: string;
+  assignedToUserName?: string;
+  groupId?: string;
+  groupName?: string;
+  createdAt?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TaskService {
+  private apiUrl = 'https://miqatapi-production-ed29.up.railway.app/api/Task';
+
+  constructor(private http: HttpClient) { }
+
+  getTasks(): Observable<TaskDto[]> {
+    return this.http.get<TaskDto[]>(this.apiUrl);
+  }
+
+  getTaskById(id: string): Observable<TaskDto> {
+    return this.http.get<TaskDto>(`${this.apiUrl}/${id}`);
+  }
+
+  createTask(task: TaskDto): Observable<TaskDto> {
+    return this.http.post<TaskDto>(this.apiUrl, task);
+  }
+
+  updateTask(id: string, task: TaskDto): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, task);
+  }
+
+  deleteTask(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}`);
+  }
+}

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CalendarEvent } from '../calendar-event';
 import { RouterModule } from '@angular/router';
-import { AuthLogic } from '../authentication/auth-logic.service';
+import { Router } from '@angular/router';
 import { RevealOnScrollDirective } from '../directives/reveal-on-scroll.directive';
 
 @Component({
@@ -18,8 +18,16 @@ export class Home implements OnInit {
   weeks: (Date | null)[][] = [];
   selectedDate: Date | null = null;
 
-  constructor(public authLogic: AuthLogic) {
+  constructor(private router: Router) {
      this.generateCalendar();
+  }
+
+  goToRegister() {
+    this.router.navigate(['/authentication'], { queryParams: { form: 'register' } });
+  }
+
+  goToLogin() {
+    this.router.navigate(['/authentication'], { queryParams: { form: 'login' } });
   }
 
 
