@@ -12,7 +12,6 @@
     "serve:ssr:Miqat": "node dist/Miqat/server/server.mjs"
   },
   "dependencies": {
-    "@abacritt/angularx-social-login": "^2.6.0",
     "@angular/animations": "^20.0.0",
     "@angular/cdk": "^20.0.0",
     "@angular/common": "^20.0.0",
