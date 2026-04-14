@@ -11,6 +11,14 @@
     "serve:ssr:Miqat": "node dist/Miqat/server/server.mjs"
   },
   "private": true,
+  "overrides": {
+    "@swimlane/ngx-charts": {
+      "@angular/core": "$@angular/core",
+      "@angular/common": "$@angular/common",
+      "@angular/platform-browser": "$@angular/platform-browser",
+      "@angular/platform-browser-dynamic": "$@angular/platform-browser-dynamic"
+    }
+  },
   "dependencies": {
     "@angular/animations": "^20.3.16",
     "@angular/cdk": "^20.2.14",
