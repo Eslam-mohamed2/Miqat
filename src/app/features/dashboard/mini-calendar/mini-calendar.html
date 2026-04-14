@@ -1,0 +1,23 @@
+<div class="calendar-card">
+  <div class="cal-header">
+    <div class="month">October 2023</div>
+    <div class="actions">
+      <div class="btn-nav"><mat-icon>chevron_left</mat-icon></div>
+      <div class="btn-nav"><mat-icon>chevron_right</mat-icon></div>
+    </div>
+  </div>
+
+  <div class="dow-row">
+    <div *ngFor="let dow of daysOfWeek" class="dow">{{ dow }}</div>
+  </div>
+
+  <div class="calendar-grid">
+    <div *ngFor="let day of grid" 
+         class="cal-day" 
+         [class.other-month]="day.other"
+         [class.today]="day.today"
+         [class.has-event]="day.event">
+      {{ day.num }}
+    </div>
+  </div>
+</div>

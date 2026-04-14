@@ -1,3 +1,4 @@
+@use 'styles/tokens' as *;
 @import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Montserrat:wght@100..900&family=Raleway:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Bungee+Spice&family=Cinzel:wght@400..900&family=Gruppo&family=Luckiest+Guy&family=Oswald:wght@200..700&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 
@@ -272,5 +273,54 @@ li {
   }
   .w-30 {
     width: 30% !important;
+  }
+}
+
+// === DASHBOARD GLOBAL STYLES ===
+
+/* Dashboard overrides to ensure it looks like the prompt */
+.dashboard-root {
+  height: 100%;
+  background-color: $bg-app;
+  font-family: $font-family;
+  font-size: $font-size-base;
+  color: $text-primary;
+  -webkit-font-smoothing: antialiased;
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: $bg-app; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+}
+
+html, body {
+  // Add some fallbacks just in case
+  height: 100%;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background-color: #0d0d0d; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+/* Dashboard global utilities */
+.mt-20 { margin-top: 20px; }
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  color: $text-secondary;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: $transition-std;
+
+  &:hover {
+    color: $text-primary;
+    border-color: #333;
   }
 }

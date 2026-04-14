@@ -8,12 +8,12 @@ import { tap } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'https://miqatapi-production-ed29.up.railway.app/api/Auth';
+  private apiUrl = '/api/Auth';
 
   constructor(
     private http: HttpClient,
     private router: Router
-  ) {}
+  ) { }
 
   login(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/login`, data, { responseType: 'text' }).pipe(

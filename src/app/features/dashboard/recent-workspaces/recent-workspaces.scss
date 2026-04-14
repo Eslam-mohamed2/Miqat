@@ -1,0 +1,39 @@
+@use '../../../../styles/tokens' as *;
+
+.workspaces-card {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+  padding: 20px 24px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  .title {
+    font-size: 15px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .view-all {
+    font-size: 13px;
+    color: $teal-primary;
+    cursor: pointer;
+    transition: $transition-std;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.placeholder-content {
+  color: $text-secondary;
+  font-size: 13px;
+  padding: 20px 0;
+  text-align: center;
+}

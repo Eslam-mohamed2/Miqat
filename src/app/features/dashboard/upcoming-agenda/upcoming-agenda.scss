@@ -1,0 +1,92 @@
+@use '../../../../styles/tokens' as *;
+
+.agenda-card {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+  padding: 18px 20px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+
+  .title {
+    font-size: 15px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .btn-add {
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: $bg-app;
+    border: 1px solid $border-subtle;
+    color: $text-secondary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: $transition-std;
+
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+    &:hover { color: $text-primary; }
+  }
+}
+
+.agenda-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid $border-subtle;
+
+  &:last-child { border-bottom: none; }
+}
+
+.agenda-time {
+  font-size: 12px;
+  color: $text-muted;
+  font-weight: 500;
+  width: 36px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.agenda-content {
+  flex: 1;
+  background: $bg-agenda-item;
+  border-radius: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid transparent;
+
+  .event-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .event-description {
+    font-size: 12px;
+    color: $text-secondary;
+    margin-top: 2px;
+  }
+
+  .event-avatars {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+
+    img {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid $bg-card;
+      object-fit: cover;
+    }
+  }
+}

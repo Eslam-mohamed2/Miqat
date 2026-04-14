@@ -1,0 +1,73 @@
+@use '../../../../styles/tokens' as *;
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 24px;
+
+  .header-left {
+    .greeting {
+      font-size: 28px;
+      font-weight: 700;
+      color: $text-primary;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: $text-secondary;
+      margin-top: 4px;
+    }
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.left-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.right-col {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .right-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .quick-actions-grid { grid-template-columns: 1fr; }
+  .right-col { grid-template-columns: 1fr; }
+}

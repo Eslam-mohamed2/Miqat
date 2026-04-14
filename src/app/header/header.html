@@ -13,7 +13,10 @@
       <div class="clock m-auto rounded Font-Title">
         {{ time }}
       </div>
-      <div class="Authentication-Buttons d-flex ms-auto ">
+      <div class="Authentication-Buttons d-flex ms-auto align-items-center">
+        <button class="btn text-white me-3 p-0 border-0 fs-5" (click)="themeService.toggleTheme()">
+          <i class="fa-solid" [ngClass]="themeService.getTheme() === 'dark' ? 'fa-sun' : 'fa-moon'"></i>
+        </button>
         <button  class="btn btn-login me-2 Font-Title" (click)="goToLogin()">Login <i class="fa-solid fa-right-to-bracket fa-beat"></i></button>
         <button class="btn btn-join-us Font-Title" (click)="goToRegister()">Get Started</button>
       </div>

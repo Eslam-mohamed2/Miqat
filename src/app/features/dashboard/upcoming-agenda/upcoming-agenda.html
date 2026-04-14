@@ -1,0 +1,22 @@
+<div class="agenda-card mt-20">
+  <div class="card-header">
+    <div class="title">Upcoming Agenda</div>
+    <div class="btn-add">
+      <mat-icon>add</mat-icon>
+    </div>
+  </div>
+
+  <div class="agenda-list">
+    <div *ngFor="let item of agendaItems" class="agenda-item">
+      <div class="agenda-time">{{ item.time }}</div>
+      <div class="agenda-content" [ngStyle]="{'border-left-color': item.accentColor}">
+        <div class="event-title">{{ item.title }}</div>
+        <div class="event-description">{{ item.description }}</div>
+        
+        <div *ngIf="item.avatars.length > 0" class="event-avatars">
+          <img *ngFor="let avatar of item.avatars" [src]="avatar" alt="Avatar" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

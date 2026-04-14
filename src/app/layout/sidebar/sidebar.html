@@ -1,0 +1,43 @@
+<div class="sidebar">
+  <div class="logo-section">
+    <div class="logo-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
+      </svg>
+    </div>
+    <span class="logo-text">Miqat</span>
+  </div>
+
+  <div class="nav-groups">
+    <div class="nav-group">
+      <div class="nav-label">APPLICATION</div>
+      <div class="nav-item"
+           *ngFor="let item of navItemsApp"
+           [class.active]="item.active"
+           [routerLink]="item.route">
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </div>
+    </div>
+
+    <div class="nav-group" style="margin-top: 24px">
+      <div class="nav-label">OTHERS</div>
+      <div class="nav-item"
+           *ngFor="let item of navItemsOther"
+           [class.active]="item.active"
+           [routerLink]="item.route">
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="user-profile">
+    <div class="avatar-placeholder"></div>
+    <div class="user-info">
+      <div class="user-name">Sarah Jenkins</div>
+      <div class="user-email">sarah@miqat.app</div>
+    </div>
+    <mat-icon class="chevron">chevron_right</mat-icon>
+  </div>
+</div>

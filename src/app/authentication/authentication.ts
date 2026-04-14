@@ -82,7 +82,7 @@ export class Authentication implements OnInit {
     this.authService.login(this.loginForm.value).subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.router.navigate(['/main']);
+        this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.isLoading = false;
@@ -108,7 +108,14 @@ export class Authentication implements OnInit {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
+        if (err.status === 204) {
+          // SAFEGUARD: The API returned 204 successfully but was interpreted as an HTTP error
+          this.successMessage = 'Account created! Please enter the OTP sent to your email.';
+          this.registeredEmail = this.registerForm.value.email;
+          this.showOtpPopup = true;
+        } else {
+          this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
+        }
       }
     });
   }
@@ -133,7 +140,7 @@ export class Authentication implements OnInit {
           next: () => {
             this.isVerifyingOtp = false;
             this.showOtpPopup = false;
-            this.router.navigate(['/main']);
+            this.router.navigate(['/dashboard']);
           },
           error: () => {
             // Failsafe: Email verified, but auto-login blocked.

@@ -1,0 +1,17 @@
+<div class="topnav">
+  <div class="search-container">
+    <mat-icon class="search-icon">search</mat-icon>
+    <input type="text" placeholder="Search tasks, nodes, or events (Cmd+K)" />
+  </div>
+  
+  <div class="right-actions">
+    <button class="btn-quick-add">+ Quick Add</button>
+    <div class="action-btn">
+      <mat-icon>notifications</mat-icon>
+      <div class="badge"></div>
+    </div>
+    <div class="action-btn" (click)="themeService.toggleTheme()">
+      <mat-icon>{{ themeService.getTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,16 @@
+<div class="quick-card" (click)="cardClick.emit(card)">
+  <mat-icon class="arrow-icon">north_east</mat-icon>
+  
+  <div class="icon-container" [ngStyle]="{'background': card.iconBg}">
+    <mat-icon [ngStyle]="{'color': card.iconColor}">{{ card.icon }}</mat-icon>
+  </div>
+  
+  <h3 class="title">{{ card.title }}</h3>
+  <p class="description">{{ card.description }}</p>
+  
+  <div *ngIf="card.hasDecoration" class="decoration-blob">
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 40H0C0 17.9086 17.9086 0 40 0V40Z" fill="#1a2a1a"/>
+    </svg>
+  </div>
+</div>

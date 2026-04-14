@@ -1,0 +1,67 @@
+@use '../../../../styles/tokens' as *;
+
+.chart-card {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+  padding: 22px 24px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: $text-secondary;
+  margin-top: 2px;
+}
+
+.legend {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: $text-secondary;
+  
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .tasks-dot { background: $teal-primary; }
+  .nodes-dot { background: $orange-accent; }
+}
+
+.chart-container {
+  height: 240px;
+  width: 100%;
+}
+
+::ng-deep {
+  .ngx-charts {
+    .gridline-path { stroke: #2a2a2a; stroke-dasharray: none; }
+    .tick text { fill: #555; font-size: 11px; font-family: $font-family; }
+    .line-series path { stroke-width: 2.5px; }
+    /* Nodes line — make it dotted */
+    .line-series:last-child path {
+      stroke-dasharray: 4 4;
+      stroke-width: 2px;
+    }
+  }
+}

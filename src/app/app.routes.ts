@@ -24,5 +24,16 @@ export const routes: Routes = [
     path: 'main', 
     component: Main,
     canActivate: [authGuard]
+  },
+  {
+    path: 'dashboard',
+    canActivate: [authGuard],
+    loadComponent: () => import('./layout/app-shell/app-shell').then(m => m.AppShell),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/dashboard/dashboard-page/dashboard-page').then(m => m.DashboardPage)
+      }
+    ]
   }
 ];

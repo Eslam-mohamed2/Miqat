@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { ThemeService } from '../core/services/theme.service';
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -25,7 +26,7 @@ export class Header implements OnInit, OnDestroy {
     'assets/SVG icons/clock-two-thirty-svgrepo-com.svg',
     '../../assets/SVG icons/clock-lines-svgrepo-com.svg'
   ];
-  constructor(private router: Router) { }
+  constructor(private router: Router, public themeService: ThemeService) { }
   private intervalId: any;
 
   goToLogin() {

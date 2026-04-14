@@ -1,0 +1,109 @@
+@use '../../../styles/tokens' as *;
+
+.topnav {
+  height: 56px;
+  background: $bg-topbar;
+  border-bottom: 1px solid $border-subtle;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-container {
+  position: relative;
+  width: 340px;
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: $text-muted;
+  }
+
+  input {
+    width: 100%;
+    height: 38px;
+    background: $bg-input;
+    border: 1px solid $border-input;
+    border-radius: $radius-input;
+    padding: 0 14px 0 38px;
+    font-size: 13px;
+    color: $text-primary;
+    transition: $transition-std;
+
+    &::placeholder {
+      color: $text-muted;
+    }
+
+    &:focus {
+      border-color: $teal-primary;
+      outline: none;
+      box-shadow: 0 0 0 2px $teal-glow;
+    }
+  }
+}
+
+.right-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-quick-add {
+  background: $btn-quick-add-bg;
+  color: $btn-quick-add-text;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: $radius-btn;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: $transition-std;
+
+  &:hover {
+    background: $btn-quick-add-hover;
+    transform: scale(1.02);
+  }
+}
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: $bg-card;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: $text-secondary;
+  transition: $transition-std;
+  position: relative;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    color: $text-primary;
+    background: $bg-card-hover;
+  }
+  
+  .badge {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $amber-dot;
+  }
+}

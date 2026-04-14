@@ -1,0 +1,33 @@
+<div class="chart-card">
+  <div class="chart-header">
+    <div class="header-left">
+      <div class="title">Productivity Flow</div>
+      <div class="subtitle">Tasks completed vs. Nodes created</div>
+    </div>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="dot tasks-dot"></div>
+        <span>Tasks</span>
+      </div>
+      <div class="legend-item">
+        <div class="dot nodes-dot"></div>
+        <span>Nodes</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="chart-container">
+    <ngx-charts-line-chart
+      [scheme]="colorScheme"
+      [results]="chartData"
+      [xAxis]="true"
+      [yAxis]="true"
+      [showGridLines]="true"
+      [curve]="curve"
+      [autoScale]="false"
+      [yScaleMin]="0"
+      [yScaleMax]="25"
+      [roundDomains]="true">
+    </ngx-charts-line-chart>
+  </div>
+</div>

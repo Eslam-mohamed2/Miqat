@@ -1,0 +1,121 @@
+:root {
+  // === BACKGROUND LAYERS ===
+  --bg-app:         #0d0d0d;
+  --bg-sidebar:     #111111;
+  --bg-topbar:      #161616;
+  --bg-card:        #1a1a1a;
+  --bg-card-hover:  #222222;
+  --bg-input:       #1e1e1e;
+  --bg-active-nav:  #1f2e2b;
+  --bg-calendar:    #161b22;
+  --bg-agenda-item: #1c1c1c;
+
+  // === BORDER ===
+  --border-subtle:  #2a2a2a;
+  --border-input:   #2e2e2e;
+  --border-card:    #252525;
+
+  // === TEXT ===
+  --text-primary:   #f0f0f0;
+  --text-secondary: #888888;
+  --text-muted:     #555555;
+  --text-active:    #2ec4a0;
+  --text-link:      #2ec4a0;
+
+  // === ICON BACKGROUNDS ===
+  --icon-bg-event:  #1b3a35;
+  --icon-bg-board:  #1e2240;
+  --icon-bg-flow:   #2d2010;
+  
+  // === CHART & ACCENT ===
+  --teal-primary:   #2ec4a0;
+  --teal-dark:      #1a9e82;
+  --teal-glow:      rgba(46, 196, 160, 0.15);
+  --orange-accent:  #f4845f;
+  --btn-quick-add-text: #0d0d0d;
+  
+  // Static shadows
+  --shadow-card:    0 2px 12px rgba(0,0,0,0.4);
+}
+
+html[data-theme='light'] {
+  // === BACKGROUND LAYERS ===
+  --bg-app:         #f3f4f6;
+  --bg-sidebar:     #ffffff;
+  --bg-topbar:      #ffffff;
+  --bg-card:        #ffffff;
+  --bg-card-hover:  #f9fafb;
+  --bg-input:       #f3f4f6;
+  --bg-active-nav:  #e6f7f3;
+  --bg-calendar:    #ffffff;
+  --bg-agenda-item: #f9fafb;
+
+  // === BORDER ===
+  --border-subtle:  #e5e7eb;
+  --border-input:   #d1d5db;
+  --border-card:    #e5e7eb;
+
+  // === TEXT ===
+  --text-primary:   #111827;
+  --text-secondary: #4b5563;
+  --text-muted:     #6b7280;
+  --text-active:    #2ec4a0;
+
+  // === ICON BACKGROUNDS (Light mode variants) ===
+  --icon-bg-event:  #e6f7f3;
+  --icon-bg-board:  #eef0ff;
+  --icon-bg-flow:   #fef3c7;
+
+  // === QUICK ADD BUTTON ===
+  --btn-quick-add-text: #ffffff;
+
+  // Static shadows
+  --shadow-card:    0 2px 12px rgba(0,0,0,0.08);
+}
+
+// SCSS proxies mapping to variables so component files don't need rewriting!
+$bg-app: var(--bg-app);
+$bg-sidebar: var(--bg-sidebar);
+$bg-topbar: var(--bg-topbar);
+$bg-card: var(--bg-card);
+$bg-card-hover: var(--bg-card-hover);
+$bg-input: var(--bg-input);
+$bg-active-nav: var(--bg-active-nav);
+$bg-calendar: var(--bg-calendar);
+$bg-agenda-item: var(--bg-agenda-item);
+
+$border-subtle: var(--border-subtle);
+$border-input: var(--border-input);
+$border-card: var(--border-card);
+
+$text-primary: var(--text-primary);
+$text-secondary: var(--text-secondary);
+$text-muted: var(--text-muted);
+$text-active: var(--text-active);
+$text-link: var(--text-link);
+
+$teal-primary: var(--teal-primary);
+$teal-dark: var(--teal-dark);
+$teal-glow: var(--teal-glow);
+$orange-accent: var(--orange-accent);
+$amber-dot: #f59e0b; // Shared
+$agenda-teal: var(--teal-primary);
+$agenda-orange: var(--orange-accent);
+
+$icon-bg-event: var(--icon-bg-event);
+$icon-bg-board: var(--icon-bg-board);
+$icon-bg-flow: var(--icon-bg-flow);
+
+$btn-quick-add-bg: var(--teal-primary);
+$btn-quick-add-text: var(--btn-quick-add-text);
+$btn-quick-add-hover: var(--teal-dark);
+
+$radius-card: 12px;
+$radius-btn: 8px;
+$radius-input: 8px;
+$radius-icon: 10px;
+$shadow-card: var(--shadow-card);
+$transition-std: all 0.2s ease;
+
+$font-family: 'Inter', 'Segoe UI', sans-serif;
+$font-size-base: 14px;
