@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { trigger, transition, style, animate, stagger, query } from '@angular/animations';
@@ -7,6 +7,8 @@ import { ProductivityChart } from '../productivity-chart/productivity-chart';
 import { MiniCalendar } from '../mini-calendar/mini-calendar';
 import { UpcomingAgenda } from '../upcoming-agenda/upcoming-agenda';
 import { RecentWorkspaces } from '../recent-workspaces/recent-workspaces';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { TaskWindowComponent } from '../task-window/task-window';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -18,7 +20,8 @@ import { RecentWorkspaces } from '../recent-workspaces/recent-workspaces';
     ProductivityChart,
     MiniCalendar,
     UpcomingAgenda,
-    RecentWorkspaces
+    RecentWorkspaces,
+    MatDialogModule
   ],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.scss',
@@ -43,6 +46,8 @@ import { RecentWorkspaces } from '../recent-workspaces/recent-workspaces';
   ]
 })
 export class DashboardPage implements OnInit {
+  private dialog = inject(MatDialog);
+
   quickActionCards = [
     {
       id: 'event',
@@ -77,6 +82,22 @@ export class DashboardPage implements OnInit {
   ngOnInit() {}
 
   onQuickAction(card: any) {
-    console.log('Action clicked:', card);
+    if (card.id === 'event') {
+      const dialogRef = this.dialog.open(TaskWindowComponent, {
+        width: '600px',
+        maxWidth: '95vw',
+        disableClose: true,
+        panelClass: 'custom-dialog-container',
+        autoFocus: false
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          console.log('Task/Event created successfully:', result);
+        }
+      });
+    } else {
+      console.log('Action clicked:', card);
+    }
   }
 }

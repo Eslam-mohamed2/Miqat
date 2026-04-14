@@ -25,7 +25,7 @@ export interface TaskDto {
   providedIn: 'root'
 })
 export class TaskService {
-  private apiUrl = 'https://miqatapi-production-ed29.up.railway.app/api/Task';
+  private apiUrl = '/api/Task';
 
   constructor(private http: HttpClient) { }
 

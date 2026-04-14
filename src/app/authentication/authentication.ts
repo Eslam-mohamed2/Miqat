@@ -7,7 +7,6 @@ import {
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { FlipClock } from '../flip-clock/flip-clock';
-
 @Component({
   selector: 'authentication',
   standalone: true,

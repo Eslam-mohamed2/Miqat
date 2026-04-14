@@ -1,0 +1,74 @@
+<div class="task-window">
+  <div class="glass-header px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+    <h3 class="m-0 title d-flex align-items-center">
+      <i class="fa-solid fa-bolt me-2 text-warning"></i> Quick Add Task
+    </h3>
+    <button type="button" class="btn-close shadow-none" aria-label="Close" (click)="onCancel()"></button>
+  </div>
+  
+  <div class="modal-body px-4 py-4">
+    <div *ngIf="errorMessage" class="alert alert-danger px-3 py-2 text-sm rounded-3">{{ errorMessage }}</div>
+    
+    <form [formGroup]="taskForm" (ngSubmit)="onSubmit()">
+      <!-- Title -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">Title</label>
+        <input type="text" class="form-control" formControlName="title" placeholder="What needs to be done?" [ngClass]="{'is-invalid': taskForm.get('title')?.invalid && taskForm.get('title')?.touched}">
+        <div class="invalid-feedback">Title is required.</div>
+      </div>
+      
+      <!-- Description -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">Description</label>
+        <textarea class="form-control" formControlName="description" rows="3" placeholder="Add some details..."></textarea>
+      </div>
+
+      <div class="row">
+        <!-- Status -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Status</label>
+          <select class="form-select" formControlName="status">
+            <option value="Pending">🚧 Pending</option>
+            <option value="InProgress">🚀 In Progress</option>
+            <option value="Completed">✅ Completed</option>
+          </select>
+        </div>
+        
+        <!-- Priority -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Priority</label>
+          <select class="form-select" formControlName="priority">
+            <option value="Low">🧊 Low</option>
+            <option value="Medium">🔥 Medium</option>
+            <option value="High">🚨 High</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Due Date -->
+        <div class="col-md-6 mb-4">
+          <label class="form-label fw-bold">Due Date</label>
+          <input type="datetime-local" class="form-control" formControlName="dueDate">
+        </div>
+        
+        <!-- Tags -->
+        <div class="col-md-6 mb-4">
+          <label class="form-label fw-bold">Tags</label>
+          <div class="position-relative">
+            <i class="fa-solid fa-tags position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            <input type="text" class="form-control ps-5" formControlName="tags" placeholder="e.g. Design, UI">
+          </div>
+        </div>
+      </div>
+      
+      <div class="d-flex justify-content-end mt-2 pt-3 border-top">
+        <button type="button" class="btn btn-light px-4 me-3 rounded-pill fw-medium" (click)="onCancel()" [disabled]="isLoading">Cancel</button>
+        <button type="submit" class="btn bg-image px-5 rounded-pill fw-medium shadow-sm" [disabled]="isLoading">
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          {{ isLoading ? 'Saving...' : 'Create Task' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
