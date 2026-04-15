@@ -1,0 +1,84 @@
+<div class="backdrop" *ngIf="isOpen" [@fadeBackdrop] (click)="close()"></div>
+
+<div class="notification-panel" *ngIf="isOpen" [@slideIn]>
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="panel-title">
+      <mat-icon class="panel-icon">notifications_active</mat-icon>
+      <span>Notifications</span>
+      <span class="unread-badge" *ngIf="unreadCount() > 0">{{ unreadCount() }}</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-text" (click)="markAllRead()" *ngIf="unreadCount() > 0">
+        <mat-icon>done_all</mat-icon>
+        Mark all read
+      </button>
+      <button class="close-btn" (click)="close()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading()">
+    <div class="skeleton" *ngFor="let i of [1,2,3]"></div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading() && visibleNotifications().length === 0">
+    <div class="empty-icon-wrap">
+      <mat-icon>notifications_off</mat-icon>
+    </div>
+    <p class="empty-title">You're all caught up!</p>
+    <p class="empty-sub">No notifications at the moment.</p>
+  </div>
+
+  <!-- Notification List -->
+  <div class="notification-list" *ngIf="!loading() && visibleNotifications().length > 0"
+       [@listAnim]="visibleNotifications().length">
+
+    <div class="section-label" *ngIf="unreadCount() > 0">Unread</div>
+
+    <div
+      class="notif-item"
+      *ngFor="let n of visibleNotifications()"
+      [class.unread]="!n.isRead"
+      [@itemLeave]>
+
+      <!-- Icon -->
+      <div class="notif-icon" [style.background]="getTypeBg(n.type)">
+        <mat-icon [style.color]="getTypeColor(n.type)">{{ getTypeIcon(n.type) }}</mat-icon>
+      </div>
+
+      <!-- Content -->
+      <div class="notif-content" (click)="markAsRead(n.id)">
+        <div class="notif-top">
+          <span class="notif-title">{{ n.title }}</span>
+          <span class="notif-time">{{ formatTime(n.createdAt) }}</span>
+        </div>
+        <p class="notif-message">{{ n.message }}</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="notif-actions">
+        <button class="action-icon" (click)="markAsRead(n.id)" *ngIf="!n.isRead" title="Mark as read">
+          <mat-icon>check_circle_outline</mat-icon>
+        </button>
+        <button class="action-icon dismiss" (click)="dismiss(n.id)" title="Dismiss">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Unread dot -->
+      <div class="unread-dot" *ngIf="!n.isRead"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="panel-footer" *ngIf="!loading()">
+    <button class="btn-view-all">
+      <mat-icon>open_in_new</mat-icon>
+      View all activity
+    </button>
+  </div>
+</div>

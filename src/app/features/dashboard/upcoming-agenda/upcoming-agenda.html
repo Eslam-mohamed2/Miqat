@@ -1,21 +1,21 @@
 <div class="agenda-card mt-20">
   <div class="card-header">
-    <div class="title">Upcoming Agenda</div>
+    <div class="title">Due Soon</div>
     <div class="btn-add">
       <mat-icon>add</mat-icon>
     </div>
   </div>
 
-  <div class="agenda-list">
-    <div *ngFor="let item of agendaItems" class="agenda-item">
-      <div class="agenda-time">{{ item.time }}</div>
-      <div class="agenda-content" [ngStyle]="{'border-left-color': item.accentColor}">
+  <div class="agenda-list" *ngIf="(dueSoon$ | async) as dueSoonList">
+    <div *ngIf="dueSoonList.length === 0" class="empty-state" style="padding: 16px; text-align: center; color: var(--text-muted);">
+      <p>All caught up!</p>
+    </div>
+
+    <div *ngFor="let item of dueSoonList" class="agenda-item">
+      <div class="agenda-time">{{ item.dueDate | date:'shortTime' }}</div>
+      <div class="agenda-content" [ngStyle]="{'border-left-color': getPriorityColor(item.priority)}">
         <div class="event-title">{{ item.title }}</div>
-        <div class="event-description">{{ item.description }}</div>
-        
-        <div *ngIf="item.avatars.length > 0" class="event-avatars">
-          <img *ngFor="let avatar of item.avatars" [src]="avatar" alt="Avatar" />
-        </div>
+        <div class="event-description">{{ item.description || 'No description' }}</div>
       </div>
     </div>
   </div>

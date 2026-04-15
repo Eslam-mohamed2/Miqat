@@ -1,0 +1,55 @@
+<div class="main-calendar-container">
+  
+  <div class="calendar-header">
+    <div class="calendar-header-left">
+      <div class="nav-arrows">
+        <button class="icon-btn" (click)="prevMonth()"><mat-icon>chevron_left</mat-icon></button>
+        <button class="icon-btn" (click)="nextMonth()"><mat-icon>chevron_right</mat-icon></button>
+      </div>
+      <h2 class="month-title">{{ currentMonth() | date:'MMMM yyyy' }}</h2>
+      <button class="today-btn" (click)="setToday()">Today</button>
+    </div>
+
+    <div class="calendar-header-right">
+      <div class="timezone-selector">
+        <mat-icon class="tz-icon">language</mat-icon>
+        <span>PST (GMT-8)</span>
+        <mat-icon class="tz-caret">expand_more</mat-icon>
+      </div>
+      <div class="view-toggles">
+        <button class="view-btn">Day</button>
+        <button class="view-btn">Week</button>
+        <button class="view-btn active">Month</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="calendar-grid-wrapper">
+    <div class="calendar-grid">
+      <!-- Header Row -->
+      <div class="grid-header">
+        <div class="day-name" *ngFor="let day of daysOfWeek">
+          {{ day }}
+        </div>
+      </div>
+
+      <!-- Body Rows -->
+      <div class="grid-body">
+        <div class="week-row" *ngFor="let week of weeks()">
+          <div class="day-cell" *ngFor="let day of week" [class.not-current-month]="!day.isCurrentMonth" [class.today]="day.isToday">
+            <div class="day-number">{{ day.date }}<div *ngIf="day.isToday" class="today-dot"></div></div>
+            <div class="events-container">
+              <div class="event-capsule" 
+                   *ngFor="let event of day.events" 
+                   [style.backgroundColor]="event.color"
+                   [style.color]="event.textLight ? '#fff' : 'var(--text-primary)'">
+                {{ event.time }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,102 @@
+<div class="dialog-wrap">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="dialog-title">
+      <div class="title-icon" [style.background]="selectedColor() + '22'">
+        <mat-icon [style.color]="selectedColor()">folder_special</mat-icon>
+      </div>
+      <div>
+        <h2>Create New Project</h2>
+        <p>Organize your work into a shared space</p>
+      </div>
+    </div>
+    <button class="close-btn" (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Color accent bar -->
+  <div class="color-accent-bar" [style.background]="'linear-gradient(90deg, ' + selectedColor() + ', transparent)'"></div>
+
+  <!-- Body -->
+  <div class="dialog-body">
+
+    <!-- Name -->
+    <div class="field-group">
+      <label class="field-label">Project Name <span class="required">*</span></label>
+      <div class="input-wrap" [class.focused]="name().length > 0">
+        <mat-icon class="field-icon">title</mat-icon>
+        <input
+          id="project-name"
+          type="text"
+          placeholder="e.g. Website Redesign, Mobile App v2"
+          [(ngModel)]="name"
+          [ngModel]="name()"
+          (ngModelChange)="name.set($event)"
+          maxlength="60"
+          autocomplete="off"
+        />
+        <span class="char-count">{{ name().length }}/60</span>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="field-group">
+      <label class="field-label">Description</label>
+      <div class="textarea-wrap">
+        <mat-icon class="field-icon top">notes</mat-icon>
+        <textarea
+          id="project-desc"
+          placeholder="What is this project about?"
+          rows="3"
+          [value]="description()"
+          (input)="description.set($any($event.target).value)"
+          maxlength="200"
+        ></textarea>
+      </div>
+      <span class="char-hint">{{ description().length }}/200</span>
+    </div>
+
+    <!-- Color Picker -->
+    <div class="field-group">
+      <label class="field-label">Project Color</label>
+      <div class="color-swatches">
+        <button
+          class="swatch"
+          *ngFor="let color of colorSwatches"
+          [style.background]="color"
+          [class.selected]="selectedColor() === color"
+          (click)="selectColor(color)"
+          [title]="color"
+        >
+          <mat-icon *ngIf="selectedColor() === color">check</mat-icon>
+        </button>
+      </div>
+      <div class="selected-preview">
+        <div class="preview-dot" [style.background]="selectedColor()"></div>
+        <span>{{ selectedColor() }}</span>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-msg" *ngIf="error()">
+      <mat-icon>error_outline</mat-icon>
+      {{ error() }}
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <button class="btn-cancel" (click)="cancel()">Cancel</button>
+    <button
+      class="btn-create"
+      (click)="create()"
+      [disabled]="!isValid() || loading()"
+      [style.background]="isValid() ? selectedColor() : undefined"
+    >
+      <mat-icon *ngIf="loading()">hourglass_empty</mat-icon>
+      <mat-icon *ngIf="!loading()">add</mat-icon>
+      {{ loading() ? 'Creating...' : 'Create Project' }}
+    </button>
+  </div>
+</div>

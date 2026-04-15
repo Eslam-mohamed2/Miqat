@@ -1,67 +1,84 @@
-@use '../../../../styles/tokens' as *;
-
 .chart-card {
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-  padding: 22px 24px;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .title {
-  font-size: 15px;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: $text-primary;
+  color: var(--text-primary);
+  margin-bottom: 4px;
 }
 
 .subtitle {
-  font-size: 12px;
-  color: $text-secondary;
-  margin-top: 2px;
-}
-
-.legend {
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: $text-secondary;
-  
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-  .tasks-dot { background: $teal-primary; }
-  .nodes-dot { background: $orange-accent; }
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 .chart-container {
-  height: 240px;
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around;
+  min-height: 250px;
+  gap: 16px;
+}
+
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 200px;
+}
+
+.chart-title {
+  margin: 0 0 8px 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.graph-wrapper {
+  height: 200px;
   width: 100%;
 }
 
 ::ng-deep {
   .ngx-charts {
-    .gridline-path { stroke: #2a2a2a; stroke-dasharray: none; }
-    .tick text { fill: #555; font-size: 11px; font-family: $font-family; }
-    .line-series path { stroke-width: 2.5px; }
-    /* Nodes line — make it dotted */
-    .line-series:last-child path {
-      stroke-dasharray: 4 4;
-      stroke-width: 2px;
+    text {
+      fill: var(--text-secondary);
     }
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--text-muted, #9ca3af);
+  
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
   }
 }

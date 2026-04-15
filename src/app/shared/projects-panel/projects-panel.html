@@ -1,0 +1,112 @@
+<div class="backdrop" *ngIf="isOpen" [@fadeBackdrop] (click)="close()"></div>
+
+<div class="projects-panel" *ngIf="isOpen" [@slideIn]>
+
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="panel-title">
+      <div class="title-icon">
+        <mat-icon>folder_special</mat-icon>
+      </div>
+      <div>
+        <span class="title-text">Projects</span>
+        <span class="project-count" *ngIf="!loading()">{{ groups().length }}</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-new-project" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        New Project
+      </button>
+      <button class="close-btn" (click)="close()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <mat-icon class="search-icon">search</mat-icon>
+    <input
+      type="text"
+      placeholder="Search projects..."
+      [value]="searchQuery()"
+      (input)="searchQuery.set($any($event.target).value)"
+    />
+  </div>
+
+  <!-- Loading Skeleton -->
+  <div class="loading-state" *ngIf="loading()">
+    <div class="card-skeleton" *ngFor="let i of [1,2,3]"></div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading() && filteredGroups().length === 0">
+    <div class="empty-icon-wrap">
+      <mat-icon>folder_open</mat-icon>
+    </div>
+    <p class="empty-title">{{ searchQuery() ? 'No results found' : 'No projects yet' }}</p>
+    <p class="empty-sub">{{ searchQuery() ? 'Try a different search term' : 'Create your first project to get started' }}</p>
+    <button class="btn-create-first" (click)="openCreateDialog()" *ngIf="!searchQuery()">
+      <mat-icon>add</mat-icon>
+      Create Project
+    </button>
+  </div>
+
+  <!-- Projects Grid -->
+  <div class="projects-grid" *ngIf="!loading() && filteredGroups().length > 0"
+       [@cardStagger]="filteredGroups().length">
+
+    <div class="project-card" *ngFor="let group of filteredGroups()" (click)="uiService.openProjectDetails(group.id)">
+
+      <!-- Top: Avatar + Status -->
+      <div class="card-top">
+        <div class="project-avatar" [style.background]="group.color + '22'" [style.border-color]="group.color + '44'">
+          <span class="initials" [style.color]="group.color">{{ getInitials(group.name) }}</span>
+        </div>
+        <div class="status-chip" [style.color]="getStatusColor(group)" [style.background]="getStatusColor(group) + '18'">
+          <div class="status-dot" [style.background]="getStatusColor(group)"></div>
+          {{ getStatusLabel(group) }}
+        </div>
+      </div>
+
+      <!-- Project Info -->
+      <div class="card-body">
+        <h3 class="project-name">{{ group.name }}</h3>
+        <p class="project-desc">{{ group.description || 'No description' }}</p>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="card-stats">
+        <div class="stat">
+          <mat-icon>group</mat-icon>
+          <span>{{ group.memberCount ?? 0 }} members</span>
+        </div>
+        <div class="stat">
+          <mat-icon>task_alt</mat-icon>
+          <span>{{ group.taskCount ?? 0 }} tasks</span>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="card-footer" [style.border-top-color]="group.color + '33'">
+        <div class="card-date">
+          <mat-icon>calendar_today</mat-icon>
+          <span>{{ group.createdAt | date:'MMM d, y' }}</span>
+        </div>
+        <div class="card-actions">
+          <button class="card-btn" title="Open project">
+            <mat-icon>open_in_new</mat-icon>
+          </button>
+          <button class="card-btn" title="More options">
+            <mat-icon>more_horiz</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Color bar -->
+      <div class="color-bar" [style.background]="group.color"></div>
+    </div>
+
+  </div>
+</div>

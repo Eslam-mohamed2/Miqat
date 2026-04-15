@@ -1,0 +1,224 @@
+.sidebar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+h4 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.mini-calendar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mini-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .nav-arrows {
+    display: flex;
+    gap: 8px;
+    color: var(--text-secondary);
+    
+    .icon-btn {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      &:hover { color: var(--text-primary); }
+    }
+  }
+}
+
+.mini-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+
+  .day-name {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    
+    &.highlight {
+      color: var(--primary, #13c296);
+    }
+  }
+
+  .day-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    aspect-ratio: 1;
+
+    &.not-current {
+      color: var(--text-muted, #9ca3af);
+    }
+
+    .day-circle {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: var(--bg-hover);
+      }
+    }
+
+    &.today .day-circle {
+      background: var(--primary, #13c296);
+      color: white;
+    }
+  }
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--border);
+  margin: 24px 0;
+}
+
+.calendars-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .add-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      &:hover { color: var(--text-primary); }
+    }
+  }
+}
+
+.calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  ::ng-deep .mdc-checkbox {
+    padding: 0;
+    margin-right: 8px;
+    .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
+      border-color: var(--checkbox-color, var(--primary)) !important;
+      background-color: var(--checkbox-color, var(--primary)) !important;
+    }
+  }
+
+  .dot-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  span {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+}
+
+.schedule-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .schedule-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+
+    .date-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--primary, #13c296);
+    }
+  }
+}
+
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schedule-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+
+  .event-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .event-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .event-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--text-muted, #9ca3af);
+
+    .subtitle-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+}

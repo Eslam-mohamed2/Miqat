@@ -1,0 +1,119 @@
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { TaskService, TaskDto } from '../../../../core/services/task.service';
+import { GroupService } from '../../../../core/services/group.service';
+import { forkJoin } from 'rxjs';
+
+export interface CalendarEvent {
+  id: string;
+  time: string;
+  title: string;
+  color: string;
+  textLight?: boolean;
+}
+
+export interface CalendarDay {
+  date: number;
+  fullDate: Date;
+  isCurrentMonth: boolean;
+  isToday?: boolean;
+  events: CalendarEvent[];
+}
+
+@Component({
+  selector: 'app-main-calendar',
+  standalone: true,
+  imports: [CommonModule, MatIconModule],
+  templateUrl: './main-calendar.html',
+  styleUrl: './main-calendar.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class MainCalendar implements OnInit {
+  private taskService = inject(TaskService);
+  private groupService = inject(GroupService);
+
+  daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  weeks = signal<CalendarDay[][]>([]);
+  currentMonth = signal(new Date());
+
+  ngOnInit() {
+    this.refreshCalendar();
+  }
+
+  refreshCalendar() {
+    forkJoin({
+      tasks: this.taskService.getTasks(),
+      groups: this.groupService.getGroups()
+    }).subscribe({
+      next: (res) => {
+        this.generateCalendar(res.tasks, res.groups);
+      },
+      error: () => {
+        this.generateCalendar([], []); // Fallback to empty
+      }
+    });
+  }
+
+  generateCalendar(tasks: TaskDto[], groups: any[]) {
+    const today = new Date();
+    const startOfMonth = new Date(this.currentMonth().getFullYear(), this.currentMonth().getMonth(), 1);
+    const endOfMonth = new Date(this.currentMonth().getFullYear(), this.currentMonth().getMonth() + 1, 0);
+
+    // Get the first day of the grid (might be in the previous month)
+    const startDate = new Date(startOfMonth);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+
+    const generatedWeeks: CalendarDay[][] = [];
+    const tempDate = new Date(startDate);
+
+    // Generate 6 weeks to ensure we cover the whole month view
+    for (let i = 0; i < 6; i++) {
+        const week: CalendarDay[] = [];
+        for (let j = 0; j < 7; j++) {
+            const dateStr = tempDate.toISOString().split('T')[0];
+            const tasksForDay = tasks.filter(t => t.dueDate && t.dueDate.startsWith(dateStr));
+            
+            week.push({
+                date: tempDate.getDate(),
+                fullDate: new Date(tempDate),
+                isCurrentMonth: tempDate.getMonth() === this.currentMonth().getMonth(),
+                isToday: tempDate.toDateString() === today.toDateString(),
+                events: tasksForDay.map(t => {
+                    const group = groups.find(g => g.id === t.groupId);
+                    return {
+                        id: t.id || '',
+                        time: this.formatTime(t.dueDate!),
+                        title: t.title,
+                        color: group?.color || '#2ec4a0',
+                        textLight: true
+                    };
+                })
+            });
+            tempDate.setDate(tempDate.getDate() + 1);
+        }
+        generatedWeeks.push(week);
+    }
+    this.weeks.set(generatedWeeks);
+  }
+
+  formatTime(dateStr: string): string {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  prevMonth() {
+    this.currentMonth.set(new Date(this.currentMonth().getFullYear(), this.currentMonth().getMonth() - 1, 1));
+    this.refreshCalendar();
+  }
+
+  nextMonth() {
+    this.currentMonth.set(new Date(this.currentMonth().getFullYear(), this.currentMonth().getMonth() + 1, 1));
+    this.refreshCalendar();
+  }
+
+  setToday() {
+    this.currentMonth.set(new Date());
+    this.refreshCalendar();
+  }
+}

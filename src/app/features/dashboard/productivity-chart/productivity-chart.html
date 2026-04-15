@@ -2,32 +2,45 @@
   <div class="chart-header">
     <div class="header-left">
       <div class="title">Productivity Flow</div>
-      <div class="subtitle">Tasks completed vs. Nodes created</div>
-    </div>
-    <div class="legend">
-      <div class="legend-item">
-        <div class="dot tasks-dot"></div>
-        <span>Tasks</span>
-      </div>
-      <div class="legend-item">
-        <div class="dot nodes-dot"></div>
-        <span>Nodes</span>
-      </div>
+      <div class="subtitle">Tasks overview by Status and Priority</div>
     </div>
   </div>
   
-  <div class="chart-container">
-    <ngx-charts-line-chart
-      [scheme]="colorScheme"
-      [results]="chartData"
-      [xAxis]="true"
-      [yAxis]="true"
-      [showGridLines]="true"
-      [curve]="curve"
-      [autoScale]="false"
-      [yScaleMin]="0"
-      [yScaleMax]="25"
-      [roundDomains]="true">
-    </ngx-charts-line-chart>
+  <div class="chart-container" *ngIf="tasks && tasks.length > 0; else emptyState">
+    
+    <div class="chart-section">
+      <h4 class="chart-title">Status</h4>
+      <div class="graph-wrapper">
+        <ngx-charts-pie-chart
+          [scheme]="statusColorScheme"
+          [results]="statusData"
+          [doughnut]="true"
+          [labels]="false"
+          [tooltipDisabled]="false">
+        </ngx-charts-pie-chart>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <h4 class="chart-title">Priority</h4>
+      <div class="graph-wrapper">
+        <ngx-charts-bar-vertical
+          [scheme]="priorityColorScheme"
+          [results]="priorityData"
+          [xAxis]="true"
+          [yAxis]="true"
+          [showXAxisLabel]="false"
+          [showYAxisLabel]="false">
+        </ngx-charts-bar-vertical>
+      </div>
+    </div>
+
   </div>
+
+  <ng-template #emptyState>
+    <div class="empty-state">
+      <mat-icon>assessment</mat-icon>
+      <p>No task data loaded yet.</p>
+    </div>
+  </ng-template>
 </div>

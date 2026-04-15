@@ -3,12 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = '/api/Auth';
+  private apiUrl = `${environment.apiUrl}/api/Auth`;
 
   constructor(
     private http: HttpClient,
@@ -88,5 +89,13 @@ export class AuthService {
 
   goToRegister(): void {
     this.router.navigate(['/authentication'], { queryParams: { form: 'register' } });
+  }
+
+  forgotPassword(data: { email: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/forgot-password`, data, { responseType: 'text' });
+  }
+
+  changePassword(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/change-password`, data, { responseType: 'text' });
   }
 }

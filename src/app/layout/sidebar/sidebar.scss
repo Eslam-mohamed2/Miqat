@@ -43,12 +43,53 @@
   overflow-y: auto;
 }
 
+.nav-label-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 8px;
+  cursor: pointer;
+  transition: $transition-std;
+
+  .nav-label {
+    padding: 0;
+  }
+
+  .label-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: $text-muted;
+    opacity: 0;
+    transition: $transition-std;
+  }
+
+  &:hover {
+    .nav-label { color: $text-secondary; }
+    .label-icon { opacity: 1; color: $teal-primary; }
+  }
+}
+
 .nav-label {
   font-size: 10px;
   font-weight: 600;
   color: $text-muted;
   letter-spacing: 1px;
-  padding: 0 20px 8px;
+}
+
+.new-project-btn {
+  color: $text-muted !important;
+  font-style: italic;
+  
+  mat-icon {
+    font-size: 16px !important;
+  }
+
+  &:hover {
+    color: $teal-primary !important;
+    background: transparent !important;
+    font-style: normal;
+  }
 }
 
 .nav-item {

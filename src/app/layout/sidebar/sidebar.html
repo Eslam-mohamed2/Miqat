@@ -13,10 +13,27 @@
       <div class="nav-label">APPLICATION</div>
       <div class="nav-item"
            *ngFor="let item of navItemsApp"
-           [class.active]="item.active"
+           routerLinkActive="active"
            [routerLink]="item.route">
         <mat-icon>{{ item.icon }}</mat-icon>
         <span>{{ item.label }}</span>
+      </div>
+    </div>
+
+    <div class="nav-group" style="margin-top: 24px" *ngIf="(groups$ | async) as groups">
+      <div class="nav-label-container" (click)="uiService.toggleProjects(true)">
+        <div class="nav-label">PINNED PROJECTS</div>
+        <mat-icon class="label-icon">settings_overscan</mat-icon>
+      </div>
+      
+      <div class="nav-item" *ngFor="let group of groups" (click)="uiService.openProjectDetails(group.id)">
+        <div class="dot" [style.backgroundColor]="group.color || '#2ec4a0'" style="width: 8px; height: 8px; border-radius: 50%; margin-right: 8px;"></div>
+        <span>{{ group.name }}</span>
+      </div>
+
+      <div class="nav-item new-project-btn" (click)="uiService.toggleProjects(true)">
+        <mat-icon>add_circle_outline</mat-icon>
+        <span>New Project</span>
       </div>
     </div>
 
@@ -24,7 +41,7 @@
       <div class="nav-label">OTHERS</div>
       <div class="nav-item"
            *ngFor="let item of navItemsOther"
-           [class.active]="item.active"
+           routerLinkActive="active"
            [routerLink]="item.route">
         <mat-icon>{{ item.icon }}</mat-icon>
         <span>{{ item.label }}</span>
@@ -32,11 +49,13 @@
     </div>
   </div>
 
-  <div class="user-profile">
-    <div class="avatar-placeholder"></div>
+  <div class="user-profile" *ngIf="(user$ | async) as user">
+    <div class="avatar-placeholder">
+      <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" width="100%" height="100%" [style.borderRadius]="'50%'">
+    </div>
     <div class="user-info">
-      <div class="user-name">Sarah Jenkins</div>
-      <div class="user-email">sarah@miqat.app</div>
+      <div class="user-name">{{ user.firstName }} {{ user.lastName }}</div>
+      <div class="user-email">{{ user.email }}</div>
     </div>
     <mat-icon class="chevron">chevron_right</mat-icon>
   </div>

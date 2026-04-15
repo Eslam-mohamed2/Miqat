@@ -1,0 +1,408 @@
+@use '../../../styles/tokens' as *;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 900;
+}
+
+.projects-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 480px;
+  height: 100vh;
+  background: $bg-sidebar;
+  border-left: 1px solid $border-subtle;
+  z-index: 901;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+
+  @media (max-width: 540px) { width: 100vw; }
+}
+
+// ── Header ────────────────────────────────────────────
+.panel-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid $border-subtle;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: $bg-topbar;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .title-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(46, 196, 160, 0.12);
+    border: 1px solid rgba(46, 196, 160, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    mat-icon { color: $teal-primary; font-size: 20px; width: 20px; height: 20px; }
+  }
+
+  .title-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: $text-primary;
+    display: block;
+  }
+
+  .project-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-muted;
+    background: $bg-card;
+    border: 1px solid $border-card;
+    border-radius: 10px;
+    padding: 1px 8px;
+    margin-left: 8px;
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-new-project {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: $teal-primary;
+  color: #0d0d0d;
+  font-size: 13px;
+  font-weight: 700;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: $transition-std;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+  &:hover {
+    background: $teal-dark;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 196, 160, 0.35);
+  }
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: $bg-card;
+  border: 1px solid $border-subtle;
+  color: $text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: $transition-std;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { color: $text-primary; background: $bg-card-hover; }
+}
+
+// ── Search ────────────────────────────────────────────
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid $border-subtle;
+  flex-shrink: 0;
+
+  .search-icon {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+    color: $text-muted;
+    flex-shrink: 0;
+  }
+
+  input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: $text-primary;
+    font-size: 13px;
+
+    &::placeholder { color: $text-muted; }
+  }
+}
+
+// ── Grid ──────────────────────────────────────────────
+.projects-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+}
+
+// ── Project Card ──────────────────────────────────────
+.project-card {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  &:hover {
+    background: $bg-card-hover;
+    border-color: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+    .card-actions { opacity: 1; }
+  }
+}
+
+.color-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 14px 0 0 14px;
+  transition: width 0.2s ease;
+}
+
+.project-card:hover .color-bar { width: 4px; }
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.project-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .initials {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+}
+
+.status-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+}
+
+.card-body {
+  margin-bottom: 12px;
+}
+
+.project-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: $text-primary;
+  margin: 0 0 5px 0;
+}
+
+.project-desc {
+  font-size: 12px;
+  color: $text-muted;
+  margin: 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ── Stats ─────────────────────────────────────────────
+.card-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: $text-secondary;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: $text-muted;
+  }
+}
+
+// ── Card Footer ───────────────────────────────────────
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid;
+}
+
+.card-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: $text-muted;
+
+  mat-icon { font-size: 12px; width: 12px; height: 12px; }
+}
+
+.card-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: $transition-std;
+}
+
+.card-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: $bg-input;
+  border: none;
+  color: $text-muted;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: $transition-std;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+  &:hover { color: $teal-primary; background: $teal-glow; }
+}
+
+// ── Skeleton ──────────────────────────────────────────
+.loading-state {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-skeleton {
+  height: 140px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, $bg-card 25%, $bg-card-hover 50%, $bg-card 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+// ── Empty State ────────────────────────────────────────
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.empty-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
+
+  mat-icon { font-size: 32px; width: 32px; height: 32px; color: $text-muted; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: $text-secondary;
+  margin: 0 0 8px;
+}
+
+.empty-sub {
+  font-size: 13px;
+  color: $text-muted;
+  margin: 0 0 20px;
+}
+
+.btn-create-first {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: $teal-primary;
+  color: #0d0d0d;
+  font-size: 13px;
+  font-weight: 700;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: $transition-std;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+  &:hover { background: $teal-dark; transform: translateY(-1px); }
+}

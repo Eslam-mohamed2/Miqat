@@ -1,0 +1,149 @@
+<div class="backdrop" *ngIf="uiService.projectDetailsOpen()" @fade (click)="close()"></div>
+
+<div class="details-panel" *ngIf="uiService.projectDetailsOpen()" @slideIn>
+  <div class="panel-container" *ngIf="project() as p">
+    <!-- Top Action Bar -->
+    <div class="top-bar">
+      <div class="breadcrumbs">
+        <mat-icon class="check-icon">check</mat-icon>
+        <span class="root-name">{{ p.name }}</span>
+        <mat-icon class="chevron">chevron_right</mat-icon>
+        <span class="item-code">{{ p.code }}</span>
+      </div>
+      <div class="actions">
+        <button class="action-btn"><mat-icon>description</mat-icon> Duplicate</button>
+        <button class="action-btn"><mat-icon>more_horiz</mat-icon></button>
+        <button class="close-btn" (click)="close()"><mat-icon>close</mat-icon></button>
+      </div>
+    </div>
+
+    <!-- Title Header -->
+    <div class="title-header">
+      <h1>Create Clickable Prototype</h1>
+    </div>
+
+    <!-- Meta Grid -->
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">
+          <mat-icon>radio_button_checked</mat-icon> Status
+        </div>
+        <div class="meta-value">
+          <div class="status-dropdown">
+            <span class="status-dot"></span>
+            {{ p.status }}
+            <mat-icon>expand_more</mat-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-item">
+        <div class="meta-label">
+          <mat-icon>person_outline</mat-icon> Assignees
+        </div>
+        <div class="meta-value">
+          <div class="avatar-group">
+            <img *ngFor="let user of p.assignees" [src]="user.avatar" class="avatar">
+            <div class="add-avatar"><mat-icon>add</mat-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-item">
+        <div class="meta-label">
+          <mat-icon>calendar_today</mat-icon> Dates
+        </div>
+        <div class="meta-value">
+          <div class="date-range">
+            {{ p.startDate }} - {{ p.endDate }}
+            <mat-icon>expand_more</mat-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-item">
+        <div class="meta-label">
+          <mat-icon>flag</mat-icon> Priority
+        </div>
+        <div class="meta-value">
+          <div class="priority-chip" [class.high]="p.priority === 'High'">
+            <mat-icon>keyboard_double_arrow_up</mat-icon>
+            {{ p.priority }}
+            <mat-icon>expand_more</mat-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-item">
+        <div class="meta-label">
+          <mat-icon>label_outline</mat-icon> Tags
+        </div>
+        <div class="meta-value">
+          <div class="tag-list">
+            <span class="tag purple" *ngFor="let tag of p.tags">{{ tag }}</span>
+            <div class="add-tag"><mat-icon>add</mat-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-item">
+        <div class="meta-label">
+          <mat-icon>sync_alt</mat-icon> Type
+        </div>
+        <div class="meta-value">
+           <div class="type-badge">Task <mat-icon>sync</mat-icon> <span>Make Event</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Description -->
+    <div class="description-section">
+      <div class="desc-header">
+        <div class="desc-title">
+          <mat-icon>format_align_left</mat-icon> Description
+        </div>
+        <button class="edit-btn">Edit</button>
+      </div>
+
+      <div class="desc-content">
+        <p>{{ p.description }}</p>
+
+        <div class="requirements">
+          <h3>Key Requirements:</h3>
+          <ul>
+            <li *ngFor="let req of p.keyRequirements">{{ req }}</li>
+          </ul>
+        </div>
+
+        <div class="footer-note">
+          Please refer to the attached moodboard for structural inspiration before finalizing the UI components.
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtasks -->
+    <div class="subtasks-section">
+      <div class="subtasks-header">
+        <div class="subtasks-title">
+          <mat-icon>assignment_turned_in</mat-icon> Subtasks
+        </div>
+        <div class="subtasks-count">{{ p.completedCount }}/{{ p.totalCount }} Completed</div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar" [style.width.%]="(p.completedCount / p.totalCount) * 100"></div>
+      </div>
+
+      <div class="subtask-list">
+        <div class="subtask-item" *ngFor="let sub of p.subtasks" [class.completed]="sub.completed">
+          <div class="checkbox">
+            <mat-icon *ngIf="sub.completed">check</mat-icon>
+          </div>
+          <span>{{ sub.title }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

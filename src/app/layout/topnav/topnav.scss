@@ -95,6 +95,17 @@
   &:hover {
     color: $text-primary;
     background: $bg-card-hover;
+
+    .tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  &.active {
+    background: $bg-active-nav;
+    color: $teal-primary;
+    border: 1px solid rgba(46, 196, 160, 0.3);
   }
   
   .badge {
@@ -105,5 +116,24 @@
     height: 8px;
     border-radius: 50%;
     background: $amber-dot;
+    box-shadow: 0 0 0 2px $bg-topbar;
+  }
+
+  .tooltip {
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    border: 1px solid #333;
+    z-index: 1000;
   }
 }

@@ -1,0 +1,319 @@
+@use '../../../styles/tokens' as *;
+
+.dialog-wrap {
+  background: $bg-sidebar;
+  border-radius: 16px;
+  overflow: hidden;
+  width: 520px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Color Accent Bar ──────────────────────────────────
+.color-accent-bar {
+  height: 3px;
+  transition: background 0.3s ease;
+}
+
+// ── Header ────────────────────────────────────────────
+.dialog-header {
+  padding: 24px 24px 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: $bg-topbar;
+  border-bottom: 1px solid $border-subtle;
+}
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  .title-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.3s ease;
+
+    mat-icon { font-size: 24px; width: 24px; height: 24px; }
+  }
+
+  h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0 0 4px;
+  }
+
+  p {
+    font-size: 12px;
+    color: $text-muted;
+    margin: 0;
+  }
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: $bg-card;
+  border: 1px solid $border-subtle;
+  color: $text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: $transition-std;
+  flex-shrink: 0;
+  margin-top: 4px;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { color: $text-primary; background: $bg-card-hover; }
+}
+
+// ── Body ──────────────────────────────────────────────
+.dialog-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  .required { color: $orange-accent; margin-left: 2px; }
+}
+
+.input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: $bg-input;
+  border: 1px solid $border-input;
+  border-radius: $radius-input;
+  padding: 0 12px;
+  transition: $transition-std;
+
+  &.focused, &:focus-within {
+    border-color: $teal-primary;
+    box-shadow: 0 0 0 3px $teal-glow;
+  }
+
+  .field-icon {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+    color: $text-muted;
+    flex-shrink: 0;
+  }
+
+  input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: $text-primary;
+    font-size: 14px;
+    height: 44px;
+
+    &::placeholder { color: $text-muted; }
+  }
+
+  .char-count {
+    font-size: 11px;
+    color: $text-muted;
+    flex-shrink: 0;
+  }
+}
+
+.textarea-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: $bg-input;
+  border: 1px solid $border-input;
+  border-radius: $radius-input;
+  padding: 12px;
+  transition: $transition-std;
+
+  &:focus-within {
+    border-color: $teal-primary;
+    box-shadow: 0 0 0 3px $teal-glow;
+  }
+
+  .field-icon.top {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+    color: $text-muted;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  textarea {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: $text-primary;
+    font-size: 14px;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.6;
+
+    &::placeholder { color: $text-muted; }
+  }
+}
+
+.char-hint {
+  font-size: 11px;
+  color: $text-muted;
+  text-align: right;
+}
+
+// ── Color Swatches ─────────────────────────────────────
+.color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  position: relative;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: white;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+  }
+
+  &:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
+  }
+
+  &.selected {
+    transform: scale(1.15);
+    border-color: white;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
+  }
+}
+
+.selected-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+
+  .preview-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.3s ease;
+  }
+
+  span {
+    font-size: 12px;
+    color: $text-muted;
+    font-family: monospace;
+  }
+}
+
+// ── Error ──────────────────────────────────────────────
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(244, 132, 95, 0.12);
+  border: 1px solid rgba(244, 132, 95, 0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #f4845f;
+  font-size: 13px;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+}
+
+// ── Footer ─────────────────────────────────────────────
+.dialog-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid $border-subtle;
+}
+
+.btn-cancel {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  color: $text-secondary;
+  font-size: 13px;
+  font-weight: 500;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: $transition-std;
+
+  &:hover { color: $text-primary; border-color: #444; }
+}
+
+.btn-create {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0d0d0d;
+  font-size: 13px;
+  font-weight: 700;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: $teal-primary;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  &:disabled {
+    background: $bg-card !important;
+    color: $text-muted;
+    cursor: not-allowed;
+  }
+}

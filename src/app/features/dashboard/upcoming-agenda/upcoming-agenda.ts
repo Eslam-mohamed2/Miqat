@@ -1,6 +1,8 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
+import { TaskService, TaskDto } from '../../../core/services/task.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-upcoming-agenda',
@@ -10,21 +12,18 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './upcoming-agenda.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class UpcomingAgenda {
-  agendaItems = [
-    {
-      time: '10:00',
-      title: 'Design Sync',
-      description: 'Review whiteboard sketches',
-      accentColor: '#2ec4a0',
-      avatars: ['https://i.pravatar.cc/100?img=1', 'https://i.pravatar.cc/100?img=2']
-    },
-    {
-      time: '14:30',
-      title: 'Client Presentation',
-      description: 'Present Node Flow diagram',
-      accentColor: '#f4845f',
-      avatars: []
-    }
-  ];
+export class UpcomingAgenda implements OnInit {
+  private taskService = inject(TaskService);
+  dueSoon$!: Observable<TaskDto[]>;
+
+  ngOnInit(): void {
+    this.dueSoon$ = this.taskService.getDueSoonTasks();
+  }
+  
+  getPriorityColor(priority: string | undefined): string {
+    if (priority === 'High') return '#ef4444';
+    if (priority === 'Medium') return '#f4a835';
+    if (priority === 'Low') return '#2ec4a0';
+    return '#9ca3af';
+  }
 }

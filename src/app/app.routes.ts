@@ -26,13 +26,21 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
-    path: 'dashboard',
+    path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./layout/app-shell/app-shell').then(m => m.AppShell),
     children: [
       {
-        path: '',
+        path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard-page/dashboard-page').then(m => m.DashboardPage)
+      },
+      {
+        path: 'calendar',
+        loadComponent: () => import('./features/calendar/calendar-page/calendar-page').then(m => m.CalendarPage)
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./features/settings/settings-page').then(m => m.SettingsPage)
       }
     ]
   }

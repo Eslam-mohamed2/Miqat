@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface TaskDto {
   id?: string;
@@ -25,9 +26,13 @@ export interface TaskDto {
   providedIn: 'root'
 })
 export class TaskService {
-  private apiUrl = '/api/Task';
+  private apiUrl = `${environment.apiUrl}/api/Task`;
 
   constructor(private http: HttpClient) { }
+
+  getDueSoonTasks(): Observable<TaskDto[]> {
+    return this.http.get<TaskDto[]>(`${this.apiUrl}/due-soon`);
+  }
 
   getTasks(): Observable<TaskDto[]> {
     return this.http.get<TaskDto[]>(this.apiUrl);

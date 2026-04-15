@@ -1,0 +1,120 @@
+<div class="settings-container">
+  <div class="settings-header">
+    <h1>Settings</h1>
+    <div class="header-search">
+      <mat-icon>search</mat-icon>
+      <input type="text" placeholder="Search settings...">
+    </div>
+  </div>
+
+  <div class="settings-content">
+    <!-- Sidebar -->
+    <div class="settings-sidebar">
+      <div 
+        class="sidebar-item" 
+        *ngFor="let tab of tabs" 
+        [class.active]="activeTab() === tab.name"
+        (click)="setTab(tab.name)">
+        <span>{{ tab.name }}</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="scroll-area">
+        
+        <!-- Profile Section -->
+        <div class="settings-card profile-card" *ngIf="activeTab() === 'Profile'">
+          <div class="card-header">
+            <div class="user-avatar-section">
+              <div class="avatar-large">
+                <img [src]="user().avatarUrl" alt="User Avatar">
+              </div>
+              <div class="avatar-actions">
+                <button class="btn-upload">Upload new</button>
+                <button class="btn-remove">Remove</button>
+                <p class="avatar-hint">JPG, GIF or PNG. 1MB max.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label>First Name</label>
+              <input type="text" [value]="user().firstName" (input)="updateUserInfo('firstName', $any($event.target).value)">
+            </div>
+            <div class="form-field">
+              <label>Last Name</label>
+              <input type="text" [value]="user().lastName" (input)="updateUserInfo('lastName', $any($event.target).value)">
+            </div>
+            <div class="form-field full">
+              <label>Email Address</label>
+              <div class="input-with-icon">
+                <mat-icon>mail_outline</mat-icon>
+                <input type="email" [value]="user().email" (input)="updateUserInfo('email', $any($event.target).value)">
+              </div>
+            </div>
+            <div class="form-field full">
+              <label>Bio</label>
+              <textarea rows="4" [value]="user().bio" (input)="updateUserInfo('bio', $any($event.target).value)"></textarea>
+              <div class="char-count">275 characters left</div>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <button class="btn-cancel">Cancel</button>
+            <button class="btn-save" (click)="saveProfile()">Save Changes</button>
+          </div>
+        </div>
+
+        <!-- Preferences Section (Only shown in Profile/Global) -->
+        <div class="settings-card preferences-card">
+          <h3>Preferences</h3>
+          <p class="section-desc">Manage your app experience and display settings.</p>
+
+          <div class="pref-group">
+            <label>Theme</label>
+            <div class="theme-options">
+              <div class="theme-card" [class.selected]="themeService.getTheme() === 'light'" (click)="themeService.setTheme('light')">
+                <div class="theme-preview light">
+                   <div class="preview-header"></div>
+                   <div class="preview-content"></div>
+                </div>
+                <span>Light</span>
+                <div class="check-dot" *ngIf="themeService.getTheme() === 'light'"><mat-icon>check_circle</mat-icon></div>
+              </div>
+
+              <div class="theme-card" [class.selected]="themeService.getTheme() === 'dark'" (click)="themeService.setTheme('dark')">
+                <div class="theme-preview dark">
+                   <div class="preview-header"></div>
+                   <div class="preview-content"></div>
+                </div>
+                <span>Dark</span>
+                <div class="check-dot" *ngIf="themeService.getTheme() === 'dark'"><mat-icon>check_circle</mat-icon></div>
+              </div>
+
+              <div class="theme-card system" (click)="themeService.setTheme('system')">
+                <div class="theme-preview system">
+                   <div class="preview-header"></div>
+                   <div class="preview-content"></div>
+                </div>
+                <span>System</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pref-group toggle-group">
+            <div class="toggle-info">
+              <label>Compact Mode</label>
+              <span>Reduce spacing to show more content on screen.</span>
+            </div>
+            <div class="toggle-switch" [class.on]="compactMode()" (click)="toggleCompactMode()">
+              <div class="switch-handle"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

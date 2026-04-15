@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { trigger, transition, style, animate, stagger, query } from '@angular/animations';
@@ -9,12 +9,15 @@ import { UpcomingAgenda } from '../upcoming-agenda/upcoming-agenda';
 import { RecentWorkspaces } from '../recent-workspaces/recent-workspaces';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TaskWindowComponent } from '../task-window/task-window';
+import { TaskService, TaskDto } from '../../../core/services/task.service';
+import { UserService } from '../../../core/services/user.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
   imports: [
-    CommonModule, 
+    CommonModule,
     MatIconModule,
     QuickActionCard,
     ProductivityChart,
@@ -79,8 +82,15 @@ export class DashboardPage implements OnInit {
     }
   ];
 
-  ngOnInit() {}
+  public taskService = inject(TaskService);
+  public userService = inject(UserService);
+  tasks$!: Observable<TaskDto[]>;
+  user$!: Observable<any>;
 
+  ngOnInit() {
+    this.tasks$ = this.taskService.getTasks();
+    this.user$ = this.userService.getMe();
+  }
   onQuickAction(card: any) {
     if (card.id === 'event') {
       const dialogRef = this.dialog.open(TaskWindowComponent, {

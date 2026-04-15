@@ -1,8 +1,8 @@
 <div class="dashboard-page" @fadeInUp>
 
   <div class="page-header">
-    <div class="header-left">
-      <h1 class="greeting">Good Morning, Sarah</h1>
+    <div class="header-left" *ngIf="user$ | async as user">
+      <h1 class="greeting">Good Morning, {{ user?.firstName || 'User' }}</h1>
       <p class="subtitle">Here's your productivity overview for today.</p>
     </div>
     <div class="header-right">
@@ -23,7 +23,7 @@
 
   <div class="dashboard-grid">
     <div class="left-col">
-      <app-productivity-chart></app-productivity-chart>
+      <app-productivity-chart [tasks]="(tasks$ | async) || []"></app-productivity-chart>
       <app-recent-workspaces></app-recent-workspaces>
     </div>
     <div class="right-col">

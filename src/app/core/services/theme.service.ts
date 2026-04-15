@@ -24,6 +24,16 @@ export class ThemeService {
     this.applyTheme(this.currentTheme);
   }
 
+  setTheme(theme: 'dark' | 'light' | 'system'): void {
+    if (theme === 'system') {
+      const osPrefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      this.currentTheme = osPrefersLight ? 'light' : 'dark';
+    } else {
+      this.currentTheme = theme;
+    }
+    this.applyTheme(this.currentTheme);
+  }
+
   private applyTheme(theme: 'dark' | 'light'): void {
     if (theme === 'light') {
       this.renderer.setAttribute(document.documentElement, 'data-theme', 'light');

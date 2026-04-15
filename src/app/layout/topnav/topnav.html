@@ -6,12 +6,35 @@
   
   <div class="right-actions">
     <button class="btn-quick-add" (click)="onQuickAdd()">+ Quick Add</button>
-    <div class="action-btn">
-      <mat-icon>notifications</mat-icon>
-      <div class="badge"></div>
+    
+    <div class="action-btn" (click)="uiService.toggleProjects()" [class.active]="uiService.projectsPanelOpen()">
+      <mat-icon>folder_special</mat-icon>
+      <span class="tooltip">Projects</span>
     </div>
+
+    <div class="action-btn" (click)="uiService.toggleNotifications()" [class.active]="uiService.notificationPanelOpen()">
+      <mat-icon>notifications</mat-icon>
+      <div class="badge" *ngIf="(unreadCount$ | async) as count; else emptyBadge" [style.display]="count > 0 ? 'flex' : 'none'">
+        {{ count > 9 ? '9+' : count }}
+      </div>
+      <ng-template #emptyBadge></ng-template>
+      <span class="tooltip">Notifications</span>
+    </div>
+
     <div class="action-btn" (click)="themeService.toggleTheme()">
       <mat-icon>{{ themeService.getTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      <span class="tooltip">Theme</span>
     </div>
   </div>
 </div>
+
+<!-- Overlay Panels -->
+<app-notification-panel 
+  [isOpen]="uiService.notificationPanelOpen()" 
+  (closed)="uiService.notificationPanelOpen.set(false)">
+</app-notification-panel>
+
+<app-projects-panel 
+  [isOpen]="uiService.projectsPanelOpen()" 
+  (closed)="uiService.projectsPanelOpen.set(false)">
+</app-projects-panel>

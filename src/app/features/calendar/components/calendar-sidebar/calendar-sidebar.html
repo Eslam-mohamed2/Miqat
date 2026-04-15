@@ -1,0 +1,68 @@
+<div class="sidebar-container">
+  
+  <div class="mini-calendar-section">
+    <div class="mini-calendar-header">
+      <h4>{{ (currentMonth || 'October 2023') }}</h4>
+      <div class="nav-arrows">
+        <mat-icon class="icon-btn">chevron_left</mat-icon>
+        <mat-icon class="icon-btn">chevron_right</mat-icon>
+      </div>
+    </div>
+    
+    <div class="mini-calendar-grid">
+      <div class="day-name">S</div>
+      <div class="day-name">M</div>
+      <div class="day-name">T</div>
+      <div class="day-name">W</div>
+      <div class="day-name highlight">T</div>
+      <div class="day-name">F</div>
+      <div class="day-name">S</div>
+
+      <ng-container *ngFor="let week of miniCalendarWeeks()">
+        <div class="day-cell" *ngFor="let day of week" [class.today]="day === 19">
+          <div class="day-circle">{{ day }}</div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="calendars-section">
+    <div class="section-header">
+      <h4>My Calendars</h4>
+      <mat-icon class="add-icon">add</mat-icon>
+    </div>
+    
+    <div class="calendar-list">
+      <div class="calendar-item" *ngFor="let cal of calendars()">
+        <mat-checkbox [checked]="cal.checked" [color]="'primary'" class="custom-checkbox" [style.--checkbox-color]="cal.color">
+          {{ cal.name }}
+        </mat-checkbox>
+        <div class="dot-indicator" [style.backgroundColor]="cal.color"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="schedule-section">
+    <h4>Upcoming Schedule</h4>
+    <div class="schedule-date">
+      <div class="date-dot"></div>
+      <span>TODAY, OCT 19</span>
+    </div>
+
+    <div class="schedule-list">
+      <div class="schedule-card" *ngFor="let event of upcomingEvents()" [style.borderLeftColor]="event.color">
+        <div class="event-time">{{ event.time }}</div>
+        <div class="event-title">{{ event.title }}</div>
+        <div class="event-subtitle" *ngIf="event.subtitle">
+          <mat-icon class="subtitle-icon">{{ event.icon }}</mat-icon>
+          {{ event.subtitle }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
