@@ -20,10 +20,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError(err => {
-      if (err.status === 401) {
+      if (err.status === 401 && !req.url.includes('/api/Auth/login') && !req.url.includes('/api/Auth/register')) {
         authService.logout().subscribe();
         router.navigate(['/authentication'], { queryParams: { form: 'login' } });
       }
+
       return throwError(() => err);
     })
   );

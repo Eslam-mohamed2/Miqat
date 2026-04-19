@@ -1,4 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule, FormBuilder,
@@ -7,6 +8,8 @@ import {
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { FlipClock } from '../flip-clock/flip-clock';
+import { finalize } from 'rxjs';
+
 @Component({
   selector: 'authentication',
   standalone: true,
@@ -19,6 +22,8 @@ export class Authentication implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef);
+
 
   activeForm: 'login' | 'register' = 'login';
   isLoading = false;
@@ -51,7 +56,12 @@ export class Authentication implements OnInit {
     this.registerForm = this.fb.group({
       fullName: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      // Improved: Match the hint in the HTML (Ucase, Lcase, Number, Special Char)
+      password: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+      ]],
       phoneNumber: ['', [Validators.required]],
       country: ['', [Validators.required]],
       timeZone: ['', [Validators.required]]
@@ -78,16 +88,21 @@ export class Authentication implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.loginForm.value).subscribe({
-      next: (res) => {
+    this.authService.login(this.loginForm.value).pipe(
+      finalize(() => {
         this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+
+      next: (res) => {
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        this.isLoading = false;
         this.errorMessage = this.extractErrorMessage(err, 'Login failed. Please try again.');
       }
     });
+
   }
 
   onRegister(): void {
@@ -98,25 +113,26 @@ export class Authentication implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.register(this.registerForm.value).subscribe({
-      next: (res) => {
+    this.authService.register(this.registerForm.value).pipe(
+      finalize(() => {
         this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+
+      next: (res) => {
         this.successMessage = 'Account created! Please enter the OTP sent to your email.';
         this.registeredEmail = this.registerForm.value.email;
         this.showOtpPopup = true;
       },
       error: (err) => {
-        this.isLoading = false;
-        if (err.status === 204) {
-          // SAFEGUARD: The API returned 204 successfully but was interpreted as an HTTP error
-          this.successMessage = 'Account created! Please enter the OTP sent to your email.';
-          this.registeredEmail = this.registerForm.value.email;
-          this.showOtpPopup = true;
-        } else {
-          this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
-        }
+        // The service already handles 204/200 OK by returning of('Success')
+        // If we still hit the error block with a 2xx status, it means something is wrong in the service
+        this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
+        console.error('Registration error details:', err);
       }
     });
+
   }
 
   onOtpCodeChange(event: Event): void {
@@ -158,12 +174,17 @@ export class Authentication implements OnInit {
   }
 
   requestResendOtp(): void {
-    this.authService.resendOtp({ email: this.registeredEmail, purpose: 'Registration' }).subscribe({
-      next: (res) => {
+    this.authService.resendOtp({
+      email: this.registeredEmail,
+      purpose: 'EmailVerification' // ← was 'Registration'
+    }).subscribe({
+      next: () => {
         this.successMessage = 'A new code has been sent to your email!';
+        this.errorMessage = '';
       },
       error: (err) => {
         this.errorMessage = err.error?.message || 'Failed to resend OTP.';
+        this.successMessage = '';
       }
     });
   }
@@ -174,12 +195,49 @@ export class Authentication implements OnInit {
   }
 
   private extractErrorMessage(err: any, defaultMsg: string): string {
+    console.log('Raw error object received:', err);
     if (typeof err === 'string') return err;
-    if (typeof err.error === 'string') return err.error;
-    if (err.error?.errors) {
-      const firstKey = Object.keys(err.error.errors)[0];
-      return err.error.errors[firstKey][0] || defaultMsg;
+
+    let message = '';
+    
+    // Handle case where error is an object but contains a message
+    if (err.error?.message && typeof err.error.message === 'string') {
+      message = err.error.message;
     }
-    return err.error?.message || err.error?.title || defaultMsg;
+
+    // Handle case where err.error is a JSON string (common in some API configurations)
+    if (!message && typeof err.error === 'string' && err.error.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(err.error);
+        message = parsed.message || parsed.title || '';
+      } catch (e) {
+        console.error('Failed to parse error JSON:', e);
+      }
+    }
+
+    if (!message && typeof err.error === 'string' && err.error.trim().length > 0 && !err.error.startsWith('<')) {
+      message = err.error;
+    }
+
+    // Check if it's an HttpErrorResponse with a 409 status specifically
+    if (!message && err.status === 409) {
+      message = 'Conflict: User might already exist or a policy was violated.';
+    }
+
+    // ASP.NET Core Validation errors
+    if (!message && err.error?.errors) {
+      const errorEntries = Object.entries(err.error.errors);
+      if (errorEntries.length > 0) {
+        const [key, messages] = errorEntries[0];
+        if (Array.isArray(messages) && messages.length > 0) {
+          message = messages[0];
+        }
+      }
+    }
+
+    const finalMsg = message || err.error?.message || err.error?.title || err.message || defaultMsg;
+    console.log('Extracted error message:', finalMsg);
+    return finalMsg;
   }
 }
+

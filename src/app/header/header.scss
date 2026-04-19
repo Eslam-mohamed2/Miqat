@@ -115,60 +115,82 @@ img {
 }
 
 // ========== Responsive breakpoints (add overrides below; base styles unchanged) ==========
-@media (max-width: 1024px) {
+@media (max-width: 991.98px) {
+  .navbar-toggler {
+    display: block !important;
+    z-index: 10001 !important;
+    position: relative;
+    pointer-events: auto !important;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+
+    &:active {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .navbar-toggler-icon {
+      width: 1.25em;
+      height: 1.25em;
+    }
+  }
+
+  .navbar-collapse {
+    background-color: var(--color-light) !important;
+    padding: 1.5rem;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    position: absolute;
+    top: 65px;
+    left: 0;
+    width: 100%;
+    z-index: 10000;
+    display: none;
+    border: 1px solid rgba(0,0,0,0.05);
+
+    &.show {
+      display: block !important;
+    }
+  }
+
+  .navbar-nav {
+    margin-bottom: 1.5rem;
+    gap: 12px;
+
+    .nav-link {
+      color: var(--color-primary) !important;
+      padding: 12px 0;
+      font-weight: 600 !important;
+      border-bottom: 1px solid rgba(0,0,0,0.03);
+      
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+
+
+
+  .Authentication-Buttons {
+    margin-left: 0 !important;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+
+    .btn {
+      width: 100%;
+      text-align: left;
+    }
+  }
+
   .clock {
     display: none;
   }
-  .Custmizable-Header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .Authentication-Buttons {
-    margin-left: auto !important;
-  }
-  .w-10 {
-    width: 17% !important;
-  }
-  .clock-falls {
-    position: absolute;
-    top: 0;
-    left: -5%;
-    height: 100%;
-    width: 160px;
-    pointer-events: none;
-    z-index: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .w-10 {
-    width: 20% !important;
-  }
-  .clock-falls {
-    position: absolute;
-    top: 0;
-    left: -8%;
-    height: 100%;
-    width: 160px;
-    pointer-events: none;
-    z-index: 0;
-  }
-  
 }
 
 @media (max-width: 576px) {
-  .clock-falls {
-    position: absolute;
-    top: 0;
-    left: -1%;
-    height: 100%;
-    width: 100px;
-    pointer-events: none;
-    z-index: 0;
-  }
   .w-10 {
     width: 35% !important;
   }
-
 }
+

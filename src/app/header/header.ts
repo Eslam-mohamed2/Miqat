@@ -13,7 +13,16 @@ import { ThemeService } from '../core/services/theme.service';
 })
 export class Header implements OnInit, OnDestroy {
   time: string = '';
+  isMenuOpen = false;
   Timer = inject(ChangeDetectorRef);
+
+  toggleMenu() {
+    this.isMenuOpen = !this.isMenuOpen;
+    console.log('Mobile menu toggled. New state:', this.isMenuOpen);
+    this.Timer.detectChanges();
+  }
+
+
 
   clocks = [
     'assets/SVG icons/clock-slash-svgrepo-com.svg',

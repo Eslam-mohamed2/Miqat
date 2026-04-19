@@ -25,6 +25,8 @@ export class AuthService {
   register(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, data, { responseType: 'text' }).pipe(
       catchError(err => {
+        // Only treat as success if it truly was a success status that HttpClient misidentified
+        // (Though with responseType: 'text', it shouldn't for 200/204)
         if (err.status === 204 || err.status === 200) {
           return of('Success');
         }
