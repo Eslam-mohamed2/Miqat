@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://miqatapi-production-ed29.up.railway.app/api/:path*"
+            "destination": "https://miqatsmartcalendar-b7e4anhxh8d5cmcx.israelcentral-01.azurewebsites.net/api/:path*"
         },
         {
             "source": "/(.*\\.js)",

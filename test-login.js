@@ -6,7 +6,7 @@ const data = JSON.stringify({
 });
 
 const options = {
-  hostname: 'miqatapi-production-ed29.up.railway.app',
+  hostname: 'miqatsmartcalendar-b7e4anhxh8d5cmcx.israelcentral-01.azurewebsites.net',
   port: 443,
   path: '/api/Auth/login',
   method: 'POST',
