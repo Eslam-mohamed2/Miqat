@@ -60,7 +60,7 @@
       <span>Logout</span>
     </div>
 
-    <div class="user-profile" *ngIf="(user$ | async) as user">
+    <div class="user-profile" *ngIf="(user$ | async) as user" [routerLink]="['/settings']">
       <div class="avatar-placeholder">
         <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" width="100%" height="100%" [style.borderRadius]="'50%'">
       </div>

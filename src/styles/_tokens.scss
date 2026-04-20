@@ -38,7 +38,8 @@
   --shadow-card:    0 2px 12px rgba(0,0,0,0.4);
 }
 
-html[data-theme='light'] {
+html[data-theme='light'], 
+body.light-mode {
   // === BACKGROUND LAYERS ===
   --bg-app:         #f3f4f6;
   --bg-sidebar:     #ffffff;

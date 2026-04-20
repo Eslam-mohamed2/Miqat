@@ -9,6 +9,8 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 
   @media (max-width: 768px) {
     display: none;
@@ -162,36 +164,50 @@
 
 /* --- OVERRIDES FOR COLLAPSED STATE --- */
 .sidebar {
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow-x: hidden;
-
   &.collapsed {
-    width: 76px;
+    width: 72px;
 
     .logo-text, .nav-label, span, .user-info, .chevron {
-      display: none;
+      opacity: 0;
+      visibility: hidden;
+      width: 0;
+      height: 0;
+      margin: 0;
+      padding: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
     }
 
     .nav-label-container {
       justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
       .label-icon { display: none; }
     }
 
     .nav-item {
       justify-content: center;
       padding: 10px 0;
-      margin: 2px 10px;
+      margin: 2px 8px;
+      gap: 0;
       mat-icon { margin-right: 0; }
     }
 
     .user-profile {
       justify-content: center;
       padding: 16px 0;
+      gap: 0;
     }
 
     .toggle-btn {
       transform: rotate(180deg);
       margin: 0 auto;
+    }
+
+    .logo-section {
+      padding: 0;
+      justify-content: center;
+      .logo-icon { margin-left: 0; }
     }
   }
 }

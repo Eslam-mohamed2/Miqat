@@ -51,7 +51,6 @@ export class MainCalendar implements OnInit {
     const weekWithToday = all.find(w => w.some(d => d.isToday)) || all[0];
     
     // For Day view, we still return the week so the template can iterate it, but we'll mask non-selected days in HTML, or we can just filter the days.
-    // Let's filter days rigidly inside the row for Day view.
     if (view === 'day') {
       const todayCell = weekWithToday.find(d => d.isToday) || weekWithToday[0];
       return [[todayCell]]; // 1 row, 1 cell 
@@ -59,6 +58,12 @@ export class MainCalendar implements OnInit {
 
     return [weekWithToday]; // 1 row, 7 cells
   });
+
+  // Explicit Getters for Signal values - helps ngtsc template type checking
+  get currentViewValue() { return this.currentView(); }
+  get selectedEventValue() { return this.selectedEvent(); }
+  get filteredWeeksValue() { return this.filteredWeeks(); }
+  get currentMonthValue() { return this.currentMonth(); }
 
   ngOnInit() {
     this.refreshCalendar();

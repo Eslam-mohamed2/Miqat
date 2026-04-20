@@ -63,6 +63,20 @@ li {
   font-style: normal !important;
 }
 
+// === GLOBAL TITLE SPACING ===
+h1, h2, h3, h4 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+h1 { font-size: 2rem; margin-top: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1rem; }
+
 // Fixed Sizing Classes
 .w-95 {
   width: 95% !important;
