@@ -414,3 +414,46 @@
     }
   }
 }
+
+// ── Dark Mode Overrides ──────────────────────────────────────
+@at-root [data-theme="dark"] .details-panel {
+  background: var(--app-card-bg);
+  color: var(--app-text);
+  border-left-color: rgba(255,255,255,0.1);
+  
+  .top-bar { border-bottom-color: rgba(255,255,255,0.1); }
+  .title-header h1 { color: var(--app-text); }
+  .meta-value { color: var(--app-text); }
+  
+  .status-dropdown, .date-range, .priority-chip {
+    border-color: rgba(255,255,255,0.2);
+    color: var(--app-text);
+    &:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.3); }
+  }
+  
+  .meta-label, .action-btn, .close-btn { color: var(--app-text-muted); }
+  .close-btn:hover { background: rgba(255,255,255,0.1); color: var(--app-text); }
+  .action-btn:hover { background: rgba(255,255,255,0.1); color: var(--app-text); }
+  
+  .desc-title, .subtasks-title, .desc-content h3 { color: var(--app-text); }
+  .desc-content { 
+    background: var(--app-bg); 
+    border-color: rgba(255,255,255,0.1); 
+    color: var(--app-text-muted); 
+  }
+  
+  .subtask-list {
+    background: var(--app-card-bg);
+    border-color: rgba(255,255,255,0.1);
+  }
+  
+  .subtask-item {
+    border-bottom-color: rgba(255,255,255,0.1);
+    &:hover { background: rgba(255,255,255,0.05); }
+    span { color: var(--app-text); }
+  }
+  
+  .divider { background: rgba(255,255,255,0.1); }
+  .subtasks-count { background: rgba(255,255,255,0.1); color: var(--app-text-muted); }
+  .progress-container { background: rgba(255,255,255,0.1); }
+}

@@ -7,6 +7,8 @@
   width: 90% !important;
   height: 65px !important;
   margin: 0% auto !important;
+  position: relative;
+  z-index: 5;
 }
 nav .btn{
 padding: 5px 25px !important;
@@ -17,6 +19,7 @@ font-weight: bold !important;
 }
 .navbar-nav > a {
 overflow: hidden ;
+margin-right: 15px;
 }
 .navbar-nav a::after {
 content: '';
@@ -51,13 +54,12 @@ color: var(--color-light) !important;
   font-family: "Poppins", sans-serif;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #ffffff;
-  background-color: var(--color-primary);
-  border: 2px solid #ffffff !important;
+  color: var(--color-primary);
+  background-color: transparent;
   padding: 5px 25px !important;
 }
 .Authentication-Buttons{
-margin-left: 120px !important;
+  /* Removed fixed margin to fix responsive squishing */
 }
 
 

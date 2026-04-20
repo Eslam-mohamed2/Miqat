@@ -159,3 +159,61 @@
     height: 16px;
   }
 }
+
+/* --- OVERRIDES FOR COLLAPSED STATE --- */
+.sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+
+  &.collapsed {
+    width: 76px;
+
+    .logo-text, .nav-label, span, .user-info, .chevron {
+      display: none;
+    }
+
+    .nav-label-container {
+      justify-content: center;
+      .label-icon { display: none; }
+    }
+
+    .nav-item {
+      justify-content: center;
+      padding: 10px 0;
+      margin: 2px 10px;
+      mat-icon { margin-right: 0; }
+    }
+
+    .user-profile {
+      justify-content: center;
+      padding: 16px 0;
+    }
+
+    .toggle-btn {
+      transform: rotate(180deg);
+      margin: 0 auto;
+    }
+  }
+}
+
+.toggle-btn {
+  color: $text-muted;
+  cursor: pointer;
+  transition: all 0.3s;
+  &:hover {
+    color: $teal-primary;
+  }
+}
+
+.logout-btn {
+  color: #dc3545 !important;
+  margin-bottom: 8px;
+  &:hover {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    color: #c82333 !important;
+    mat-icon { color: #c82333 !important; }
+  }
+  mat-icon {
+    color: #dc3545 !important;
+  }
+}

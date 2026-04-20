@@ -1,11 +1,16 @@
-<div class="sidebar">
+<div class="sidebar" [ngClass]="{'collapsed': isCollapsed()}">
   <div class="logo-section">
-    <div class="logo-icon">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
-      </svg>
+    <div class="d-flex align-items-center w-100 justify-content-between">
+      <div class="d-flex align-items-center">
+        <div class="logo-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
+          </svg>
+        </div>
+        <span class="logo-text">Miqat</span>
+      </div>
+      <mat-icon class="toggle-btn" (click)="toggleSidebar()">menu_open</mat-icon>
     </div>
-    <span class="logo-text">Miqat</span>
   </div>
 
   <div class="nav-groups">
@@ -49,14 +54,21 @@
     </div>
   </div>
 
-  <div class="user-profile" *ngIf="(user$ | async) as user">
-    <div class="avatar-placeholder">
-      <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" width="100%" height="100%" [style.borderRadius]="'50%'">
+  <div class="bottom-section">
+    <div class="nav-item logout-btn" (click)="onLogout()">
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
     </div>
-    <div class="user-info">
-      <div class="user-name">{{ user.firstName }} {{ user.lastName }}</div>
-      <div class="user-email">{{ user.email }}</div>
+
+    <div class="user-profile" *ngIf="(user$ | async) as user">
+      <div class="avatar-placeholder">
+        <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" width="100%" height="100%" [style.borderRadius]="'50%'">
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ user.firstName }} {{ user.lastName }}</div>
+        <div class="user-email">{{ user.email }}</div>
+      </div>
+      <mat-icon class="chevron">chevron_right</mat-icon>
     </div>
-    <mat-icon class="chevron">chevron_right</mat-icon>
   </div>
 </div>

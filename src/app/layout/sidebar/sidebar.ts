@@ -1,6 +1,6 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { GroupService } from '../../core/services/group.service';
 import { UserService } from '../../core/services/user.service';
@@ -20,8 +20,11 @@ export class Sidebar implements OnInit {
   private userService = inject(UserService);
   public uiService = inject(UiService);
 
+  private router = inject(Router);
+
   groups$!: Observable<any[]>;
   user$!: Observable<any>;
+  isCollapsed = signal(false);
 
   navItemsApp = [
     { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
@@ -39,5 +42,14 @@ export class Sidebar implements OnInit {
   ngOnInit() {
     this.groups$ = this.groupService.getGroups();
     this.user$ = this.userService.getMe();
+  }
+
+  toggleSidebar() {
+    this.isCollapsed.set(!this.isCollapsed());
+  }
+
+  onLogout() {
+    localStorage.clear();
+    this.router.navigate(['/home']);
   }
 }

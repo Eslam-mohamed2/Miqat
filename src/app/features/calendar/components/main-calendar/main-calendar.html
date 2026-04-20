@@ -17,9 +17,9 @@
         <mat-icon class="tz-caret">expand_more</mat-icon>
       </div>
       <div class="view-toggles">
-        <button class="view-btn">Day</button>
-        <button class="view-btn">Week</button>
-        <button class="view-btn active">Month</button>
+        <button class="view-btn" [class.active]="currentView() === 'day'" (click)="setView('day')">Day</button>
+        <button class="view-btn" [class.active]="currentView() === 'week'" (click)="setView('week')">Week</button>
+        <button class="view-btn" [class.active]="currentView() === 'month'" (click)="setView('month')">Month</button>
       </div>
     </div>
   </div>
@@ -28,19 +28,20 @@
     <div class="calendar-grid">
       <!-- Header Row -->
       <div class="grid-header">
-        <div class="day-name" *ngFor="let day of daysOfWeek">
+        <div class="day-name" *ngFor="let day of daysOfWeek" [ngStyle]="{'display': currentView() === 'day' ? 'none' : 'block'}">
           {{ day }}
         </div>
       </div>
 
       <!-- Body Rows -->
-      <div class="grid-body">
-        <div class="week-row" *ngFor="let week of weeks()">
+      <div class="grid-body" [ngClass]="currentView() + '-view'">
+        <div class="week-row" *ngFor="let week of filteredWeeks()">
           <div class="day-cell" *ngFor="let day of week" [class.not-current-month]="!day.isCurrentMonth" [class.today]="day.isToday">
             <div class="day-number">{{ day.date }}<div *ngIf="day.isToday" class="today-dot"></div></div>
             <div class="events-container">
               <div class="event-capsule" 
                    *ngFor="let event of day.events" 
+                   (click)="openTaskDetails(event)"
                    [style.backgroundColor]="event.color"
                    [style.color]="event.textLight ? '#fff' : 'var(--text-primary)'">
                 {{ event.time }}
@@ -48,6 +49,25 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Details Modal Overlay -->
+  <div class="task-overlay-backdrop" *ngIf="selectedEvent()" (click)="closeTaskDetails()">
+    <div class="task-details-card" (click)="$event.stopPropagation()">
+      <div class="task-details-header" [style.backgroundColor]="selectedEvent()?.color"></div>
+      <div class="task-details-content">
+        <h3 class="task-details-title">{{ selectedEvent()?.title }}</h3>
+        <div class="task-details-time">
+          <mat-icon>schedule</mat-icon>
+          <span>{{ selectedEvent()?.time }}</span>
+          <span *ngIf="selectedEvent()?.status" class="ms-2 badge text-bg-light border">{{ selectedEvent()?.status }}</span>
+        </div>
+        <p class="text-secondary small mb-4" *ngIf="selectedEvent()?.description">
+          {{ selectedEvent()?.description }}
+        </p>
+        <button class="task-details-close" (click)="closeTaskDetails()">Close Details</button>
       </div>
     </div>
   </div>

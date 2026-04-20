@@ -181,6 +181,11 @@
   &:last-child {
     border-bottom: none;
   }
+  
+  @at-root .day-view & {
+    grid-template-columns: 1fr;
+    .day-cell { border-right: none; }
+  }
 }
 
 .day-cell {
@@ -254,5 +259,120 @@
 
   &:hover {
     opacity: 0.8;
+  }
+}
+
+// Media Query for responsiveness
+@media (max-width: 768px) {
+  .calendar-grid-wrapper {
+    overflow-x: hidden;
+  }
+  .calendar-grid {
+    min-width: unset;
+    min-height: 400px;
+  }
+  .day-name {
+    padding: 8px 4px;
+    font-size: 0.65rem;
+  }
+  .day-cell {
+    padding: 4px;
+    gap: 2px;
+  }
+  .events-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+  }
+  .event-capsule {
+    width: 6px;
+    height: 6px;
+    padding: 0;
+    font-size: 0;
+    border-radius: 50%;
+  }
+}
+
+// Modal styles
+.task-overlay-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-details-card {
+  background: var(--surface, #ffffff);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  overflow: hidden;
+  position: relative;
+  
+  @at-root [data-theme="dark"] & {
+    background: var(--surface-alt, #1e1e1e);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+}
+
+.task-details-header {
+  height: 8px;
+  width: 100%;
+}
+
+.task-details-content {
+  padding: 24px;
+}
+
+.task-details-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.task-details-time {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.task-details-close {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: var(--surface-2, #f3f4f6);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  
+  &:hover {
+    background: var(--bg-hover, #e5e7eb);
+  }
+  
+  @at-root [data-theme="dark"] & {
+    background: rgba(255,255,255,0.05);
+    &:hover { background: rgba(255,255,255,0.1); }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { TaskService, TaskDto } from '../../../../core/services/task.service';
@@ -9,6 +9,8 @@ export interface CalendarEvent {
   id: string;
   time: string;
   title: string;
+  description?: string;
+  status?: string;
   color: string;
   textLight?: boolean;
 }
@@ -36,6 +38,27 @@ export class MainCalendar implements OnInit {
   daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   weeks = signal<CalendarDay[][]>([]);
   currentMonth = signal(new Date());
+  selectedEvent = signal<CalendarEvent | null>(null);
+  currentView = signal<'month' | 'week' | 'day'>('month');
+
+  // Compute what to render based on the current View selection
+  filteredWeeks = computed(() => {
+    const view = this.currentView();
+    const all = this.weeks();
+    if (view === 'month') return all;
+
+    // For Week or Day, find the row containing 'today', or just use the first row if none found
+    const weekWithToday = all.find(w => w.some(d => d.isToday)) || all[0];
+    
+    // For Day view, we still return the week so the template can iterate it, but we'll mask non-selected days in HTML, or we can just filter the days.
+    // Let's filter days rigidly inside the row for Day view.
+    if (view === 'day') {
+      const todayCell = weekWithToday.find(d => d.isToday) || weekWithToday[0];
+      return [[todayCell]]; // 1 row, 1 cell 
+    }
+
+    return [weekWithToday]; // 1 row, 7 cells
+  });
 
   ngOnInit() {
     this.refreshCalendar();
@@ -85,6 +108,8 @@ export class MainCalendar implements OnInit {
                         id: t.id || '',
                         time: this.formatTime(t.dueDate!),
                         title: t.title,
+                        description: t.description,
+                        status: t.status,
                         color: group?.color || '#2ec4a0',
                         textLight: true
                     };
@@ -115,5 +140,17 @@ export class MainCalendar implements OnInit {
   setToday() {
     this.currentMonth.set(new Date());
     this.refreshCalendar();
+  }
+
+  openTaskDetails(event: CalendarEvent) {
+    this.selectedEvent.set(event);
+  }
+
+  closeTaskDetails() {
+    this.selectedEvent.set(null);
+  }
+
+  setView(view: 'month' | 'week' | 'day') {
+    this.currentView.set(view);
   }
 }

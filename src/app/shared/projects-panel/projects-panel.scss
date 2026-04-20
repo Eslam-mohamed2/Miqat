@@ -406,3 +406,49 @@
   mat-icon { font-size: 17px; width: 17px; height: 17px; }
   &:hover { background: $teal-dark; transform: translateY(-1px); }
 }
+
+// ── Dark Mode Overrides ──────────────────────────────────────
+@at-root [data-theme="dark"] .projects-panel {
+  background: var(--app-bg);
+  border-left-color: rgba(255,255,255,0.1);
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.8);
+
+  .panel-header {
+    background: var(--app-card-bg);
+    border-bottom-color: rgba(255,255,255,0.1);
+  }
+
+  .title-text { color: var(--app-text); }
+  .project-count {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    color: var(--app-text-muted);
+  }
+
+  .close-btn { 
+    background: rgba(255,255,255,0.05); 
+    border-color: rgba(255,255,255,0.1); 
+    color: var(--app-text-muted);
+    &:hover { color: var(--app-text); background: rgba(255,255,255,0.1); }
+  }
+
+  .search-bar { 
+    border-bottom-color: rgba(255,255,255,0.1);
+    input { color: var(--app-text); &::placeholder { color: var(--app-text-muted); } }
+  }
+
+  .project-card {
+    background: var(--app-card-bg);
+    border-color: rgba(255,255,255,0.1);
+    &:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
+  }
+
+  .project-name { color: var(--app-text); }
+  .project-desc, .stat { color: var(--app-text-muted); }
+  .card-footer { border-top-color: rgba(255,255,255,0.1); }
+  .card-date { color: var(--app-text-muted); }
+
+  .empty-icon-wrap { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+  .empty-title { color: var(--app-text); }
+  .empty-sub { color: var(--app-text-muted); }
+}
