@@ -456,4 +456,69 @@
   .divider { background: rgba(255,255,255,0.1); }
   .subtasks-count { background: rgba(255,255,255,0.1); color: var(--app-text-muted); }
   .progress-container { background: rgba(255,255,255,0.1); }
+
+  .edit-input, .edit-select, .edit-textarea {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--app-text);
+    
+    &:focus {
+      border-color: #10b981;
+      background: rgba(0, 0, 0, 0.2);
+    }
+  }
+  .title-input { color: var(--app-text); }
+}
+
+// ── Edit Mode Inputs ──────────────────────────────────────────
+.edit-input, .edit-select, .edit-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  
+  &:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  }
+}
+
+.title-input {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 0;
+  color: #111827;
+}
+
+.desc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.save-btn {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #059669;
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 }

@@ -19,7 +19,8 @@
 
     <!-- Title Header -->
     <div class="title-header">
-      <h1>Create Clickable Prototype</h1>
+      <h1 *ngIf="!isEditing()">{{ p.name }}</h1>
+      <input *ngIf="isEditing()" type="text" class="edit-input title-input" [(ngModel)]="editData.name" />
     </div>
 
     <!-- Meta Grid -->
@@ -29,11 +30,17 @@
           <mat-icon>radio_button_checked</mat-icon> Status
         </div>
         <div class="meta-value">
-          <div class="status-dropdown">
+          <div class="status-dropdown" *ngIf="!isEditing()">
             <span class="status-dot"></span>
             {{ p.status }}
             <mat-icon>expand_more</mat-icon>
           </div>
+          <select *ngIf="isEditing()" class="edit-select" [(ngModel)]="editData.status">
+            <option value="Active">Active</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Paused">Paused</option>
+          </select>
         </div>
       </div>
 
@@ -54,9 +61,12 @@
           <mat-icon>calendar_today</mat-icon> Dates
         </div>
         <div class="meta-value">
-          <div class="date-range">
-            {{ p.startDate }} - {{ p.endDate }}
-            <mat-icon>expand_more</mat-icon>
+          <div class="date-range" *ngIf="!isEditing()">
+            {{ formatDate(p.startDate) }} - {{ formatDate(p.endDate) }}
+          </div>
+          <div *ngIf="isEditing()" style="display:flex; gap:8px;">
+            <input type="date" class="edit-input" [(ngModel)]="editData.startDate">
+            <input type="date" class="edit-input" [(ngModel)]="editData.endDate">
           </div>
         </div>
       </div>
@@ -66,11 +76,16 @@
           <mat-icon>flag</mat-icon> Priority
         </div>
         <div class="meta-value">
-          <div class="priority-chip" [class.high]="p.priority === 'High'">
+          <div class="priority-chip" [class.high]="p.priority === 'High'" *ngIf="!isEditing()">
             <mat-icon>keyboard_double_arrow_up</mat-icon>
             {{ p.priority }}
             <mat-icon>expand_more</mat-icon>
           </div>
+          <select *ngIf="isEditing()" class="edit-select" [(ngModel)]="editData.priority">
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
         </div>
       </div>
 
@@ -104,11 +119,19 @@
         <div class="desc-title">
           <mat-icon>format_align_left</mat-icon> Description
         </div>
-        <button class="edit-btn">Edit</button>
+        <div class="desc-actions">
+          <button class="edit-btn" (click)="toggleEdit()">
+            {{ isEditing() ? 'Cancel' : 'Edit' }}
+          </button>
+          <button class="save-btn" *ngIf="isEditing()" (click)="saveChanges()" [disabled]="isSaving()">
+            {{ isSaving() ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
       </div>
 
       <div class="desc-content">
-        <p>{{ p.description }}</p>
+        <p *ngIf="!isEditing()">{{ p.description }}</p>
+        <textarea *ngIf="isEditing()" class="edit-textarea" [(ngModel)]="editData.description" rows="4"></textarea>
 
         <div class="requirements">
           <h3>Key Requirements:</h3>
