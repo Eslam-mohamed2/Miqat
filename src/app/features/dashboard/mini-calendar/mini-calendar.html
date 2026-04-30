@@ -1,9 +1,9 @@
 <div class="calendar-card">
   <div class="cal-header">
-    <div class="month">October 2023</div>
+    <div class="month">{{ currentMonthName }}</div>
     <div class="actions">
-      <div class="btn-nav"><mat-icon>chevron_left</mat-icon></div>
-      <div class="btn-nav"><mat-icon>chevron_right</mat-icon></div>
+      <div class="btn-nav" (click)="prevMonth()"><mat-icon>chevron_left</mat-icon></div>
+      <div class="btn-nav" (click)="nextMonth()"><mat-icon>chevron_right</mat-icon></div>
     </div>
   </div>
 
@@ -16,7 +16,8 @@
          class="cal-day" 
          [class.other-month]="day.other"
          [class.today]="day.today"
-         [class.has-event]="day.event">
+         [class.has-event]="day.event"
+         (click)="onDayClick(day)">
       {{ day.num }}
     </div>
   </div>

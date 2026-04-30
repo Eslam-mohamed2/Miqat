@@ -17,8 +17,26 @@
   }
 }
 
+.light-logo {
+  display: none;
+}
+
+.dark-logo {
+  display: block;
+}
+
+:host-context(body.light-mode) {
+  .light-logo {
+    display: block;
+  }
+
+  .dark-logo {
+    display: none;
+  }
+}
+
 .logo-section {
-  padding: 0 20px 24px 20px;
+  padding: 0 20px 10px 20px;
   display: flex;
   align-items: center;
 
@@ -42,14 +60,14 @@
 
 .nav-groups {
   flex: 1;
-  overflow-y: auto;
+  
 }
 
 .nav-label-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px 8px;
+  // padding: 0 20px 8px;
   cursor: pointer;
   transition: $transition-std;
 
@@ -64,25 +82,46 @@
     color: $text-muted;
     opacity: 0;
     transition: $transition-std;
+    margin-right: 20px;
   }
 
   &:hover {
-    .nav-label { color: $text-secondary; }
-    .label-icon { opacity: 1; color: $teal-primary; }
+    .nav-label {
+      color: $text-secondary;
+    }
+
+    .label-icon {
+      opacity: 1;
+      color: $teal-primary;
+    }
   }
 }
 
 .nav-label {
-  font-size: 10px;
+  width: fit-content;
+  font-size: 12px;
   font-weight: 600;
   color: $text-muted;
-  letter-spacing: 1px;
+  margin: 10px 25px;
+  position: relative;
+}
+
+.nav-label::after {
+  content: "";
+  position: absolute;
+  left: -10px;
+  bottom: 0%;
+  width: 3px;
+  height: 16px;
+  background-color: rgb(46, 196, 160);
+  transition: width 0.3s ease-in-out;
+  border-radius: 20px;
 }
 
 .new-project-btn {
   color: $text-muted !important;
   font-style: italic;
-  
+
   mat-icon {
     font-size: 16px !important;
   }
@@ -107,7 +146,11 @@
   cursor: pointer;
   transition: $transition-std;
 
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
 
   &:hover {
     background: $bg-card;
@@ -119,7 +162,9 @@
     color: $teal-primary;
     font-weight: 600;
 
-    mat-icon { color: $teal-primary; }
+    mat-icon {
+      color: $teal-primary;
+    }
   }
 }
 
@@ -147,6 +192,7 @@
       font-weight: 600;
       color: $text-primary;
     }
+
     .user-email {
       font-size: 11px;
       color: $text-secondary;
@@ -167,7 +213,12 @@
   &.collapsed {
     width: 72px;
 
-    .logo-text, .nav-label, span, .user-info, .chevron {
+    .logo-text,
+    .nav-label,
+    span,
+    .user-info,
+    .chevron,
+    .logo {
       opacity: 0;
       visibility: hidden;
       width: 0;
@@ -182,7 +233,10 @@
       justify-content: center;
       padding-left: 0;
       padding-right: 0;
-      .label-icon { display: none; }
+
+      .label-icon {
+        display: none;
+      }
     }
 
     .nav-item {
@@ -190,7 +244,10 @@
       padding: 10px 0;
       margin: 2px 8px;
       gap: 0;
-      mat-icon { margin-right: 0; }
+
+      mat-icon {
+        margin-right: 0;
+      }
     }
 
     .user-profile {
@@ -199,36 +256,47 @@
       gap: 0;
     }
 
-    .toggle-btn {
+    .toggle-icon {
       transform: rotate(180deg);
-      margin: 0 auto;
     }
 
     .logo-section {
-      padding: 0;
+      padding: 0 10px;
       justify-content: center;
-      .logo-icon { margin-left: 0; }
+
+      .header-wrapper {
+        justify-content: center !important;
+      }
+
+      .logo-icon {
+        margin-left: 0;
+      }
     }
   }
 }
 
-.toggle-btn {
-  color: $text-muted;
-  cursor: pointer;
-  transition: all 0.3s;
-  &:hover {
-    color: $teal-primary;
+.toggle-btn-wrapper {
+  margin-top: auto;
+  margin-bottom: 10px;
+
+  .toggle-icon {
+    transition: transform 0.3s ease;
   }
 }
 
 .logout-btn {
   color: #dc3545 !important;
   margin-bottom: 8px;
+
   &:hover {
     background-color: rgba(220, 53, 69, 0.1) !important;
-    color: #c82333 !important;
-    mat-icon { color: #c82333 !important; }
+    color:nav-groups #c82333 !important;
+
+    mat-icon {
+      color: #c82333 !important;
+    }
   }
+
   mat-icon {
     color: #dc3545 !important;
   }

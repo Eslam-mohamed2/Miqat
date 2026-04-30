@@ -2,10 +2,10 @@
   
   <div class="mini-calendar-section">
     <div class="mini-calendar-header">
-      <h4>{{ (currentMonth || 'October 2023') }}</h4>
+      <h4>{{ calendarState.currentMonth() | date:'MMMM yyyy' }}</h4>
       <div class="nav-arrows">
-        <mat-icon class="icon-btn">chevron_left</mat-icon>
-        <mat-icon class="icon-btn">chevron_right</mat-icon>
+        <mat-icon class="icon-btn" (click)="calendarState.prevMonth()">chevron_left</mat-icon>
+        <mat-icon class="icon-btn" (click)="calendarState.nextMonth()">chevron_right</mat-icon>
       </div>
     </div>
     
@@ -19,7 +19,8 @@
       <div class="day-name">S</div>
 
       <ng-container *ngFor="let week of miniCalendarWeeks()">
-        <div class="day-cell" *ngFor="let day of week" [class.today]="day === 19">
+        <!-- Hardcoding today's date highlight requires more logic, for now remove 'day === 19' dummy highlight -->
+        <div class="day-cell" *ngFor="let day of week">
           <div class="day-circle">{{ day }}</div>
         </div>
       </ng-container>

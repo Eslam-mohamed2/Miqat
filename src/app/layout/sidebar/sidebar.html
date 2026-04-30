@@ -1,25 +1,19 @@
 <div class="sidebar" [ngClass]="{'collapsed': isCollapsed()}">
   <div class="logo-section">
-    <div class="d-flex align-items-center w-100 justify-content-between">
+    <div class="d-flex align-items-center w-100 justify-content-center header-wrapper">
       <div class="d-flex align-items-center">
-        <div class="logo-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
-          </svg>
-        </div>
-        <span class="logo-text">Miqat</span>
+        <img src="../../../assets/Logo.png" alt="Miqat" class="logo dark-logo"
+          style="max-width: 100px; max-height: 100px;">
+        <img src="../../../assets/Light-mode-logo.png" alt="Miqat" class="logo light-logo"
+          style="max-width: 100px; max-height: 100px;">
       </div>
-      <mat-icon class="toggle-btn" (click)="toggleSidebar()">menu_open</mat-icon>
     </div>
   </div>
 
   <div class="nav-groups">
     <div class="nav-group">
       <div class="nav-label">APPLICATION</div>
-      <div class="nav-item"
-           *ngFor="let item of navItemsApp"
-           routerLinkActive="active"
-           [routerLink]="item.route">
+      <div class="nav-item" *ngFor="let item of navItemsApp" routerLinkActive="active" [routerLink]="item.route">
         <mat-icon>{{ item.icon }}</mat-icon>
         <span>{{ item.label }}</span>
       </div>
@@ -30,9 +24,10 @@
         <div class="nav-label">PINNED PROJECTS</div>
         <mat-icon class="label-icon">settings_overscan</mat-icon>
       </div>
-      
+
       <div class="nav-item" *ngFor="let group of groups" (click)="uiService.openProjectDetails(group.id)">
-        <div class="dot" [style.backgroundColor]="group.color || '#2ec4a0'" style="width: 8px; height: 8px; border-radius: 50%; margin-right: 8px;"></div>
+        <div class="dot" [style.backgroundColor]="group.color || '#2ec4a0'"
+          style="width: 8px; height: 8px; border-radius: 50%; margin-right: 8px;"></div>
         <span>{{ group.name }}</span>
       </div>
 
@@ -44,14 +39,16 @@
 
     <div class="nav-group" style="margin-top: 24px">
       <div class="nav-label">OTHERS</div>
-      <div class="nav-item"
-           *ngFor="let item of navItemsOther"
-           routerLinkActive="active"
-           [routerLink]="item.route">
+      <div class="nav-item" *ngFor="let item of navItemsOther" routerLinkActive="active" [routerLink]="item.route">
         <mat-icon>{{ item.icon }}</mat-icon>
         <span>{{ item.label }}</span>
       </div>
     </div>
+  </div>
+
+  <div class="nav-item toggle-btn-wrapper" (click)="toggleSidebar()">
+    <mat-icon class="toggle-icon">menu_open</mat-icon>
+    <span>Collapse</span>
   </div>
 
   <div class="bottom-section">

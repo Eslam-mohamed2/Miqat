@@ -408,47 +408,47 @@
 }
 
 // ── Dark Mode Overrides ──────────────────────────────────────
-@at-root [data-theme="dark"] .projects-panel {
-  background: var(--app-bg);
+@at-root body.dark-mode .projects-panel {
+  background: var(--bg-app);
   border-left-color: rgba(255,255,255,0.1);
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.8);
 
   .panel-header {
-    background: var(--app-card-bg);
+    background: var(--bg-card);
     border-bottom-color: rgba(255,255,255,0.1);
   }
 
-  .title-text { color: var(--app-text); }
+  .title-text { color: var(--text-primary); }
   .project-count {
     background: rgba(255,255,255,0.05);
     border-color: rgba(255,255,255,0.1);
-    color: var(--app-text-muted);
+    color: var(--text-muted);
   }
 
   .close-btn { 
     background: rgba(255,255,255,0.05); 
     border-color: rgba(255,255,255,0.1); 
-    color: var(--app-text-muted);
-    &:hover { color: var(--app-text); background: rgba(255,255,255,0.1); }
+    color: var(--text-muted);
+    &:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
   }
 
   .search-bar { 
     border-bottom-color: rgba(255,255,255,0.1);
-    input { color: var(--app-text); &::placeholder { color: var(--app-text-muted); } }
+    input { color: var(--text-primary); &::placeholder { color: var(--text-muted); } }
   }
 
   .project-card {
-    background: var(--app-card-bg);
+    background: var(--bg-card);
     border-color: rgba(255,255,255,0.1);
     &:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
   }
 
-  .project-name { color: var(--app-text); }
-  .project-desc, .stat { color: var(--app-text-muted); }
+  .project-name { color: var(--text-primary); }
+  .project-desc, .stat { color: var(--text-muted); }
   .card-footer { border-top-color: rgba(255,255,255,0.1); }
-  .card-date { color: var(--app-text-muted); }
+  .card-date { color: var(--text-muted); }
 
   .empty-icon-wrap { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-  .empty-title { color: var(--app-text); }
-  .empty-sub { color: var(--app-text-muted); }
+  .empty-title { color: var(--text-primary); }
+  .empty-sub { color: var(--text-muted); }
 }

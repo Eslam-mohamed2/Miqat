@@ -5,7 +5,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { UiService } from '../../core/services/ui.service';
 import { GroupService } from '../../core/services/group.service';
 import { TaskService } from '../../core/services/task.service';
+import { UserService } from '../../core/services/user.service';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-project-details-panel',
@@ -39,9 +41,11 @@ export class ProjectDetailsPanel {
   public uiService = inject(UiService);
   private groupService = inject(GroupService);
   private taskService = inject(TaskService);
+  private userService = inject(UserService);
 
   project = signal<any>(null);
-  tasks = signal<any[]>([]);
+  members = signal<any[]>([]);
+  allUsers = signal<any[]>([]);
   isLoading = signal(false);
 
   isEditing = signal(false);
@@ -57,80 +61,69 @@ export class ProjectDetailsPanel {
     });
   }
 
-  private getMockFallback(id: string) {
-    return {
-      id: id,
-      name: 'Untitled Project',
-      code: `T-${id.substring(0, 3).toUpperCase()}`,
-      status: 'Active',
-      startDate: null,
-      endDate: null,
-      assignees: [
-        { name: 'User 1', avatar: 'https://i.pravatar.cc/150?u=1' },
-      ],
-      priority: 'Medium',
-      type: 'Task',
-      tags: ['UI/UX DESIGN'],
-      description: 'No description provided.',
-      keyRequirements: [] as string[],
-      subtasks: [] as { title: string; completed: boolean }[],
-      completedCount: 0,
-      totalCount: 0
-    };
-  }
-
   loadDetails(id: string) {
     this.isLoading.set(true);
     this.isEditing.set(false);
+    this.members.set([]);
     
-    const fallback = this.getMockFallback(id);
+    // Load all users
+    this.userService.getAllUsers().subscribe({
+      next: (users) => this.allUsers.set(users),
+      error: () => console.error('Failed to load users')
+    });
     
+    // Load Group properties
     this.groupService.getGroupById(id).subscribe({
       next: (data) => {
-        const merged = { ...fallback, ...data };
-        this.project.set(merged);
+        this.project.set(data);
         this.editData = { 
-          ...merged,
-          startDate: this.toDateInputFormat(merged.startDate),
-          endDate: this.toDateInputFormat(merged.endDate)
+          name: data.name,
+          description: data.description,
+          color: data.color || '#2ec4a0'
         };
         this.isLoading.set(false);
       },
-      error: () => {
-        // Mock data for demonstration as backend might not have high-fidelity mocks ready
-        fallback.name = 'WEBSITE REDESIGN';
-        fallback.status = 'In Progress';
-        fallback.priority = 'High';
-        fallback.description = 'Develop a comprehensive, high-fidelity clickable prototype for the landing page and main dashboard views.';
-        fallback.keyRequirements = [
-          'Incorporate the new brand color palette (Teal & Yellow accents)',
-          'Include hover states and micro-interactions for all primary buttons'
-        ];
-        fallback.subtasks = [
-          { title: 'Review competitor landing pages', completed: true },
-          { title: 'Draft low-fidelity wireframes', completed: false }
-        ];
-        fallback.completedCount = 1;
-        fallback.totalCount = 2;
-        
-        this.project.set(fallback);
-        this.editData = { 
-           ...fallback,
-           startDate: this.toDateInputFormat(fallback.startDate),
-           endDate: this.toDateInputFormat(fallback.endDate)
-        };
+      error: (err) => {
+        console.error('Failed to load group details', err);
         this.isLoading.set(false);
       }
+    });
+
+    // Load Group members
+    this.groupService.getGroupMembers(id).subscribe({
+      next: (data) => {
+        // Handle paged response data.items or direct array
+        this.members.set(data.items || data || []);
+      },
+      error: (err) => {
+        console.error('Failed to load group members', err);
+      }
+    });
+  }
+
+  addMember(userId: string) {
+    if (!userId || !this.project()) return;
+    
+    const projectId = this.project().id;
+    this.groupService.addMember(projectId, userId).subscribe({
+      next: () => {
+        // Refresh members
+        this.groupService.getGroupMembers(projectId).subscribe(data => {
+          this.members.set(data.items || data || []);
+        });
+      },
+      error: (err) => console.error('Failed to add member', err)
     });
   }
 
   toggleEdit() {
     if (this.isEditing()) {
       this.isEditing.set(false);
+      const current = this.project();
       this.editData = { 
-        ...this.project(),
-        startDate: this.toDateInputFormat(this.project().startDate),
-        endDate: this.toDateInputFormat(this.project().endDate)
+        name: current.name,
+        description: current.description,
+        color: current.color || '#2ec4a0'
       };
     } else {
       this.isEditing.set(true);
@@ -138,22 +131,19 @@ export class ProjectDetailsPanel {
   }
 
   saveChanges() {
+    if (!this.project()) return;
+    
     this.isSaving.set(true);
-    this.groupService.updateGroup(this.project().id, this.editData).subscribe({
+    this.groupService.updateGroup(this.project().id, this.editData)
+      .pipe(finalize(() => this.isSaving.set(false)))
+      .subscribe({
       next: (res) => {
-        const merged = { ...this.project(), ...this.editData, ...res };
-        this.project.set(merged);
-        this.editData = { ...merged };
-        this.isEditing.set(false);
-        this.isSaving.set(false);
-      },
-      error: () => {
-        // Fallback simulate save locally
         const merged = { ...this.project(), ...this.editData };
         this.project.set(merged);
-        this.editData = { ...merged };
         this.isEditing.set(false);
-        this.isSaving.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to update group', err);
       }
     });
   }
@@ -163,21 +153,10 @@ export class ProjectDetailsPanel {
     this.uiService.closeProjectDetails();
   }
 
-  formatDate(dateStr: string | null): string {
+  formatDate(dateStr: string | null | undefined): string {
     if (!dateStr) return 'Not set';
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-
-  private toDateInputFormat(dateStr: string | null | undefined): string {
-    if (!dateStr) return '';
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return '';
-      return d.toISOString().split('T')[0];
-    } catch {
-      return '';
-    }
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 }

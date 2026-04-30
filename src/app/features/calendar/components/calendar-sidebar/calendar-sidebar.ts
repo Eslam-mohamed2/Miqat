@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { TaskService } from '../../../../core/services/task.service';
 import { GroupService } from '../../../../core/services/group.service';
+import { CalendarStateService } from '../../../../core/services/calendar-state.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -17,20 +18,25 @@ import { forkJoin } from 'rxjs';
 export class CalendarSidebar implements OnInit {
   private taskService = inject(TaskService);
   private groupService = inject(GroupService);
+  public calendarState = inject(CalendarStateService);
 
   miniCalendarWeeks = signal<number[][]>([]);
   calendars = signal<any[]>([]);
   upcomingEvents = signal<any[]>([]);
-  currentMonth = 'October 2023';
+
+  constructor() {
+    effect(() => {
+      const month = this.calendarState.currentMonth();
+      this.generateMiniCalendar(month);
+    });
+  }
 
   ngOnInit() {
-    this.generateMiniCalendar();
     this.refreshData();
   }
 
-  generateMiniCalendar() {
-    const today = new Date();
-    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+  generateMiniCalendar(monthDate: Date) {
+    const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
     start.setDate(start.getDate() - start.getDay());
     
     const weeks: number[][] = [];

@@ -345,25 +345,25 @@
 }
 
 // ── Dark Mode Overrides ──────────────────────────────────────
-@at-root [data-theme="dark"] .notification-panel {
-  background: var(--app-bg);
+@at-root body.dark-mode .notification-panel {
+  background: var(--bg-app);
   border-left-color: rgba(255,255,255,0.1);
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.8);
 
   .panel-header {
-    background: var(--app-card-bg);
+    background: var(--bg-card);
     border-bottom-color: rgba(255,255,255,0.1);
   }
 
-  .panel-title { color: var(--app-text); }
+  .panel-title { color: var(--text-primary); }
   .close-btn { 
     background: rgba(255,255,255,0.05); 
     border-color: rgba(255,255,255,0.1); 
-    color: var(--app-text-muted);
-    &:hover { color: var(--app-text); background: rgba(255,255,255,0.1); }
+    color: var(--text-muted);
+    &:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
   }
 
-  .section-label { color: var(--app-text-muted); }
+  .section-label { color: var(--text-muted); }
 
   .notif-item {
     &:hover {
@@ -372,12 +372,12 @@
     }
     &.unread {
       background: rgba(46, 196, 160, 0.1);
-      .notif-title { color: var(--app-text); }
+      .notif-title { color: var(--text-primary); }
     }
   }
 
-  .notif-title { color: var(--app-text); }
-  .notif-time, .notif-message { color: var(--app-text-muted); }
+  .notif-title { color: var(--text-primary); }
+  .notif-time, .notif-message { color: var(--text-muted); }
 
   .action-icon {
     background: rgba(255,255,255,0.05);
@@ -386,14 +386,14 @@
   }
 
   .empty-icon-wrap { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-  .empty-title { color: var(--app-text); }
-  .empty-sub { color: var(--app-text-muted); }
+  .empty-title { color: var(--text-primary); }
+  .empty-sub { color: var(--text-muted); }
 
   .panel-footer { border-top-color: rgba(255,255,255,0.1); }
   .btn-view-all { 
     background: rgba(255,255,255,0.05); 
     border-color: rgba(255,255,255,0.1); 
-    color: var(--app-text-muted);
+    color: var(--text-muted);
     &:hover { color: $teal-primary; border-color: $teal-primary; background: rgba(46, 196, 160, 0.1); }
   }
 }

@@ -5,13 +5,12 @@
     <!-- Top Action Bar -->
     <div class="top-bar">
       <div class="breadcrumbs">
-        <mat-icon class="check-icon">check</mat-icon>
+        <mat-icon class="check-icon" [style.color]="p.color || '#2ec4a0'">circle</mat-icon>
         <span class="root-name">{{ p.name }}</span>
         <mat-icon class="chevron">chevron_right</mat-icon>
-        <span class="item-code">{{ p.code }}</span>
+        <span class="item-code">Details</span>
       </div>
       <div class="actions">
-        <button class="action-btn"><mat-icon>description</mat-icon> Duplicate</button>
         <button class="action-btn"><mat-icon>more_horiz</mat-icon></button>
         <button class="close-btn" (click)="close()"><mat-icon>close</mat-icon></button>
       </div>
@@ -25,88 +24,75 @@
 
     <!-- Meta Grid -->
     <div class="meta-grid">
+      <!-- Owner Name -->
       <div class="meta-item">
         <div class="meta-label">
-          <mat-icon>radio_button_checked</mat-icon> Status
+          <mat-icon>person</mat-icon> Owner
         </div>
         <div class="meta-value">
-          <div class="status-dropdown" *ngIf="!isEditing()">
-            <span class="status-dot"></span>
-            {{ p.status }}
-            <mat-icon>expand_more</mat-icon>
+          <div class="status-dropdown">
+            {{ p.ownerName || 'Unknown Owner' }}
           </div>
-          <select *ngIf="isEditing()" class="edit-select" [(ngModel)]="editData.status">
-            <option value="Active">Active</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-            <option value="Paused">Paused</option>
-          </select>
         </div>
       </div>
 
+      <!-- Assignees / Members -->
       <div class="meta-item">
         <div class="meta-label">
-          <mat-icon>person_outline</mat-icon> Assignees
+          <mat-icon>group</mat-icon> Members ({{ p.memberCount || members().length }})
         </div>
         <div class="meta-value">
           <div class="avatar-group">
-            <img *ngFor="let user of p.assignees" [src]="user.avatar" class="avatar">
-            <div class="add-avatar"><mat-icon>add</mat-icon></div>
+            <img *ngFor="let member of members()" [src]="member.avatar || 'https://i.pravatar.cc/150?u=' + member.id" class="avatar" [title]="member.name || member.userName || 'Member'">
+            <div class="add-avatar-wrapper" *ngIf="isEditing()" style="display:inline-flex; align-items: center; margin-left: 8px;">
+              <select #memberSelect class="edit-select" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; border: 1px dashed var(--border-input);" (change)="addMember(memberSelect.value); memberSelect.value=''">
+                <option value="">+ Add Member</option>
+                <option *ngFor="let user of allUsers()" [value]="user.id">
+                  {{ user.name || user.userName }}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- Created Date -->
       <div class="meta-item">
         <div class="meta-label">
-          <mat-icon>calendar_today</mat-icon> Dates
+          <mat-icon>calendar_today</mat-icon> Created
         </div>
         <div class="meta-value">
-          <div class="date-range" *ngIf="!isEditing()">
-            {{ formatDate(p.startDate) }} - {{ formatDate(p.endDate) }}
-          </div>
-          <div *ngIf="isEditing()" style="display:flex; gap:8px;">
-            <input type="date" class="edit-input" [(ngModel)]="editData.startDate">
-            <input type="date" class="edit-input" [(ngModel)]="editData.endDate">
+          <div class="date-range">
+            {{ formatDate(p.createdAt) }}
           </div>
         </div>
       </div>
 
+      <!-- Tasks Count -->
       <div class="meta-item">
         <div class="meta-label">
-          <mat-icon>flag</mat-icon> Priority
+          <mat-icon>checklist</mat-icon> Tasks
         </div>
         <div class="meta-value">
-          <div class="priority-chip" [class.high]="p.priority === 'High'" *ngIf="!isEditing()">
-            <mat-icon>keyboard_double_arrow_up</mat-icon>
-            {{ p.priority }}
-            <mat-icon>expand_more</mat-icon>
-          </div>
-          <select *ngIf="isEditing()" class="edit-select" [(ngModel)]="editData.priority">
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="meta-item">
-        <div class="meta-label">
-          <mat-icon>label_outline</mat-icon> Tags
-        </div>
-        <div class="meta-value">
-          <div class="tag-list">
-            <span class="tag purple" *ngFor="let tag of p.tags">{{ tag }}</span>
-            <div class="add-tag"><mat-icon>add</mat-icon></div>
+          <div class="priority-chip">
+            {{ p.taskCount || 0 }} Tasks
           </div>
         </div>
       </div>
 
+      <!-- Color -->
       <div class="meta-item">
         <div class="meta-label">
-          <mat-icon>sync_alt</mat-icon> Type
+          <mat-icon>palette</mat-icon> Color
         </div>
         <div class="meta-value">
-           <div class="type-badge">Task <mat-icon>sync</mat-icon> <span>Make Event</span></div>
+          <div class="tag-list" *ngIf="!isEditing()">
+            <span class="tag" [style.background]="p.color || '#2ec4a0'" style="color: white; border: none;">{{ p.color || '#2ec4a0' }}</span>
+          </div>
+          <div *ngIf="isEditing()" style="display:flex; align-items: center; gap: 8px;">
+            <input type="color" class="edit-input" style="padding: 0; width: 40px; height: 35px; border: none; background: transparent; cursor: pointer;" [(ngModel)]="editData.color">
+            <span style="font-size: 13px; color: var(--text-secondary);">Pick a color</span>
+          </div>
         </div>
       </div>
     </div>
@@ -130,42 +116,8 @@
       </div>
 
       <div class="desc-content">
-        <p *ngIf="!isEditing()">{{ p.description }}</p>
-        <textarea *ngIf="isEditing()" class="edit-textarea" [(ngModel)]="editData.description" rows="4"></textarea>
-
-        <div class="requirements">
-          <h3>Key Requirements:</h3>
-          <ul>
-            <li *ngFor="let req of p.keyRequirements">{{ req }}</li>
-          </ul>
-        </div>
-
-        <div class="footer-note">
-          Please refer to the attached moodboard for structural inspiration before finalizing the UI components.
-        </div>
-      </div>
-    </div>
-
-    <!-- Subtasks -->
-    <div class="subtasks-section">
-      <div class="subtasks-header">
-        <div class="subtasks-title">
-          <mat-icon>assignment_turned_in</mat-icon> Subtasks
-        </div>
-        <div class="subtasks-count">{{ p.completedCount }}/{{ p.totalCount }} Completed</div>
-      </div>
-
-      <div class="progress-container">
-        <div class="progress-bar" [style.width.%]="(p.completedCount / p.totalCount) * 100"></div>
-      </div>
-
-      <div class="subtask-list">
-        <div class="subtask-item" *ngFor="let sub of p.subtasks" [class.completed]="sub.completed">
-          <div class="checkbox">
-            <mat-icon *ngIf="sub.completed">check</mat-icon>
-          </div>
-          <span>{{ sub.title }}</span>
-        </div>
+        <p *ngIf="!isEditing()">{{ p.description || 'No description provided.' }}</p>
+        <textarea *ngIf="isEditing()" class="edit-textarea" [(ngModel)]="editData.description" rows="5" placeholder="Add a group description..."></textarea>
       </div>
     </div>
   </div>

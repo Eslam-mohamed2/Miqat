@@ -38,4 +38,8 @@ export class GroupService {
   removeMember(groupId: string, userId: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${groupId}/members/${userId}`);
   }
+
+  getGroupMembers(groupId: string, pageIndex = 0, pageSize = 20): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${groupId}/members?pageIndex=${pageIndex}&pageSize=${pageSize}`);
+  }
 }

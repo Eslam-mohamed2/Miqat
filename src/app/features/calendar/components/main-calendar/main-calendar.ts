@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { TaskService, TaskDto } from '../../../../core/services/task.service';
 import { GroupService } from '../../../../core/services/group.service';
+import { CalendarStateService } from '../../../../core/services/calendar-state.service';
 import { forkJoin } from 'rxjs';
 
 export interface CalendarEvent {
@@ -34,10 +35,10 @@ export interface CalendarDay {
 export class MainCalendar implements OnInit {
   private taskService = inject(TaskService);
   private groupService = inject(GroupService);
+  public calendarState = inject(CalendarStateService);
 
   daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   weeks = signal<CalendarDay[][]>([]);
-  currentMonth = signal(new Date());
   selectedEvent = signal<CalendarEvent | null>(null);
   currentView = signal<'month' | 'week' | 'day'>('month');
 
@@ -63,10 +64,17 @@ export class MainCalendar implements OnInit {
   get currentViewValue() { return this.currentView(); }
   get selectedEventValue() { return this.selectedEvent(); }
   get filteredWeeksValue() { return this.filteredWeeks(); }
-  get currentMonthValue() { return this.currentMonth(); }
+  get currentMonthValue() { return this.calendarState.currentMonth(); }
+
+  constructor() {
+    effect(() => {
+      // Whenever currentMonth changes, refresh the calendar
+      const month = this.calendarState.currentMonth();
+      this.refreshCalendar();
+    });
+  }
 
   ngOnInit() {
-    this.refreshCalendar();
   }
 
   refreshCalendar() {
@@ -85,8 +93,9 @@ export class MainCalendar implements OnInit {
 
   generateCalendar(tasks: TaskDto[], groups: any[]) {
     const today = new Date();
-    const startOfMonth = new Date(this.currentMonth().getFullYear(), this.currentMonth().getMonth(), 1);
-    const endOfMonth = new Date(this.currentMonth().getFullYear(), this.currentMonth().getMonth() + 1, 0);
+    const currentM = this.calendarState.currentMonth();
+    const startOfMonth = new Date(currentM.getFullYear(), currentM.getMonth(), 1);
+    const endOfMonth = new Date(currentM.getFullYear(), currentM.getMonth() + 1, 0);
 
     // Get the first day of the grid (might be in the previous month)
     const startDate = new Date(startOfMonth);
@@ -105,7 +114,7 @@ export class MainCalendar implements OnInit {
             week.push({
                 date: tempDate.getDate(),
                 fullDate: new Date(tempDate),
-                isCurrentMonth: tempDate.getMonth() === this.currentMonth().getMonth(),
+                isCurrentMonth: tempDate.getMonth() === currentM.getMonth(),
                 isToday: tempDate.toDateString() === today.toDateString(),
                 events: tasksForDay.map(t => {
                     const group = groups.find(g => g.id === t.groupId);
@@ -133,18 +142,15 @@ export class MainCalendar implements OnInit {
   }
 
   prevMonth() {
-    this.currentMonth.set(new Date(this.currentMonth().getFullYear(), this.currentMonth().getMonth() - 1, 1));
-    this.refreshCalendar();
+    this.calendarState.prevMonth();
   }
 
   nextMonth() {
-    this.currentMonth.set(new Date(this.currentMonth().getFullYear(), this.currentMonth().getMonth() + 1, 1));
-    this.refreshCalendar();
+    this.calendarState.nextMonth();
   }
 
   setToday() {
-    this.currentMonth.set(new Date());
-    this.refreshCalendar();
+    this.calendarState.setToday();
   }
 
   openTaskDetails(event: CalendarEvent) {

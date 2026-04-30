@@ -78,6 +78,21 @@
       </div>
     </div>
 
+    <!-- Team Members -->
+    <div class="field-group">
+      <label class="field-label">Invite Members</label>
+      <div class="members-list" style="max-height: 120px; overflow-y: auto; border: 1px solid var(--border-input); border-radius: 8px; padding: 8px; background: var(--bg-input);">
+        <label class="member-item" *ngFor="let user of users()" style="display: flex; align-items: center; gap: 8px; padding: 6px; cursor: pointer; border-radius: 4px; transition: background 0.2s;">
+          <input type="checkbox" [checked]="selectedUserIds().includes(user.id)" (change)="toggleUser(user.id)">
+          <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 13px; font-weight: 500;">{{ user.name || user.userName }}</span>
+            <span style="font-size: 11px; color: var(--text-muted);">{{ user.email }}</span>
+          </div>
+        </label>
+        <div *ngIf="users().length === 0" style="padding: 8px; font-size: 12px; color: var(--text-muted); text-align: center;">No users found</div>
+      </div>
+    </div>
+
     <!-- Error -->
     <div class="error-msg" *ngIf="error()">
       <mat-icon>error_outline</mat-icon>
