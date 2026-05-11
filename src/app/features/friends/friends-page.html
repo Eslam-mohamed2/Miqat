@@ -1,0 +1,134 @@
+<div class="settings-container friends-container">
+  <div class="settings-header">
+    <h1>Friends</h1>
+    <div class="header-search">
+      <mat-icon>search</mat-icon>
+      <input type="text" placeholder="Search users..." (input)="onSearch($event)">
+    </div>
+  </div>
+
+  <div class="settings-content">
+    <!-- Sidebar -->
+    <div class="settings-sidebar">
+      <div class="sidebar-item" [class.active]="activeTab() === 'suggestions'" (click)="setTab('suggestions')">
+        <span>Suggestions</span>
+      </div>
+      <div class="sidebar-item" [class.active]="activeTab() === 'friends'" (click)="setTab('friends')">
+        <span>My Friends</span>
+      </div>
+      <div class="sidebar-item" [class.active]="activeTab() === 'pending'" (click)="setTab('pending')">
+        <span>Pending Requests</span>
+      </div>
+      <div class="sidebar-item" [class.active]="activeTab() === 'sent'" (click)="setTab('sent')">
+        <span>Sent Requests</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="scroll-area p-4">
+        
+        <div class="loading-state text-center" *ngIf="loading()">
+          <span class="spinner-border spinner-border-sm me-2"></span> Loading...
+        </div>
+
+        <!-- Suggestions Tab -->
+        <div class="friends-grid" *ngIf="!loading() && activeTab() === 'suggestions'">
+          <div class="empty-state" *ngIf="suggestionsList().length === 0">
+            <mat-icon>person_search</mat-icon>
+            <p>No suggestions found.</p>
+          </div>
+          <div class="friend-card settings-card" *ngFor="let user of suggestionsList()">
+            <div class="user-info" (click)="viewProfile(user.id)" style="cursor: pointer;">
+              <div class="avatar-circle">
+                 <img *ngIf="user.profilePictureUrl" [src]="user.profilePictureUrl" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                 <span *ngIf="!user.profilePictureUrl">{{ user.fullName?.substring(0,2) || 'U' }}</span>
+              </div>
+              <div class="user-details">
+                <div class="name">{{ user.fullName }}</div>
+                <div class="text-muted small">{{ user.country || 'Unknown Location' }}</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-save" (click)="sendRequest(user.id)" [disabled]="user.requestSent" [style.opacity]="user.requestSent ? 0.7 : 1">
+                {{ user.requestSent ? 'Request Sent ✓' : 'Add Friend' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Friends Tab -->
+        <div class="friends-grid" *ngIf="!loading() && activeTab() === 'friends'">
+          <div class="empty-state" *ngIf="friendsList().length === 0">
+            <mat-icon>group_off</mat-icon>
+            <p>You have no friends yet.</p>
+          </div>
+          <div class="friend-card settings-card" *ngFor="let friend of friendsList()">
+            <div class="user-info" (click)="viewProfile(friend.friendUser?.id)" style="cursor: pointer;">
+              <div class="avatar-circle">
+                 <img *ngIf="friend.friendUser?.profilePictureUrl" [src]="friend.friendUser.profilePictureUrl" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                 <span *ngIf="!friend.friendUser?.profilePictureUrl">{{ friend.friendUser?.fullName?.substring(0,2) || 'FR' }}</span>
+              </div>
+              <div class="user-details">
+                <div class="name">{{ friend.friendUser?.fullName }}</div>
+                <div class="text-muted small">{{ friend.friendUser?.country || 'Unknown Location' }}</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-cancel" (click)="unfriend(friend.id)">Unfriend</button>
+              <button class="btn-cancel text-danger" (click)="blockUser(friend.friendUser?.id)">Block</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending Requests Tab -->
+        <div class="friends-grid" *ngIf="!loading() && activeTab() === 'pending'">
+          <div class="empty-state" *ngIf="pendingList().length === 0">
+            <mat-icon>inbox</mat-icon>
+            <p>No pending requests.</p>
+          </div>
+          <div class="friend-card settings-card" *ngFor="let req of pendingList()">
+            <div class="user-info" (click)="viewProfile(req.sender?.id)" style="cursor: pointer;">
+              <div class="avatar-circle">
+                 <img *ngIf="req.sender?.profilePictureUrl" [src]="req.sender.profilePictureUrl" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                 <span *ngIf="!req.sender?.profilePictureUrl">{{ req.sender?.fullName?.substring(0,2) || 'PR' }}</span>
+              </div>
+              <div class="user-details">
+                <div class="name">{{ req.sender?.fullName }}</div>
+                <div class="text-muted small">{{ req.sender?.country || 'Unknown Location' }}</div>
+              </div>
+            </div>
+            <div class="actions d-flex gap-2">
+              <button class="btn-save" (click)="acceptRequest(req.id)">Accept</button>
+              <button class="btn-cancel" (click)="rejectRequest(req.id)">Reject</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sent Requests Tab -->
+        <div class="friends-grid" *ngIf="!loading() && activeTab() === 'sent'">
+          <div class="empty-state" *ngIf="sentList().length === 0">
+            <mat-icon>send</mat-icon>
+            <p>No sent requests.</p>
+          </div>
+          <div class="friend-card settings-card" *ngFor="let req of sentList()">
+            <div class="user-info" (click)="viewProfile(req.receiver?.id)" style="cursor: pointer;">
+              <div class="avatar-circle">
+                 <img *ngIf="req.receiver?.profilePictureUrl" [src]="req.receiver.profilePictureUrl" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                 <span *ngIf="!req.receiver?.profilePictureUrl">{{ req.receiver?.fullName?.substring(0,2) || 'SR' }}</span>
+              </div>
+              <div class="user-details">
+                <div class="name">{{ req.receiver?.fullName }}</div>
+                <div class="text-muted small">Pending...</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-cancel" (click)="cancelRequest(req.id)">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

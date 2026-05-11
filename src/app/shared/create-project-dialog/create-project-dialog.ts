@@ -75,11 +75,11 @@ export class CreateProjectDialog {
       name: this.name().trim(),
       description: this.description().trim(),
       color: this.selectedColor()
-    }).subscribe({
+    } as any).subscribe({
       next: (group) => {
         const userIds = this.selectedUserIds();
         if (userIds.length > 0 && group.id) {
-          const reqs = userIds.map(id => this.groupService.addMember(group.id, id).pipe(catchError(() => of(null))));
+          const reqs = userIds.map(id => this.groupService.addMember(group.id!, id).pipe(catchError(() => of(null))));
           forkJoin(reqs).subscribe(() => {
             this.loading.set(false);
             this.dialogRef.close(group);

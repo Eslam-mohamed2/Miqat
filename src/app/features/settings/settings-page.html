@@ -1,4 +1,13 @@
-<div class="settings-container">
+<div class="settings-container position-relative">
+  <!-- Toast Notification -->
+  <div class="toast-notification position-fixed top-0 end-0 m-4 p-3 rounded shadow" 
+       [ngClass]="toastError() ? 'bg-danger text-white' : 'bg-success text-white'"
+       style="z-index: 1050; transition: opacity 0.3s;"
+       [style.opacity]="showToastState() ? '1' : '0'"
+       [style.pointer-events]="showToastState() ? 'auto' : 'none'">
+    {{ toastMessage() }}
+  </div>
+
   <div class="settings-header">
     <h1>Settings</h1>
     <div class="header-search">
@@ -23,52 +32,67 @@
     <div class="main-content">
       <div class="scroll-area">
         
+        <!-- Loading State -->
+        <div class="text-center py-5" *ngIf="isLoading()">
+          <span class="spinner-border spinner-border-sm me-2 text-primary"></span> Loading...
+        </div>
+
         <!-- Profile Section -->
-        <div class="settings-card profile-card" *ngIf="activeTab() === 'Profile'">
+        <div class="settings-card profile-card" *ngIf="!isLoading() && activeTab() === 'Profile'">
           <div class="card-header">
             <div class="user-avatar-section">
-              <div class="avatar-large">
-                <img [src]="user().avatarUrl" alt="User Avatar">
+              <div class="avatar-large position-relative d-flex justify-content-center align-items-center bg-secondary text-white fw-bold fs-2">
+                <img *ngIf="user().avatarUrl" [src]="user().avatarUrl" alt="User Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                <span *ngIf="!user().avatarUrl">{{ user().firstName?.charAt(0) }}{{ user().lastName?.charAt(0) }}</span>
+                <div *ngIf="isUploading()" class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.5);">
+                  <span class="spinner-border spinner-border-sm text-white"></span>
+                </div>
               </div>
               <div class="avatar-actions">
-                <button class="btn-upload">Upload new</button>
-                <button class="btn-remove">Remove</button>
-                <p class="avatar-hint">JPG, GIF or PNG. 1MB max.</p>
+                <input type="file" #fileInput (change)="uploadImage($event)" accept=".jpg,.jpeg,.png,.gif" style="display: none;">
+                <button class="btn-upload" (click)="fileInput.click()" [disabled]="isUploading()">Upload new</button>
+                <button class="btn-remove" (click)="removeImage()" [disabled]="isUploading() || !user().avatarUrl">Remove</button>
+                <p class="avatar-hint">JPG, GIF or PNG. 5MB max.</p>
               </div>
             </div>
           </div>
 
-          <div class="form-grid">
-            <div class="form-field">
-              <label>First Name</label>
-              <input type="text" [value]="user().firstName" (input)="updateUserInfo('firstName', $any($event.target).value)">
-            </div>
-            <div class="form-field">
-              <label>Last Name</label>
-              <input type="text" [value]="user().lastName" (input)="updateUserInfo('lastName', $any($event.target).value)">
-            </div>
-            <div class="form-field full">
-              <label>Email Address</label>
-              <div class="input-with-icon">
-                <mat-icon>mail_outline</mat-icon>
-                <input type="email" [value]="user().email" (input)="updateUserInfo('email', $any($event.target).value)">
+          <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>First Name</label>
+                <input type="text" formControlName="firstName">
+              </div>
+              <div class="form-field">
+                <label>Last Name</label>
+                <input type="text" formControlName="lastName">
+              </div>
+              <div class="form-field full">
+                <label>Email Address</label>
+                <div class="input-with-icon">
+                  <mat-icon>mail_outline</mat-icon>
+                  <input type="email" formControlName="email">
+                </div>
+              </div>
+              <div class="form-field full">
+                <label>Bio</label>
+                <textarea rows="4" formControlName="bio"></textarea>
+                <div class="char-count">{{ 275 - (profileForm.get('bio')?.value?.length || 0) }} characters left</div>
               </div>
             </div>
-            <div class="form-field full">
-              <label>Bio</label>
-              <textarea rows="4" [value]="user().bio" (input)="updateUserInfo('bio', $any($event.target).value)"></textarea>
-              <div class="char-count">275 characters left</div>
-            </div>
-          </div>
 
-          <div class="card-footer">
-            <button class="btn-cancel">Cancel</button>
-            <button class="btn-save" (click)="saveProfile()">Save Changes</button>
-          </div>
+            <div class="card-footer">
+              <button type="button" class="btn-cancel" (click)="loadProfile()">Cancel</button>
+              <button type="submit" class="btn-save" [disabled]="profileForm.invalid || isSaving()">
+                <span *ngIf="isSaving()" class="spinner-border spinner-border-sm me-2"></span>
+                Save Changes
+              </button>
+            </div>
+          </form>
         </div>
 
         <!-- Preferences Section (Only shown in Profile/Global) -->
-        <div class="settings-card preferences-card">
+        <div class="settings-card preferences-card" *ngIf="!isLoading() && activeTab() === 'Profile'">
           <h3>Preferences</h3>
           <p class="section-desc">Manage your app experience and display settings.</p>
 
@@ -112,6 +136,87 @@
               <div class="switch-handle"></div>
             </div>
           </div>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div class="settings-card" *ngIf="!isLoading() && activeTab() === 'Notifications'">
+          <h3>Notification Preferences</h3>
+          <p class="section-desc">Choose what we get in touch about and when.</p>
+
+          <div class="pref-group toggle-group mt-4">
+            <div class="toggle-info">
+              <label>Email Notifications</label>
+              <span>Receive updates and alerts via email.</span>
+            </div>
+            <div class="toggle-switch" [class.on]="emailNotifications()" (click)="emailNotifications.set(!emailNotifications())">
+              <div class="switch-handle"></div>
+            </div>
+          </div>
+
+          <div class="pref-group toggle-group mt-4">
+            <div class="toggle-info">
+              <label>Push Notifications</label>
+              <span>Receive real-time alerts on your device.</span>
+            </div>
+            <div class="toggle-switch" [class.on]="pushNotifications()" (click)="pushNotifications.set(!pushNotifications())">
+              <div class="switch-handle"></div>
+            </div>
+          </div>
+
+          <div class="pref-group toggle-group mt-4">
+            <div class="toggle-info">
+              <label>Weekly Summary</label>
+              <span>Get a weekly digest of your tasks and activities.</span>
+            </div>
+            <div class="toggle-switch" [class.on]="weeklySummary()" (click)="weeklySummary.set(!weeklySummary())">
+              <div class="switch-handle"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div class="settings-card" *ngIf="!isLoading() && activeTab() === 'Security'">
+          <h3>Security & Password</h3>
+          <p class="section-desc">Manage your password and security settings.</p>
+
+          <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="mt-4">
+            <div class="form-grid">
+              <div class="form-field full">
+                <label>Current Password</label>
+                <div class="input-with-icon position-relative">
+                  <input [type]="showPassword1 ? 'text' : 'password'" formControlName="currentPassword" class="w-100 p-2 pe-5" style="border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-primary);">
+                  <mat-icon class="position-absolute end-0 top-50 translate-middle-y me-2 text-muted" style="cursor: pointer;" (click)="showPassword1 = !showPassword1">
+                     {{ showPassword1 ? 'visibility_off' : 'visibility' }}
+                  </mat-icon>
+                </div>
+              </div>
+              <div class="form-field full">
+                <label>New Password</label>
+                <div class="input-with-icon position-relative">
+                  <input [type]="showPassword2 ? 'text' : 'password'" formControlName="newPassword" class="w-100 p-2 pe-5" style="border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-primary);">
+                  <mat-icon class="position-absolute end-0 top-50 translate-middle-y me-2 text-muted" style="cursor: pointer;" (click)="showPassword2 = !showPassword2">
+                     {{ showPassword2 ? 'visibility_off' : 'visibility' }}
+                  </mat-icon>
+                </div>
+              </div>
+              <div class="form-field full">
+                <label>Confirm New Password</label>
+                <div class="input-with-icon position-relative">
+                  <input [type]="showPassword3 ? 'text' : 'password'" formControlName="confirmPassword" class="w-100 p-2 pe-5" style="border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-primary);">
+                  <mat-icon class="position-absolute end-0 top-50 translate-middle-y me-2 text-muted" style="cursor: pointer;" (click)="showPassword3 = !showPassword3">
+                     {{ showPassword3 ? 'visibility_off' : 'visibility' }}
+                  </mat-icon>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-footer mt-4">
+              <button type="submit" class="btn-save" [disabled]="passwordForm.invalid || isSaving()">
+                <span *ngIf="isSaving()" class="spinner-border spinner-border-sm me-2"></span>
+                Change Password
+              </button>
+            </div>
+          </form>
         </div>
 
       </div>

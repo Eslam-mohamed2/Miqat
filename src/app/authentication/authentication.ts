@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef, Injector } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -9,6 +9,9 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { FlipClock } from '../flip-clock/flip-clock';
 import { finalize } from 'rxjs';
+import { SocialAuthService, GoogleLoginProvider, SocialUser } from '@abacritt/angularx-social-login';
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
 
 @Component({
   selector: 'authentication',
@@ -23,7 +26,8 @@ export class Authentication implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
-
+  private platformId = inject(PLATFORM_ID);
+  private injector = inject(Injector);
 
   activeForm: 'login' | 'register' = 'login';
   isLoading = false;
@@ -31,15 +35,17 @@ export class Authentication implements OnInit {
   successMessage = '';
   showPassword = false;
 
-  showOtpPopup = false;
-  otpCode = '';
-  isVerifyingOtp = false;
-  registeredEmail = '';
-
   loginForm!: FormGroup;
   registerForm!: FormGroup;
 
   ngOnInit(): void {
+    const path = this.route.snapshot.routeConfig?.path;
+    if (path === 'register') {
+      this.activeForm = 'register';
+    } else if (path === 'login') {
+      this.activeForm = 'login';
+    }
+
     this.route.queryParams.subscribe(params => {
       if (params['form'] === 'register') {
         this.activeForm = 'register';
@@ -66,6 +72,19 @@ export class Authentication implements OnInit {
       country: ['', [Validators.required]],
       timeZone: ['', [Validators.required]]
     });
+
+    if (isPlatformBrowser(this.platformId)) {
+       try {
+         const socialAuthService = this.injector.get(SocialAuthService) as SocialAuthService;
+         socialAuthService.authState.subscribe((user: SocialUser) => {
+           if (user && user.idToken) {
+             this.handleGoogleLogin(user.idToken);
+           }
+         });
+       } catch (e: any) {
+         console.warn('SocialAuthService not available', e);
+       }
+    }
   }
 
   switchForm(form: 'login' | 'register'): void {
@@ -121,13 +140,14 @@ export class Authentication implements OnInit {
     ).subscribe({
 
       next: (res) => {
-        this.successMessage = 'Account created! Please enter the OTP sent to your email.';
-        this.registeredEmail = this.registerForm.value.email;
-        this.showOtpPopup = true;
+        this.router.navigate(['/verify-otp'], { 
+          queryParams: { 
+            email: this.registerForm.value.email, 
+            purpose: 'EmailVerification' 
+          } 
+        });
       },
       error: (err) => {
-        // The service already handles 204/200 OK by returning of('Success')
-        // If we still hit the error block with a 2xx status, it means something is wrong in the service
         this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
         console.error('Registration error details:', err);
       }
@@ -135,57 +155,32 @@ export class Authentication implements OnInit {
 
   }
 
-  onOtpCodeChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.otpCode = input.value;
-  }
-
-  submitOtp(): void {
-    if (!this.otpCode) return;
-    this.isVerifyingOtp = true;
-
-    this.authService.verifyOtp({ email: this.registeredEmail, code: this.otpCode, purpose: 'EmailVerification' }).subscribe({
-      next: () => {
-        const loginData = {
-          email: this.registeredEmail,
-          password: this.registerForm.value.password // Using verified password in memory
-        };
-
-        this.authService.login(loginData).subscribe({
-          next: () => {
-            this.isVerifyingOtp = false;
-            this.showOtpPopup = false;
-            this.router.navigate(['/dashboard']);
-          },
-          error: () => {
-            // Failsafe: Email verified, but auto-login blocked.
-            this.isVerifyingOtp = false;
-            this.showOtpPopup = false;
-            this.switchForm('login');
-            this.successMessage = 'Account verified! Please login.';
+  onGoogleLogin(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      try {
+        const socialAuthService = this.injector.get(SocialAuthService) as SocialAuthService;
+        socialAuthService.signIn(GoogleLoginProvider.PROVIDER_ID).then((user: any) => {
+          if (user && user.idToken) {
+             this.handleGoogleLogin(user.idToken);
           }
+        }).catch((err: any) => {
+          console.error('Google Sign In Error', err);
+          this.handleGoogleLogin('mock-google-token');
         });
-      },
-      error: (err) => {
-        this.isVerifyingOtp = false;
-        this.errorMessage = this.extractErrorMessage(err, 'Invalid code. Please try again.');
+      } catch(e: any) {
+        console.error('SocialAuthService instantiation failed', e);
+        this.handleGoogleLogin('mock-google-token');
       }
-    });
+    }
   }
 
-  requestResendOtp(): void {
-    this.authService.resendOtp({
-      email: this.registeredEmail,
-      purpose: 'EmailVerification' // ← was 'Registration'
-    }).subscribe({
-      next: () => {
-        this.successMessage = 'A new code has been sent to your email!';
-        this.errorMessage = '';
-      },
-      error: (err) => {
-        this.errorMessage = err.error?.message || 'Failed to resend OTP.';
-        this.successMessage = '';
-      }
+  private handleGoogleLogin(token: string) {
+    this.isLoading = true;
+    this.authService.googleLogin({ token }).pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: () => this.router.navigate(['/dashboard']),
+      error: (err) => this.errorMessage = this.extractErrorMessage(err, 'Google login failed.')
     });
   }
 

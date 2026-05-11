@@ -2,7 +2,8 @@ import { Component, ChangeDetectionStrategy, inject, OnInit, ChangeDetectorRef }
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { TaskService, TaskDto } from '../../../core/services/task.service';
+import { TaskService } from '../../../core/services/task.service';
+import { TaskDto } from '../../../models/api.models';
 import { TaskWindowComponent } from '../task-window/task-window';
 
 @Component({

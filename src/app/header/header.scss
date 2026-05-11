@@ -1,67 +1,75 @@
-.navbar-primary{
+.navbar-primary {
   background-color: var(--color-light) !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   z-index: 1000 !important;
 }
-.Custmizable-Header{
+
+.Custmizable-Header {
   width: 90% !important;
   height: 65px !important;
   margin: 0% auto !important;
   position: relative;
   z-index: 5;
 }
-nav .btn{
-padding: 5px 25px !important;
+
+nav .btn {
+  padding: 5px 25px !important;
 }
+
 nav a {
-font-size: 18px !important;
-font-weight: bold !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
 }
-.navbar-nav > a {
-overflow: hidden ;
-margin-right: 15px;
+
+.navbar-nav>a {
+  overflow: hidden;
+  margin-right: 15px;
 }
+
 .navbar-nav a::after {
-content: '';
-position: absolute;
-background-color: var(--color-primary);
-width: 80%;
-height: 3px;;
-top: 90%;
-left: -80%;
-transition: all 1s ease-in-out;
+  content: '';
+  position: absolute;
+  background-color: var(--color-primary);
+  width: 80%;
+  height: 3px;
+  ;
+  top: 90%;
+  left: -80%;
+  transition: all 1s ease-in-out;
 }
-.navbar-nav > a:hover::after {
-left: 10% !important;
+
+.navbar-nav>a:hover::after {
+  left: 10% !important;
 }
+
 .btn-login {
-border: 1px solid var(--color-primary) !important;
-transition: 1s  all;
+  border: 1px solid var(--color-primary) !important;
+  transition: 1s all;
 }
-.btn-login:hover{
-background-color: var(--color-primary) !important;
-color: var(--color-light) !important;
+
+.btn-login:hover {
+  background-color: var(--color-primary) !important;
+  color: var(--color-light) !important;
 }
+
 .btn-join-us {
-border: 1px solid var(--color-primary) !important;
-transition: 1s  all;
+  border: 1px solid var(--color-primary) !important;
+  transition: 1s all;
 }
-.btn-join-us:hover{
-background-color: var(--color-primary) !important;
-color: var(--color-light) !important;
+
+.btn-join-us:hover {
+  background-color: var(--color-primary) !important;
+  color: var(--color-light) !important;
 }
+
 .clock {
   font-family: "Poppins", sans-serif;
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--color-primary);
-  background-color: transparent;
-  padding: 5px 25px !important;
+  color: #ffffff;
+  background-color: var(--color-primary);
+  padding: 10px 25px !important;
 }
-.Authentication-Buttons{
-  /* Removed fixed margin to fix responsive squishing */
-}
-
 
 //? Scss for floating clocks animation
 $clock-count: 10; // must match number of items in clocks[]
@@ -69,55 +77,107 @@ $clock-size: 24px;
 $primary-color: var(--color-primary, #065a57);
 
 .site-header {
-position: relative;
+  position: relative;
 }
 
 // right-side container
 .clock-falls {
-position: absolute;
-top: 0;
-left: -1%;
-height: 100%;
-width: 160px; // slope width (adjust to your layout)
-pointer-events: none;
-z-index: 0;
+  position: absolute;
+  top: 0;
+  left: -1%;
+  height: 100%;
+  width: 160px; // slope width (adjust to your layout)
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
 }
 
 .mini-clock {
-position: absolute;
-display: block;
-width: $clock-size;
-height: $clock-size;
+  position: absolute;
+  display: block;
+  width: $clock-size;
+  height: $clock-size;
 
-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0 2px rgba(0,0,0,0.15));
-}
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.15));
+  }
 }
 
 // floating animation
 @keyframes float-down {
-0%   { transform: translateY(-8px) rotate(0deg); }
-50%  { transform: translateY(8px) rotate(10deg); }
-100% { transform: translateY(-8px) rotate(0deg); }
+  0% {
+    transform: translateY(-8px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(8px) rotate(10deg);
+  }
+
+  100% {
+    transform: translateY(-8px) rotate(0deg);
+  }
 }
 
 // stagger placement diagonallyz
 @for $i from 1 through $clock-count {
-.mini-clock:nth-child(#{$i}) {
-  bottom: calc((100% / #{$clock-count}) * (#{$i - 1})); // distribute vertically
-  right: calc(#{$i * 15px}); // slope toward left
-  animation: float-down 6s ease-in-out infinite;
-  animation-delay: #{$i * 0.5}s;
-  opacity: 0.85;
-  transform: scale(1 - ($i * 0.03)); // smaller as it goes down (mountain effect)
-}
+  .mini-clock:nth-child(#{$i}) {
+    bottom: calc((100% / #{$clock-count}) * (#{$i - 1}));
+    right: calc(#{$i * 15px});
+    animation: float-down 6s ease-in-out infinite;
+    animation-delay: #{$i * 0.5}s;
+    opacity: 0.85;
+    transform: scale(1 - ($i * 0.03));
+  }
 }
 
-// ========== Responsive breakpoints (add overrides below; base styles unchanged) ==========
-@media (max-width: 991.98px) {
+@media (max-width: 1024px) {
+
+  .clock {
+    display: none !important;
+  }
+
+  .clock-falls {
+    position: absolute;
+    top: 0;
+    left: -1%;
+    height: 100%;
+    width: 160px;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .LOGO {
+    width: 15% !important;
+  }
+
+  .nav-link {
+    margin-right: 0px !important;
+  }
+
+}
+
+//done 
+
+@media (max-width: 768px) {
+  .clock-falls {
+    position: absolute;
+    top: -5px;
+    left: 82%;
+    height: 100%;
+    width: 160px;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .LOGO {
+    width: 26% !important;
+  }
+
   .navbar-toggler {
     display: block !important;
     z-index: 10001 !important;
@@ -125,7 +185,8 @@ img {
     pointer-events: auto !important;
     padding: 0.5rem;
     border-radius: 8px;
-    transition: background-color 0.3s;
+    transition: background-color 1.3s;
+    background-color: #fffffff0;
 
     &:active {
       background-color: rgba(255, 255, 255, 0.1);
@@ -141,14 +202,14 @@ img {
     background-color: var(--color-light) !important;
     padding: 1.5rem;
     border-radius: 0 0 16px 16px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     position: absolute;
     top: 65px;
     left: 0;
     width: 100%;
     z-index: 10000;
     display: none;
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 
     &.show {
       display: block !important;
@@ -163,8 +224,8 @@ img {
       color: var(--color-primary) !important;
       padding: 12px 0;
       font-weight: 600 !important;
-      border-bottom: 1px solid rgba(0,0,0,0.03);
-      
+      border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+
       &:last-child {
         border-bottom: none;
       }
@@ -190,9 +251,21 @@ img {
   }
 }
 
+// Done
+
 @media (max-width: 576px) {
-  .w-10 {
-    width: 35% !important;
+  .clock-falls {
+    position: absolute;
+    top: -5px;
+    left: 65%;
+    height: 100%;
+    width: 160px;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .LOGO {
+    width: 40% !important;
   }
 }
-

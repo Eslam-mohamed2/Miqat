@@ -9,7 +9,8 @@ import { UpcomingAgenda } from '../upcoming-agenda/upcoming-agenda';
 import { RecentWorkspaces } from '../recent-workspaces/recent-workspaces';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TaskWindowComponent } from '../task-window/task-window';
-import { TaskService, TaskDto } from '../../../core/services/task.service';
+import { TaskService } from '../../../core/services/task.service';
+import { TaskDto } from '../../../models/api.models';
 import { UserService } from '../../../core/services/user.service';
 import { Observable } from 'rxjs';
 

@@ -12,7 +12,25 @@
       <span class="tooltip">Projects</span>
     </div>
 
-    <div class="action-btn" (click)="uiService.toggleNotifications()" [class.active]="uiService.notificationPanelOpen()">
+    <div class="action-btn" routerLink="/friends" routerLinkActive="active">
+      <mat-icon>people</mat-icon>
+      <div class="badge" *ngIf="(pendingFriendsCount$ | async) as count; else emptyBadgeFriends" [style.display]="count > 0 ? 'flex' : 'none'">
+        {{ count > 9 ? '9+' : count }}
+      </div>
+      <ng-template #emptyBadgeFriends></ng-template>
+      <span class="tooltip">Friends</span>
+    </div>
+
+    <div class="action-btn" routerLink="/mentions" routerLinkActive="active">
+      <mat-icon>alternate_email</mat-icon>
+      <div class="badge" *ngIf="(unreadMentionsCount$ | async) as count; else emptyBadgeMentions" [style.display]="count > 0 ? 'flex' : 'none'">
+        {{ count > 9 ? '9+' : count }}
+      </div>
+      <ng-template #emptyBadgeMentions></ng-template>
+      <span class="tooltip">Mentions</span>
+    </div>
+
+    <div class="action-btn" routerLink="/notifications" routerLinkActive="active">
       <mat-icon>notifications</mat-icon>
       <div class="badge" *ngIf="(unreadCount$ | async) as count; else emptyBadge" [style.display]="count > 0 ? 'flex' : 'none'">
         {{ count > 9 ? '9+' : count }}
@@ -29,11 +47,6 @@
 </div>
 
 <!-- Overlay Panels -->
-<app-notification-panel 
-  [isOpen]="uiService.notificationPanelOpen()" 
-  (closed)="uiService.notificationPanelOpen.set(false)">
-</app-notification-panel>
-
 <app-projects-panel 
   [isOpen]="uiService.projectsPanelOpen()" 
   (closed)="uiService.projectsPanelOpen.set(false)">

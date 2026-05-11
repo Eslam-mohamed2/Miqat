@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { TaskService, TaskDto } from '../../../core/services/task.service';
+import { TaskService } from '../../../core/services/task.service';
+import { TaskDto } from '../../../models/api.models';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -17,7 +18,7 @@ export class UpcomingAgenda implements OnInit {
   dueSoon$!: Observable<TaskDto[]>;
 
   ngOnInit(): void {
-    this.dueSoon$ = this.taskService.getDueSoonTasks();
+    this.dueSoon$ = this.taskService.getDueSoonTasks(7);
   }
   
   getPriorityColor(priority: string | undefined): string {

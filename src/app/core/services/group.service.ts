@@ -1,29 +1,30 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { GroupDto } from '../../models/api.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GroupService {
-  private apiUrl = `${environment.apiUrl}/api/group`;
+  private apiUrl = `${environment.apiUrl}/api/Group`;
 
   constructor(private http: HttpClient) { }
 
-  getGroups(): Observable<any> {
-    return this.http.get(this.apiUrl);
+  getGroups(): Observable<GroupDto[]> {
+    return this.http.get<GroupDto[]>(this.apiUrl);
   }
 
-  getGroupById(id: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/${id}`);
+  createGroup(data: GroupDto): Observable<GroupDto> {
+    return this.http.post<GroupDto>(this.apiUrl, data);
   }
 
-  createGroup(data: any): Observable<any> {
-    return this.http.post(this.apiUrl, data);
+  getGroupById(id: string): Observable<GroupDto> {
+    return this.http.get<GroupDto>(`${this.apiUrl}/${id}`);
   }
 
-  updateGroup(id: string, data: any): Observable<any> {
+  updateGroup(id: string, data: GroupDto): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}`, data);
   }
 
@@ -39,7 +40,8 @@ export class GroupService {
     return this.http.delete(`${this.apiUrl}/${groupId}/members/${userId}`);
   }
 
-  getGroupMembers(groupId: string, pageIndex = 0, pageSize = 20): Observable<any> {
-    return this.http.get(`${this.apiUrl}/${groupId}/members?pageIndex=${pageIndex}&pageSize=${pageSize}`);
+  getMembers(groupId: string, pageIndex: number = 0, pageSize: number = 20): Observable<any> {
+    const params = new HttpParams().set('pageIndex', pageIndex).set('pageSize', pageSize);
+    return this.http.get(`${this.apiUrl}/${groupId}/members`, { params });
   }
 }

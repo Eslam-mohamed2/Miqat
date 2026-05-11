@@ -2,7 +2,8 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { TaskService, TaskDto } from '../../../core/services/task.service';
+import { TaskService } from '../../../core/services/task.service';
+import { TaskDto } from '../../../models/api.models';
 
 @Component({
   selector: 'app-task-window',

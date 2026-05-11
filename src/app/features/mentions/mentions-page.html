@@ -1,0 +1,43 @@
+<div class="mentions-page">
+  <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div class="header-left">
+      <h1 class="greeting">Mentions</h1>
+      <p class="subtitle text-muted">See where you were mentioned in tasks and groups.</p>
+    </div>
+  </div>
+
+  <div class="mentions-container">
+    <div class="loading-state text-center py-5" *ngIf="loading()">
+      <span class="spinner-border spinner-border-sm me-2"></span> Loading...
+    </div>
+
+    <div class="empty-state" *ngIf="!loading() && mentions().length === 0">
+      <div class="empty-icon-wrap">
+        <mat-icon>alternate_email</mat-icon>
+      </div>
+      <p class="empty-title">No mentions yet</p>
+      <p class="empty-sub">When someone mentions you with @, it will appear here.</p>
+    </div>
+
+    <div class="mention-list" *ngIf="!loading() && mentions().length > 0" [@listAnim]="mentions().length">
+      
+      <div class="mention-item" *ngFor="let m of mentions()" [class.unread]="!m.isRead" (click)="markAsReadAndNavigate(m)">
+        <div class="mention-icon" [class.unread-bg]="!m.isRead">
+          <mat-icon>alternate_email</mat-icon>
+        </div>
+
+        <div class="mention-content">
+          <div class="mention-top">
+            <span class="mention-title">
+              <strong>{{ m.mentionedByUserName }}</strong> mentioned you in <strong>{{ m.entityName }}</strong>
+            </span>
+            <span class="mention-time">{{ formatTime(m.createdAt) }}</span>
+          </div>
+        </div>
+
+        <div class="unread-dot" *ngIf="!m.isRead"></div>
+      </div>
+      
+    </div>
+  </div>
+</div>

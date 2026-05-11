@@ -1,0 +1,52 @@
+<div class="whiteboard-container" (mousemove)="dragNote($event)" (mouseup)="endDragNote()">
+  
+  <canvas #canvas
+          (pointerdown)="onPointerDown($event)"
+          (pointermove)="onPointerMove($event)"
+          (pointerup)="onPointerUp($event)"
+          (pointercancel)="onPointerUp($event)">
+  </canvas>
+
+  <!-- Sticky Notes Overlay -->
+  <div class="notes-layer">
+    <div *ngFor="let note of notes()" 
+         class="sticky-note" 
+         [style.left.px]="note.x" 
+         [style.top.px]="note.y"
+         [style.backgroundColor]="note.color"
+         (mousedown)="startDragNote($event, note)">
+      <div class="note-header">
+        <mat-icon (click)="deleteNote(note.id)">close</mat-icon>
+      </div>
+      <textarea [(ngModel)]="note.text" (mousedown)="$event.stopPropagation()"></textarea>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="tool-btn" [class.active]="tool() === 'select'" (click)="setTool('select')">
+      <mat-icon>near_me</mat-icon>
+      <span class="tooltip">Select</span>
+    </div>
+    <div class="tool-btn" [class.active]="tool() === 'pen'" (click)="setTool('pen')">
+      <mat-icon>edit</mat-icon>
+      <span class="tooltip">Pen</span>
+    </div>
+    <div class="tool-btn" [class.active]="tool() === 'eraser'" (click)="setTool('eraser')">
+      <mat-icon>ink_eraser</mat-icon>
+      <span class="tooltip">Eraser</span>
+    </div>
+    <div class="tool-btn" [class.active]="tool() === 'note'" (click)="setTool('note')">
+      <mat-icon>sticky_note_2</mat-icon>
+      <span class="tooltip">Sticky Note</span>
+    </div>
+    
+    <div class="divider"></div>
+
+    <div class="color-btn" style="background: #2ec4a0" [class.active]="currentColor() === '#2ec4a0'" (click)="setColor('#2ec4a0')"></div>
+    <div class="color-btn" style="background: #7c8ef5" [class.active]="currentColor() === '#7c8ef5'" (click)="setColor('#7c8ef5')"></div>
+    <div class="color-btn" style="background: #f4a835" [class.active]="currentColor() === '#f4a835'" (click)="setColor('#f4a835')"></div>
+    <div class="color-btn" style="background: #f4845f" [class.active]="currentColor() === '#f4845f'" (click)="setColor('#f4845f')"></div>
+    <div class="color-btn" style="background: #e879f9" [class.active]="currentColor() === '#e879f9'" (click)="setColor('#e879f9')"></div>
+  </div>
+</div>

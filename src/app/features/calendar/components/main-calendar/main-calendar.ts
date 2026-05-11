@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { TaskService, TaskDto } from '../../../../core/services/task.service';
+import { TaskService } from '../../../../core/services/task.service';
+import { TaskDto } from '../../../../models/api.models';
 import { GroupService } from '../../../../core/services/group.service';
 import { CalendarStateService } from '../../../../core/services/calendar-state.service';
 import { forkJoin } from 'rxjs';

@@ -1,0 +1,47 @@
+@use '../../features/settings/settings-page.scss' as settings;
+
+.profile-container {
+  @extend .settings-container;
+}
+
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 9999;
+  transform: translateY(-100px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  border-left: 4px solid var(--primary);
+
+  &.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  &.error {
+    border-left-color: #ef4444;
+    mat-icon { color: #ef4444; }
+  }
+
+  mat-icon { color: var(--primary); }
+}
+
+.friendship-actions {
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  }
+}

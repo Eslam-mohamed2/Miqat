@@ -90,12 +90,12 @@ export class ProjectDetailsPanel {
     });
 
     // Load Group members
-    this.groupService.getGroupMembers(id).subscribe({
-      next: (data) => {
+    this.groupService.getMembers(id).subscribe({
+      next: (data: any) => {
         // Handle paged response data.items or direct array
         this.members.set(data.items || data || []);
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Failed to load group members', err);
       }
     });
@@ -108,7 +108,7 @@ export class ProjectDetailsPanel {
     this.groupService.addMember(projectId, userId).subscribe({
       next: () => {
         // Refresh members
-        this.groupService.getGroupMembers(projectId).subscribe(data => {
+        this.groupService.getMembers(projectId).subscribe((data: any) => {
           this.members.set(data.items || data || []);
         });
       },

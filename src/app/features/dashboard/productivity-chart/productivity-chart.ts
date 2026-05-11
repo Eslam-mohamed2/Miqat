@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, ViewEncapsulation, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
-import { TaskDto } from '../../../core/services/task.service';
+import { TaskDto } from '../../../models/api.models';
 import { MatIcon } from "@angular/material/icon";
 
 @Component({
