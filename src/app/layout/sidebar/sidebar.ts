@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { GroupService } from '../../core/services/group.service';
 import { UserService } from '../../core/services/user.service';
 import { UiService } from '../../core/services/ui.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -19,6 +20,7 @@ export class Sidebar implements OnInit {
   private groupService = inject(GroupService);
   private userService = inject(UserService);
   public uiService = inject(UiService);
+  private authService = inject(AuthService);
 
   private router = inject(Router);
 
@@ -49,7 +51,6 @@ export class Sidebar implements OnInit {
   }
 
   onLogout() {
-    localStorage.clear();
-    this.router.navigate(['/home']);
+    this.authService.logout().subscribe();
   }
 }

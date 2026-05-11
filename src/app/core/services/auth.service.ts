@@ -46,19 +46,22 @@ export class AuthService {
   logout(data?: RefreshTokenRequest): Observable<any> {
     if (!data && typeof window !== 'undefined') {
       const rt = localStorage.getItem('refreshToken');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (rt) {
-        data = { refreshToken: rt };
+        data = { token: token || '', refreshToken: rt };
       }
     }
 
-    this.clearTokens();
-    this.goToLogin();
+    const request$ = data 
+      ? this.http.post(`${this.apiUrl}/logout`, data).pipe(catchError(() => of(null))) 
+      : of(null);
 
-    if (data) {
-      return this.http.post(`${this.apiUrl}/logout`, data).pipe(catchError(() => of(null)));
-    } else {
-      return of(null);
-    }
+    return request$.pipe(
+      tap(() => {
+        this.clearTokens();
+        this.goToLogin();
+      })
+    );
   }
 
   verifyOtp(data: VerifyOtpDto): Observable<any> {

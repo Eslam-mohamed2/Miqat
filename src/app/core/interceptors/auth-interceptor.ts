@@ -18,7 +18,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/api/Auth/login') && !req.url.includes('/api/Auth/register') && !req.url.includes('/api/Auth/refresh')) {
+      if (error.status === 401 && !req.url.includes('/api/Auth/login') && !req.url.includes('/api/Auth/register') && !req.url.includes('/api/Auth/refresh') && !req.url.includes('/api/Auth/logout')) {
         return handle401Error(req, next, authService, router);
       }
       return throwError(() => error);
@@ -32,8 +32,9 @@ function handle401Error(request: HttpRequest<any>, next: HttpHandlerFn, authServ
     refreshTokenSubject.next(null);
 
     const refreshToken = authService.getRefreshToken();
+    const currentToken = authService.getToken() || '';
     if (refreshToken) {
-      return authService.refresh({ refreshToken }).pipe(
+      return authService.refresh({ token: currentToken, refreshToken }).pipe(
         switchMap((tokenResponse: any) => {
           isRefreshing = false;
           let newToken = null;

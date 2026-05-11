@@ -1,5 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef, Injector } from '@angular/core';
-
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule, FormBuilder,
@@ -9,14 +8,14 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { FlipClock } from '../flip-clock/flip-clock';
 import { finalize } from 'rxjs';
-import { SocialAuthService, GoogleLoginProvider, SocialUser } from '@abacritt/angularx-social-login';
+import { SocialAuthService, GoogleLoginProvider, SocialUser, GoogleSigninButtonModule } from '@abacritt/angularx-social-login';
 import { isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 
 @Component({
   selector: 'authentication',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, FlipClock],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, FlipClock, GoogleSigninButtonModule],
   templateUrl: './authentication.html',
   styleUrl: './authentication.scss'
 })
@@ -27,7 +26,7 @@ export class Authentication implements OnInit {
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
   private platformId = inject(PLATFORM_ID);
-  private injector = inject(Injector);
+  private socialAuthService = inject(SocialAuthService); // ✅ inject directly
 
   activeForm: 'login' | 'register' = 'login';
   isLoading = false;
@@ -62,7 +61,6 @@ export class Authentication implements OnInit {
     this.registerForm = this.fb.group({
       fullName: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      // Improved: Match the hint in the HTML (Ucase, Lcase, Number, Special Char)
       password: ['', [
         Validators.required,
         Validators.minLength(8),
@@ -73,17 +71,13 @@ export class Authentication implements OnInit {
       timeZone: ['', [Validators.required]]
     });
 
+    // ✅ subscribe to authState directly
     if (isPlatformBrowser(this.platformId)) {
-       try {
-         const socialAuthService = this.injector.get(SocialAuthService) as SocialAuthService;
-         socialAuthService.authState.subscribe((user: SocialUser) => {
-           if (user && user.idToken) {
-             this.handleGoogleLogin(user.idToken);
-           }
-         });
-       } catch (e: any) {
-         console.warn('SocialAuthService not available', e);
-       }
+      this.socialAuthService.authState.subscribe((user: SocialUser) => {
+        if (user && user.idToken) {
+          this.handleGoogleLogin(user.idToken);
+        }
+      });
     }
   }
 
@@ -113,15 +107,11 @@ export class Authentication implements OnInit {
         this.cdr.detectChanges();
       })
     ).subscribe({
-
-      next: (res) => {
-        this.router.navigate(['/dashboard']);
-      },
+      next: () => this.router.navigate(['/dashboard']),
       error: (err) => {
         this.errorMessage = this.extractErrorMessage(err, 'Login failed. Please try again.');
       }
     });
-
   }
 
   onRegister(): void {
@@ -138,13 +128,12 @@ export class Authentication implements OnInit {
         this.cdr.detectChanges();
       })
     ).subscribe({
-
-      next: (res) => {
-        this.router.navigate(['/verify-otp'], { 
-          queryParams: { 
-            email: this.registerForm.value.email, 
-            purpose: 'EmailVerification' 
-          } 
+      next: () => {
+        this.router.navigate(['/verify-otp'], {
+          queryParams: {
+            email: this.registerForm.value.email,
+            purpose: 'EmailVerification'
+          }
         });
       },
       error: (err) => {
@@ -152,27 +141,8 @@ export class Authentication implements OnInit {
         console.error('Registration error details:', err);
       }
     });
-
   }
 
-  onGoogleLogin(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      try {
-        const socialAuthService = this.injector.get(SocialAuthService) as SocialAuthService;
-        socialAuthService.signIn(GoogleLoginProvider.PROVIDER_ID).then((user: any) => {
-          if (user && user.idToken) {
-             this.handleGoogleLogin(user.idToken);
-          }
-        }).catch((err: any) => {
-          console.error('Google Sign In Error', err);
-          this.handleGoogleLogin('mock-google-token');
-        });
-      } catch(e: any) {
-        console.error('SocialAuthService instantiation failed', e);
-        this.handleGoogleLogin('mock-google-token');
-      }
-    }
-  }
 
   private handleGoogleLogin(token: string) {
     this.isLoading = true;
@@ -180,7 +150,10 @@ export class Authentication implements OnInit {
       finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
     ).subscribe({
       next: () => this.router.navigate(['/dashboard']),
-      error: (err) => this.errorMessage = this.extractErrorMessage(err, 'Google login failed.')
+      error: (err) => {
+        this.errorMessage = this.extractErrorMessage(err, 'Google login failed.');
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -194,13 +167,11 @@ export class Authentication implements OnInit {
     if (typeof err === 'string') return err;
 
     let message = '';
-    
-    // Handle case where error is an object but contains a message
+
     if (err.error?.message && typeof err.error.message === 'string') {
       message = err.error.message;
     }
 
-    // Handle case where err.error is a JSON string (common in some API configurations)
     if (!message && typeof err.error === 'string' && err.error.trim().startsWith('{')) {
       try {
         const parsed = JSON.parse(err.error);
@@ -214,18 +185,16 @@ export class Authentication implements OnInit {
       message = err.error;
     }
 
-    // Check if it's an HttpErrorResponse with a 409 status specifically
     if (!message && err.status === 409) {
       message = 'Conflict: User might already exist or a policy was violated.';
     }
 
-    // ASP.NET Core Validation errors
     if (!message && err.error?.errors) {
       const errorEntries = Object.entries(err.error.errors);
       if (errorEntries.length > 0) {
         const [key, messages] = errorEntries[0];
         if (Array.isArray(messages) && messages.length > 0) {
-          message = messages[0];
+          message = messages[0] as string;
         }
       }
     }
@@ -235,4 +204,3 @@ export class Authentication implements OnInit {
     return finalMsg;
   }
 }
-

@@ -1,6 +1,6 @@
 export interface LoginRequest { email: string; password?: string; }
 export interface RegisterRequest { fullName: string; email: string; password?: string; phoneNumber: string; country: string; timeZone: string; }
-export interface RefreshTokenRequest { refreshToken: string; }
+export interface RefreshTokenRequest { token?: string; refreshToken: string; }
 export interface VerifyOtpDto { email: string; code: string; purpose: string; }
 export interface ForgotPasswordDto { email: string; }
 export interface ResetPasswordDto { email: string; token: string; newPassword: string; confirmPassword: string; }

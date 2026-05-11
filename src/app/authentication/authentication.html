@@ -17,7 +17,9 @@
             <div class="invalid-feedback">A valid email is required.</div>
           </div>
           <div class="mb-3">
-            <label for="loginPassword" class="form-label fw-medium">Password</label>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label for="loginPassword" class="form-label fw-medium mb-0">Password</label>
+            </div>
             <div class="position-relative">
               <input id="loginPassword" [type]="showPassword ? 'text' : 'password'" formControlName="password" class="form-control rounded-0 pe-5" [ngClass]="{'is-invalid': isFieldInvalid(loginForm, 'password')}" />
               <i class="fa-solid position-absolute top-50 translate-middle-y end-0 me-3" style="cursor: pointer; z-index: 10;" [ngClass]="showPassword ? 'fa-eye-slash text-muted' : 'fa-eye text-muted'" (click)="togglePassword()"></i>
@@ -30,13 +32,15 @@
                {{ isLoading ? 'Processing...' : 'Login' }}
             </button>
           </div>
+          <div class="d-flex justify-content-center mt-1">
+             <a routerLink="/authentication/forgot-password" class="text-decoration-none small text-muted fw-medium">Forgot Password?</a>
+          </div>
           
           <div class="d-flex justify-content-center flex-column align-items-center mt-3">
              <div class="text-muted small mb-2">Or continue with</div>
-             <button type="button" class="btn btn-outline-secondary d-flex align-items-center py-2 px-4 rounded-3 w-100 justify-content-center" (click)="onGoogleLogin()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" width="20" class="me-2" />
-                Sign in with Google
-             </button>
+             <div class="w-100 d-flex justify-content-center">
+               <asl-google-signin-button type="standard" size="large" [width]="300"></asl-google-signin-button>
+             </div>
           </div>
         </form>
 
@@ -90,10 +94,9 @@
 
           <div class="d-flex justify-content-center flex-column align-items-center mt-3">
              <div class="text-muted small mb-2">Or continue with</div>
-             <button type="button" class="btn btn-outline-secondary d-flex align-items-center py-2 px-4 rounded-3 w-100 justify-content-center" (click)="onGoogleLogin()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" width="20" class="me-2" />
-                Sign in with Google
-             </button>
+             <div class="w-100 d-flex justify-content-center">
+               <asl-google-signin-button type="standard" size="large" [width]="300"></asl-google-signin-button>
+             </div>
           </div>
         </form>
         <div class="switch-wrapper mt-2">

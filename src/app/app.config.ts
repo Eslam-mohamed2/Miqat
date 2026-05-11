@@ -5,7 +5,7 @@ import { provideClientHydration, withEventReplay } from '@angular/platform-brows
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
-import { SocialAuthServiceConfig, GoogleLoginProvider } from '@abacritt/angularx-social-login';
+import { SocialAuthServiceConfig, GoogleLoginProvider, SOCIAL_AUTH_CONFIG } from '@abacritt/angularx-social-login';
 import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
@@ -17,19 +17,19 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
     {
-      provide: 'SocialAuthServiceConfig',
+      provide: SOCIAL_AUTH_CONFIG,
       useValue: {
         autoLogin: false,
         providers: [
           {
             id: GoogleLoginProvider.PROVIDER_ID,
             provider: new GoogleLoginProvider(environment.googleClientId, {
-               oneTapEnabled: false,
-               prompt: 'select_account'
+              oneTapEnabled: false,
+              prompt: 'select_account'
             })
           }
         ],
-        onError: (err) => console.error(err)
+        onError: (err: any) => console.error(err)
       } as SocialAuthServiceConfig
     }
   ]
