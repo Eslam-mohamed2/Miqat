@@ -8,14 +8,14 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { FlipClock } from '../flip-clock/flip-clock';
 import { finalize } from 'rxjs';
-import { SocialAuthService, GoogleLoginProvider, SocialUser, GoogleSigninButtonModule } from '@abacritt/angularx-social-login';
+import { SocialAuthService, GoogleLoginProvider, SocialUser, GoogleSigninButtonDirective } from '@abacritt/angularx-social-login';
 import { isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 
 @Component({
   selector: 'authentication',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, FlipClock, GoogleSigninButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, FlipClock, GoogleSigninButtonDirective],
   templateUrl: './authentication.html',
   styleUrl: './authentication.scss'
 })
@@ -143,6 +143,21 @@ export class Authentication implements OnInit {
     });
   }
 
+  onGoogleLogin(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.socialAuthService.signIn(GoogleLoginProvider.PROVIDER_ID)
+        .then((user: SocialUser) => {
+          if (user && user.idToken) {
+            this.handleGoogleLogin(user.idToken);
+          }
+        })
+        .catch((err: any) => {
+          console.error('Google Sign In Error', err);
+          this.errorMessage = 'Google sign-in failed. Please try again.';
+          this.cdr.detectChanges();
+        });
+    }
+  }
 
   private handleGoogleLogin(token: string) {
     this.isLoading = true;
