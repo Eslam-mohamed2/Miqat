@@ -137,7 +137,10 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 28px;
-  box-shadow: 0 20px 60px rgba(46, 102, 112, 0.15), 0 4px 20px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 20px 60px rgba(46, 102, 112, 0.15),
+    0 4px 20px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   max-width: 780px;
   width: 65%;
   min-width: 520px;
@@ -148,11 +151,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background:
-      linear-gradient(135deg,
-        rgba(46, 102, 112, 0.85) 0%,
-        rgba(58, 122, 132, 0.75) 50%,
-        rgba(46, 102, 112, 0.9) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(46, 102, 112, 0.85) 0%,
+      rgba(58, 122, 132, 0.75) 50%,
+      rgba(46, 102, 112, 0.9) 100%
+    );
     backdrop-filter: blur(20px) saturate(1.4);
     -webkit-backdrop-filter: blur(20px) saturate(1.4);
     color: white;
@@ -167,35 +171,39 @@
 
     // Frosted top-edge highlight
     &::before {
-      content: '';
+      content: "";
       position: absolute;
       top: 0;
       left: 8%;
       right: 8%;
       height: 1px;
-      background: linear-gradient(90deg,
-          transparent,
-          rgba(255, 255, 255, 0.5) 25%,
-          rgba(255, 255, 255, 0.8) 50%,
-          rgba(255, 255, 255, 0.5) 75%,
-          transparent);
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.5) 25%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 255, 255, 0.5) 75%,
+        transparent
+      );
       pointer-events: none;
     }
 
     // Sweeping glass shimmer
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       top: 0;
       left: -75%;
       width: 50%;
       height: 100%;
-      background: linear-gradient(120deg,
-          transparent 0%,
-          rgba(255, 255, 255, 0.08) 40%,
-          rgba(255, 255, 255, 0.18) 50%,
-          rgba(255, 255, 255, 0.08) 60%,
-          transparent 100%);
+      background: linear-gradient(
+        120deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 40%,
+        rgba(255, 255, 255, 0.18) 50%,
+        rgba(255, 255, 255, 0.08) 60%,
+        transparent 100%
+      );
       animation: glassShimmer 6s ease-in-out infinite;
       pointer-events: none;
     }
@@ -395,7 +403,6 @@
 .Cusotm-Changes {
   width: fit-content !important;
   margin: 10px auto;
-
 }
 
 .m-Custom {
@@ -404,16 +411,18 @@
 }
 
 .Cards-Bg {
-  background-image: url('../../assets/stacked-waves-haikei.png') !important;
+  background-image: url("../../assets/stacked-waves-haikei.png") !important;
   background-repeat: no-repeat !important;
   background-size: cover !important;
   height: 430px !important;
-  transition: transform 0.9s ease, box-shadow 0.9s ease;
+  transition:
+    transform 0.9s ease,
+    box-shadow 0.9s ease;
 }
 
 .Cards-Bg:hover {
   transform: scale(1.09) !important;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.20);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
   transition-delay: 0s !important;
 }
 
@@ -442,7 +451,7 @@
 }
 
 .Title::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 5px;
   height: 60% !important;
@@ -475,7 +484,7 @@
 .bg-dots {
   padding: 15px 25px;
   border-radius: 25px;
-  background-color: rgb(255 255 255 / 88%)
+  background-color: rgb(255 255 255 / 88%);
 }
 
 .Squares {
@@ -516,10 +525,9 @@
 }
 
 .Card-Bg {
-  background-image: url('../../assets/stacked-waves-haikei.png') !important;
+  background-image: url("../../assets/stacked-waves-haikei.png") !important;
   background-repeat: no-repeat !important;
   background-size: cover !important;
-
 }
 
 .Card-animation {
@@ -642,7 +650,21 @@
   transform: translateX(0);
 }
 
-// ========== Responsive breakpoints (content fit to screen only) ==========
+@media (max-width: 1920px) {
+}
+
+@media (max-width: 1440px) {
+}
+
+@media (max-width: 1366px) {
+}
+
+@media (max-width: 1280px) {
+}
+
+@media (max-width: 1100px) {
+}
+
 @media (max-width: 1024px) {
   main .container-fluid {
     max-width: 100%;
@@ -750,7 +772,10 @@
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 28px;
-    box-shadow: 0 20px 60px rgba(46, 102, 112, 0.15), 0 4px 20px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    box-shadow:
+      0 20px 60px rgba(46, 102, 112, 0.15),
+      0 4px 20px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
     max-width: 780px;
     width: 88%;
     min-width: 520px;
@@ -790,7 +815,6 @@
   .Content-about {
     width: 140% !important;
     padding: 20px !important;
-
   }
 
   .test-sizing {
@@ -799,7 +823,6 @@
 
   .check-marks {
     font-size: 12px !important;
-    ;
   }
 
   .icon {
@@ -808,7 +831,6 @@
     position: relative;
     width: 37px;
     height: 37px;
-
   }
 
   .icon i {
@@ -837,7 +859,35 @@
   }
 }
 
-// done 
+@media (max-width: 990px) {
+  .clock-rain {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 100%;
+    height: 104% !important;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .calendar-container {
+    min-width: 0 !important;
+    width: 60% !important;
+    max-width: 100% !important;
+  }
+
+  .vh-100 {
+    height: 70vh !important;
+  }
+
+  .Content-about {
+    width: 100% !important;
+    padding: 20px !important;
+  }
+}
+
+@media (max-width: 820px) {
+}
 
 @media (max-width: 768px) {
   main .container-fluid {
@@ -1033,7 +1083,6 @@
     left: 71%;
     font-size: 350px !important;
     color: white !important;
-
   }
 
   .container-fluid {
@@ -1067,10 +1116,77 @@
   .Card {
     width: 40% !important;
   }
-
 }
 
-//done 
+// done
+
+@media (max-width: 720px) {
+  .bg-Custom {
+    height: 90vh !important;
+    padding-top: 5rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .clock-rain {
+    position: absolute;
+    top: 58%;
+    left: 0%;
+    width: 100%;
+    height: 100% !important;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .calendar-container {
+    min-width: 0 !important;
+    width: 70% !important;
+    max-width: 100% !important;
+  }
+
+  .Service-Card {
+    padding: 20px 25px !important;
+    width: 52% !important;
+    margin: 20px 10px !important;
+  }
+
+  .icon-Bottoms {
+    width: 90px !important;
+    height: 90px !important;
+    position: relative;
+    margin-bottom: 10px !important;
+    border-radius: 50% !important;
+    margin: auto;
+  }
+
+  .Card p {
+    width: 85%;
+    font-size: 14px !important;
+    margin: auto !important;
+  }
+
+  .Card h4 {
+    font-size: 20px !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .clock-rain[_ngcontent-ng-c1347661038] {
+    position: absolute;
+    top: 65%;
+    left: 0%;
+    width: 100%;
+    height: 100% !important;
+    pointer-events: none;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 640px) {
+}
+
+@media (max-width: 600px) {
+}
 
 @media (max-width: 576px) {
   .container-fluid {
@@ -1088,7 +1204,10 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 28px;
-    box-shadow: 0 20px 60px rgba(46, 102, 112, 0.15), 0 4px 20px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    box-shadow:
+      0 20px 60px rgba(46, 102, 112, 0.15),
+      0 4px 20px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   .content-spacing {
@@ -1145,7 +1264,6 @@
     width: 100% !important;
     padding: 0px 20px !important;
     height: 77vh !important;
-
   }
 
   .clock-rain {
@@ -1156,7 +1274,6 @@
     height: 57% !important;
     pointer-events: none;
     overflow: hidden;
-
   }
 
   .hero-lead-in {
@@ -1172,7 +1289,6 @@
   .fw-normal {
     font-size: 25px !important;
     margin: 10px !important;
-
   }
 
   .imageSizing {
@@ -1271,9 +1387,43 @@
     display: flex;
     flex-direction: column !important;
   }
-
-
-
 }
 
-// done   
+@media (max-width: 540px) {
+}
+
+@media (max-width: 480px) {
+  .clock-rain[_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038] {
+    position: absolute;
+    top: 59%;
+    left: 0%;
+    width: 100%;
+    height: 100% !important;
+    pointer-events: none;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 420px) {
+  .clock-rain[_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038] {
+    position: absolute;
+    top: 55%;
+    left: 0%;
+    width: 100%;
+    height: 100% !important;
+    pointer-events: none;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 380px) {
+  .clock-rain[_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038] {
+    position: absolute;
+    top: 51%;
+    left: 0%;
+    width: 100%;
+    height: 100% !important;
+    pointer-events: none;
+    overflow: hidden;
+  }
+}
