@@ -222,3 +222,42 @@ h4 {
     }
   }
 }
+
+@media (max-width: 1024px) {
+  .sidebar-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 32px;
+    padding: 24px 16px;
+    height: auto;
+    overflow-y: visible;
+  }
+  .mini-calendar-section {
+    width: 280px;
+    flex-shrink: 0;
+  }
+  .calendars-section {
+    width: 220px;
+    flex-shrink: 0;
+  }
+  .schedule-section {
+    flex: 1;
+    min-width: 280px;
+  }
+  .divider {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-container {
+    flex-direction: column;
+    gap: 24px;
+  }
+  .mini-calendar-section,
+  .calendars-section,
+  .schedule-section {
+    width: 100%;
+    max-width: none;
+  }
+}

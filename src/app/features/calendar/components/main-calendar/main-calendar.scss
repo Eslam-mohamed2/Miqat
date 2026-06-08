@@ -263,6 +263,22 @@
 
 // Media Query for responsiveness
 @media (max-width: 768px) {
+  .calendar-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .calendar-header-left {
+    justify-content: space-between;
+  }
+
+  .calendar-header-right {
+    justify-content: space-between;
+    gap: 12px;
+  }
+
   .calendar-grid-wrapper {
     overflow-x: hidden;
   }
@@ -278,18 +294,40 @@
     padding: 4px;
     gap: 2px;
   }
-  .events-container {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 2px;
-    justify-content: center;
+
+  // Only turn event capsules into small dots in month-view on mobile
+  .month-view {
+    .events-container {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 2px;
+      justify-content: center;
+    }
+    .event-capsule {
+      width: 6px;
+      height: 6px;
+      padding: 0;
+      font-size: 0;
+      border-radius: 50%;
+    }
   }
-  .event-capsule {
-    width: 6px;
-    height: 6px;
-    padding: 0;
-    font-size: 0;
-    border-radius: 50%;
+}
+
+@media (max-width: 480px) {
+  .month-title {
+    font-size: 1.1rem;
+  }
+  .timezone-selector {
+    display: none;
+  }
+  .view-toggles {
+    width: 100%;
+    justify-content: space-between;
+    .view-btn {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+    }
   }
 }
 

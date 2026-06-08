@@ -109,8 +109,13 @@ export class MainCalendar implements OnInit {
     for (let i = 0; i < 6; i++) {
         const week: CalendarDay[] = [];
         for (let j = 0; j < 7; j++) {
-            const dateStr = tempDate.toISOString().split('T')[0];
-            const tasksForDay = tasks.filter(t => t.dueDate && t.dueDate.startsWith(dateStr));
+            const tasksForDay = tasks.filter(t => {
+                if (!t.dueDate) return false;
+                const d = new Date(t.dueDate);
+                return d.getFullYear() === tempDate.getFullYear() &&
+                       d.getMonth() === tempDate.getMonth() &&
+                       d.getDate() === tempDate.getDate();
+            });
             
             week.push({
                 date: tempDate.getDate(),

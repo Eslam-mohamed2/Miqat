@@ -71,3 +71,11 @@
   .quick-actions-grid { grid-template-columns: 1fr; }
   .right-col { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 600px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}

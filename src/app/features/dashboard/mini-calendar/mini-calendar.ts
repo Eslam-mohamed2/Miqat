@@ -63,12 +63,13 @@ export class MiniCalendar implements OnInit {
 
     // Current month
     for (let i = 1; i <= daysInMonth; i++) {
-      // Create local date string in YYYY-MM-DD format manually to avoid timezone shift
-      const mm = String(month + 1).padStart(2, '0');
-      const dd = String(i).padStart(2, '0');
-      const dateStr = `${year}-${mm}-${dd}`;
-      
-      const dayTasks = this.tasks.filter(t => t.dueDate && t.dueDate.startsWith(dateStr));
+      const dayTasks = this.tasks.filter(t => {
+        if (!t.dueDate) return false;
+        const d = new Date(t.dueDate);
+        return d.getFullYear() === year &&
+               d.getMonth() === month &&
+               d.getDate() === i;
+      });
       
       newGrid.push({
         num: i,

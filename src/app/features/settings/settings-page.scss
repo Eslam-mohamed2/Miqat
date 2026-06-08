@@ -329,3 +329,73 @@
     .switch-handle { left: 24px; }
   }
 }
+
+// ── Responsive Layouts ───────────────────────────────
+@media (max-width: 992px) {
+  .settings-container {
+    padding: 20px 24px;
+  }
+  
+  .settings-content {
+    flex-direction: column;
+    gap: 24px;
+    overflow: visible;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sidebar-item {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+    padding: 8px 12px;
+  }
+
+  .main-content {
+    overflow: visible;
+  }
+
+  .scroll-area {
+    padding-right: 0;
+    overflow-y: visible;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .settings-container {
+    padding: 16px;
+  }
+
+  .settings-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    h1 {
+      font-size: 20px;
+    }
+  }
+
+  .header-search {
+    width: 100%;
+  }
+
+  .settings-sidebar {
+    flex-direction: column;
+  }
+
+  .sidebar-item {
+    width: 100%;
+  }
+}

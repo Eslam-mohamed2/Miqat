@@ -90,7 +90,10 @@ export class Home implements OnInit {
   }
   getEventsForSelected(): CalendarEvent[] {
     if (!this.selectedDate) return [];
-    const key = this.selectedDate.toISOString().split('T')[0];
+    const year = this.selectedDate.getFullYear();
+    const month = String(this.selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(this.selectedDate.getDate()).padStart(2, '0');
+    const key = `${year}-${month}-${day}`;
     return this.events[key] || [];
   }
 
