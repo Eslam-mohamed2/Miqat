@@ -27,6 +27,7 @@ export class Sidebar implements OnInit {
   groups$!: Observable<any[]>;
   user$!: Observable<any>;
   isCollapsed = signal(false);
+  isMobileMenuOpen = signal(false);
 
   navItemsApp = [
     { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
@@ -50,7 +51,16 @@ export class Sidebar implements OnInit {
     this.isCollapsed.set(!this.isCollapsed());
   }
 
+  toggleMobileMenu() {
+    this.isMobileMenuOpen.set(!this.isMobileMenuOpen());
+  }
+
+  closeMobileMenu() {
+    this.isMobileMenuOpen.set(false);
+  }
+
   onLogout() {
+    this.closeMobileMenu();
     this.authService.logout().subscribe();
   }
 }

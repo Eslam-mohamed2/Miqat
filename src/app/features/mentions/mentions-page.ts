@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MentionService } from '../../core/services/mention.service';
+import { UiService } from '../../core/services/ui.service';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 import { Router } from '@angular/router';
 
@@ -9,6 +10,8 @@ export interface Mention {
   id: string;
   mentionedByUserName: string;
   entityName: string;
+  entityType?: number | string;
+  entityId?: string;
   isRead: boolean;
   createdAt: string;
 }
@@ -35,6 +38,7 @@ export interface Mention {
 export class MentionsPage implements OnInit {
   private mentionService = inject(MentionService);
   private router = inject(Router);
+  private uiService = inject(UiService);
 
   mentions = signal<Mention[]>([]);
   loading = signal(true);
@@ -66,8 +70,19 @@ export class MentionsPage implements OnInit {
         list.map(m => m.id === mention.id ? { ...m, isRead: true } : m)
       );
     }
-    // Navigate to the related task/group (placeholder route)
-    // this.router.navigate(['/task', mention.entityId]);
+    this.navigateToMentionTarget(mention);
+  }
+
+  navigateToMentionTarget(mention: Mention) {
+    if (!mention.entityId) return;
+
+    const type = String(mention.entityType ?? '').toLowerCase();
+    if (type === '2' || type === 'group' || type === 'project') {
+      this.uiService.openProjectDetails(mention.entityId);
+      return;
+    }
+
+    this.router.navigate(['/dashboard']);
   }
 
   formatTime(dateStr: string): string {
@@ -84,9 +99,9 @@ export class MentionsPage implements OnInit {
 
   private getMockMentions(): Mention[] {
     return [
-      { id: '1', mentionedByUserName: 'Ahmed', entityName: 'Website Redesign', isRead: false, createdAt: new Date(Date.now() - 5 * 60000).toISOString() },
-      { id: '2', mentionedByUserName: 'Sara', entityName: 'Bug #1042', isRead: false, createdAt: new Date(Date.now() - 30 * 60000).toISOString() },
-      { id: '3', mentionedByUserName: 'Omar', entityName: 'Sprint Planning', isRead: true, createdAt: new Date(Date.now() - 3 * 3600000).toISOString() }
+      { id: '1', mentionedByUserName: 'Ahmed', entityName: 'Website Redesign', entityType: 'project', entityId: '1', isRead: false, createdAt: new Date(Date.now() - 5 * 60000).toISOString() },
+      { id: '2', mentionedByUserName: 'Sara', entityName: 'Bug #1042', entityType: 'task', entityId: '2', isRead: false, createdAt: new Date(Date.now() - 30 * 60000).toISOString() },
+      { id: '3', mentionedByUserName: 'Omar', entityName: 'Sprint Planning', entityType: 'project', entityId: '3', isRead: true, createdAt: new Date(Date.now() - 3 * 3600000).toISOString() }
     ];
   }
 }

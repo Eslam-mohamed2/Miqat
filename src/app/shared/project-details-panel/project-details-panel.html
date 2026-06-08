@@ -75,7 +75,7 @@
         </div>
         <div class="meta-value">
           <div class="priority-chip">
-            {{ p.taskCount || 0 }} Tasks
+            {{ tasks().length || p.taskCount || 0 }} Tasks
           </div>
         </div>
       </div>
@@ -98,6 +98,65 @@
     </div>
 
     <div class="divider"></div>
+
+    <div class="subtasks-section">
+      <div class="subtasks-header">
+        <div class="subtasks-title">
+          <mat-icon>task_alt</mat-icon> Project Tasks
+        </div>
+        <button class="save-btn" type="button" (click)="openTaskDialog()">Add Task</button>
+      </div>
+
+      <div class="subtasks-count">
+        {{ completedTasksCount() }} of {{ tasks().length }} completed ({{ completionPercent() }}%)
+      </div>
+      <div class="progress-container">
+        <div class="progress-bar" [style.width.%]="completionPercent()"></div>
+      </div>
+
+      <div class="loading-line" *ngIf="tasksLoading()">Loading tasks...</div>
+
+      <div class="empty-task-state" *ngIf="!tasksLoading() && tasks().length === 0">
+        No tasks in this project yet.
+      </div>
+
+      <div class="subtask-list" *ngIf="!tasksLoading() && tasks().length > 0">
+        <div class="subtask-item" *ngFor="let task of tasks()" [class.completed]="isTaskCompleted(task)">
+          <div class="checkbox">
+            <mat-icon *ngIf="isTaskCompleted(task)">check</mat-icon>
+          </div>
+          <div class="task-row-content">
+            <span>{{ task.title }}</span>
+            <small>
+              {{ task.assignedToUserName || 'Unassigned' }}
+              <ng-container *ngIf="task.dueDate"> - {{ formatDate(task.dueDate) }}</ng-container>
+            </small>
+          </div>
+          <div class="task-status">{{ task.status || 'Pending' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subtasks-section" *ngIf="memberStats().length > 0">
+      <div class="subtasks-header">
+        <div class="subtasks-title">
+          <mat-icon>leaderboard</mat-icon> Member Completion
+        </div>
+      </div>
+
+      <div class="member-stats-list">
+        <div class="member-stat" *ngFor="let stat of memberStats()">
+          <div class="member-stat-top">
+            <span>{{ stat.name }}</span>
+            <strong>{{ stat.percent }}%</strong>
+          </div>
+          <div class="progress-container compact">
+            <div class="progress-bar" [style.width.%]="stat.percent"></div>
+          </div>
+          <small>{{ stat.completed }} of {{ stat.total }} tasks completed</small>
+        </div>
+      </div>
+    </div>
 
     <!-- Description -->
     <div class="description-section">

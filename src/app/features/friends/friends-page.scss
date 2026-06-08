@@ -87,3 +87,52 @@
     opacity: 0.5;
   }
 }
+
+.friend-error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  border-radius: 8px;
+  background: rgba(220, 53, 69, 0.08);
+  color: #dc3545;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .friends-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .friend-card {
+    align-items: flex-start;
+    flex-direction: column !important;
+    gap: 1rem;
+    padding: 1rem !important;
+
+    .user-info {
+      width: 100%;
+      min-width: 0;
+
+      .user-details {
+        min-width: 0;
+
+        .name,
+        .small {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+    }
+
+    .actions {
+      width: 100%;
+      flex-wrap: wrap;
+
+      button {
+        flex: 1;
+        min-width: 120px;
+      }
+    }
+  }
+}

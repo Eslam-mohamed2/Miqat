@@ -57,6 +57,38 @@
   }
 }
 
+@media (max-width: 640px) {
+  .mentions-page {
+    padding: 1rem;
+  }
+
+  .page-header {
+    align-items: flex-start !important;
+  }
+
+  .greeting {
+    font-size: 1.5rem;
+  }
+
+  .mentions-container {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  .mention-item {
+    align-items: flex-start;
+    padding: 1rem;
+
+    .mention-content {
+      .mention-top {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+    }
+  }
+}
+
 .mention-item {
   display: flex;
   align-items: center;

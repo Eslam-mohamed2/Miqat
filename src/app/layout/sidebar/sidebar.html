@@ -1,4 +1,18 @@
-<div class="sidebar" [ngClass]="{'collapsed': isCollapsed()}">
+<button class="mobile-sidebar-trigger" [class.hidden]="isMobileMenuOpen()" type="button" (click)="toggleMobileMenu()" aria-label="Open navigation menu">
+  <mat-icon>menu</mat-icon>
+  <span>Menu</span>
+</button>
+
+<div class="mobile-sidebar-backdrop" [class.visible]="isMobileMenuOpen()" (click)="closeMobileMenu()"></div>
+
+<div class="sidebar" [ngClass]="{'collapsed': isCollapsed(), 'mobile-open': isMobileMenuOpen()}">
+  <div class="mobile-sheet-header">
+    <span>Navigation</span>
+    <button type="button" (click)="closeMobileMenu()" aria-label="Close navigation menu">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
   <div class="logo-section">
     <div class="d-flex align-items-center w-100 justify-content-center header-wrapper">
       <div class="d-flex align-items-center">
@@ -13,7 +27,7 @@
   <div class="nav-groups">
     <div class="nav-group">
       <div class="nav-label">APPLICATION</div>
-      <div class="nav-item" *ngFor="let item of navItemsApp" routerLinkActive="active" [routerLink]="item.route">
+      <div class="nav-item" *ngFor="let item of navItemsApp" routerLinkActive="active" [routerLink]="item.route" (click)="closeMobileMenu()">
         <mat-icon>{{ item.icon }}</mat-icon>
         <span>{{ item.label }}</span>
       </div>
@@ -25,13 +39,13 @@
         <mat-icon class="label-icon">settings_overscan</mat-icon>
       </div>
 
-      <div class="nav-item" *ngFor="let group of groups" (click)="uiService.openProjectDetails(group.id)">
+      <div class="nav-item" *ngFor="let group of groups" (click)="uiService.openProjectDetails(group.id); closeMobileMenu()">
         <div class="dot" [style.backgroundColor]="group.color || '#2ec4a0'"
           style="width: 8px; height: 8px; border-radius: 50%; margin-right: 8px;"></div>
         <span>{{ group.name }}</span>
       </div>
 
-      <div class="nav-item new-project-btn" (click)="uiService.toggleProjects(true)">
+      <div class="nav-item new-project-btn" (click)="uiService.toggleProjects(true); closeMobileMenu()">
         <mat-icon>add_circle_outline</mat-icon>
         <span>New Project</span>
       </div>
@@ -39,7 +53,7 @@
 
     <div class="nav-group" style="margin-top: 24px">
       <div class="nav-label">OTHERS</div>
-      <div class="nav-item" *ngFor="let item of navItemsOther" routerLinkActive="active" [routerLink]="item.route">
+      <div class="nav-item" *ngFor="let item of navItemsOther" routerLinkActive="active" [routerLink]="item.route" (click)="closeMobileMenu()">
         <mat-icon>{{ item.icon }}</mat-icon>
         <span>{{ item.label }}</span>
       </div>
@@ -57,7 +71,7 @@
       <span>Logout</span>
     </div>
 
-    <div class="user-profile" *ngIf="(user$ | async) as user" [routerLink]="['/settings']">
+    <div class="user-profile" *ngIf="(user$ | async) as user" [routerLink]="['/settings']" (click)="closeMobileMenu()">
       <div class="avatar-placeholder">
         <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" width="100%" height="100%" [style.borderRadius]="'50%'">
       </div>

@@ -2,17 +2,20 @@ import { Component, ChangeDetectionStrategy, inject, signal, effect } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { UiService } from '../../core/services/ui.service';
 import { GroupService } from '../../core/services/group.service';
 import { TaskService } from '../../core/services/task.service';
 import { UserService } from '../../core/services/user.service';
+import { TaskWindowComponent } from '../../features/dashboard/task-window/task-window';
+import { TaskDto } from '../../models/api.models';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-project-details-panel',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule],
+  imports: [CommonModule, MatIconModule, FormsModule, MatDialogModule],
   templateUrl: './project-details-panel.html',
   styleUrl: './project-details-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,11 +45,14 @@ export class ProjectDetailsPanel {
   private groupService = inject(GroupService);
   private taskService = inject(TaskService);
   private userService = inject(UserService);
+  private dialog = inject(MatDialog);
 
   project = signal<any>(null);
   members = signal<any[]>([]);
   allUsers = signal<any[]>([]);
+  tasks = signal<TaskDto[]>([]);
   isLoading = signal(false);
+  tasksLoading = signal(false);
 
   isEditing = signal(false);
   isSaving = signal(false);
@@ -65,6 +71,7 @@ export class ProjectDetailsPanel {
     this.isLoading.set(true);
     this.isEditing.set(false);
     this.members.set([]);
+    this.tasks.set([]);
     
     // Load all users
     this.userService.getAllUsers().subscribe({
@@ -97,6 +104,44 @@ export class ProjectDetailsPanel {
       },
       error: (err: any) => {
         console.error('Failed to load group members', err);
+      }
+    });
+
+    this.loadProjectTasks(id);
+  }
+
+  loadProjectTasks(projectId: string) {
+    this.tasksLoading.set(true);
+    this.taskService.getTasksByGroup(projectId)
+      .pipe(finalize(() => this.tasksLoading.set(false)))
+      .subscribe({
+        next: tasks => this.tasks.set(tasks ?? []),
+        error: err => {
+          console.error('Failed to load project tasks', err);
+          this.tasks.set([]);
+        }
+      });
+  }
+
+  openTaskDialog() {
+    if (!this.project()) return;
+
+    const dialogRef = this.dialog.open(TaskWindowComponent, {
+      width: '600px',
+      maxWidth: '95vw',
+      disableClose: true,
+      panelClass: 'custom-dialog-container',
+      autoFocus: false,
+      data: { groupId: this.project().id }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && this.project()) {
+        this.loadProjectTasks(this.project().id);
+        this.project.update((current: any) => current ? {
+          ...current,
+          taskCount: (current.taskCount || 0) + 1
+        } : current);
       }
     });
   }
@@ -158,5 +203,36 @@ export class ProjectDetailsPanel {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  completedTasksCount(): number {
+    return this.tasks().filter(task => this.isTaskCompleted(task)).length;
+  }
+
+  completionPercent(): number {
+    const total = this.tasks().length;
+    return total ? Math.round((this.completedTasksCount() / total) * 100) : 0;
+  }
+
+  memberStats() {
+    const assigned = new Map<string, { name: string; total: number; completed: number }>();
+
+    for (const task of this.tasks()) {
+      const id = task.assignedToUserId || 'unassigned';
+      const name = task.assignedToUserName || 'Unassigned';
+      const current = assigned.get(id) || { name, total: 0, completed: 0 };
+      current.total += 1;
+      if (this.isTaskCompleted(task)) current.completed += 1;
+      assigned.set(id, current);
+    }
+
+    return Array.from(assigned.values()).map(stat => ({
+      ...stat,
+      percent: stat.total ? Math.round((stat.completed / stat.total) * 100) : 0
+    }));
+  }
+
+  isTaskCompleted(task: TaskDto): boolean {
+    return (task.status || '').toLowerCase() === 'completed';
   }
 }

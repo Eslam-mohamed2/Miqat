@@ -2,6 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
+    "rootDir": "./src",
+    "ignoreDeprecations": "5.0",
     "types": [
       "jasmine"
     ]

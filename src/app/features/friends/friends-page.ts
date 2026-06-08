@@ -27,6 +27,7 @@ export class FriendsPage implements OnInit {
   sentList = signal<any[]>([]);
   
   loading = signal(false);
+  errorMessage = signal('');
 
   searchQuery = new Subject<string>();
   searchText = signal('');
@@ -59,25 +60,26 @@ export class FriendsPage implements OnInit {
 
   loadData() {
     this.loading.set(true);
+    this.errorMessage.set('');
     if (this.activeTab() === 'suggestions') {
       this.friendService.getSuggestions().subscribe({
         next: (data) => { this.suggestionsList.set(data); this.loading.set(false); },
-        error: () => this.loading.set(false)
+        error: () => { this.errorMessage.set('Failed to load suggestions.'); this.loading.set(false); }
       });
     } else if (this.activeTab() === 'friends') {
       this.friendService.getMyFriends().subscribe({
         next: (data) => { this.friendsList.set(data); this.loading.set(false); },
-        error: () => this.loading.set(false)
+        error: () => { this.errorMessage.set('Failed to load friends.'); this.loading.set(false); }
       });
     } else if (this.activeTab() === 'pending') {
       this.friendService.getPendingRequests().subscribe({
         next: (data) => { this.pendingList.set(data); this.loading.set(false); },
-        error: () => this.loading.set(false)
+        error: () => { this.errorMessage.set('Failed to load pending requests.'); this.loading.set(false); }
       });
     } else {
       this.friendService.getSentRequests().subscribe({
         next: (data) => { this.sentList.set(data); this.loading.set(false); },
-        error: () => this.loading.set(false)
+        error: () => { this.errorMessage.set('Failed to load sent requests.'); this.loading.set(false); }
       });
     }
   }
@@ -88,34 +90,44 @@ export class FriendsPage implements OnInit {
   }
 
   sendRequest(userId: string) {
+    if (!userId) return;
+    this.errorMessage.set('');
     this.friendService.sendRequest(userId).subscribe(() => {
        this.suggestionsList.update(list => list.map(u => u.id === userId ? { ...u, requestSent: true } : u));
+    }, () => {
+      this.errorMessage.set('Failed to send friend request.');
     });
   }
 
   acceptRequest(id: string) {
+    if (!id) return;
     this.friendService.acceptRequest(id).subscribe(() => this.loadData());
   }
 
   rejectRequest(id: string) {
+    if (!id) return;
     this.friendService.rejectRequest(id).subscribe(() => this.loadData());
   }
 
   unfriend(id: string) {
+    if (!id) return;
     if(confirm('Are you sure you want to unfriend?')) {
       this.friendService.unfriend(id).subscribe(() => this.loadData());
     }
   }
 
   cancelRequest(id: string) {
+    if (!id) return;
     this.friendService.unfriend(id).subscribe(() => this.loadData());
   }
 
   blockUser(userId: string) {
+    if (!userId) return;
     this.friendService.blockUser(userId).subscribe(() => this.loadData());
   }
 
   viewProfile(userId: string) {
+    if (!userId) return;
     this.router.navigate(['/profile', userId]);
   }
 }

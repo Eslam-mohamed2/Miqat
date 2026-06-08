@@ -334,3 +334,9 @@ html, body {
     border-color: #333;
   }
 }
+
+/* Material dialog override for TaskWindow dialog panel */
+.cdk-overlay-pane.custom-dialog-container .mat-mdc-dialog-surface {
+  border-radius: 20px !important;
+  overflow: hidden;
+}

@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TaskService } from '../../../core/services/task.service';
-import { TaskDto } from '../../../models/api.models';
+import { GroupService } from '../../../core/services/group.service';
+import { UserService } from '../../../core/services/user.service';
+import { GroupDto, TaskDto, UserDto } from '../../../models/api.models';
 
 @Component({
   selector: 'app-task-window',
@@ -15,10 +17,14 @@ import { TaskDto } from '../../../models/api.models';
 export class TaskWindowComponent implements OnInit {
   private fb = inject(FormBuilder);
   private taskService = inject(TaskService);
+  private groupService = inject(GroupService);
+  private userService = inject(UserService);
   private dialogRef = inject(MatDialogRef<TaskWindowComponent>);
   public data = inject(MAT_DIALOG_DATA, { optional: true });
 
   taskForm: FormGroup;
+  groups: GroupDto[] = [];
+  users: UserDto[] = [];
   isLoading = false;
   errorMessage = '';
   isEditMode = false;
@@ -31,11 +37,15 @@ export class TaskWindowComponent implements OnInit {
       status: ['Pending'],
       priority: ['Medium'],
       dueDate: [''],
-      tags: ['']
+      tags: [''],
+      groupId: [''],
+      assignedToUserId: ['']
     });
   }
 
   ngOnInit() {
+    this.loadFormOptions();
+
     if (this.data && this.data.task) {
       this.isEditMode = true;
       this.taskId = this.data.task.id;
@@ -52,7 +62,21 @@ export class TaskWindowComponent implements OnInit {
         ...this.data.task,
         dueDate: formattedDate
       });
+    } else if (this.data?.groupId) {
+      this.taskForm.patchValue({ groupId: this.data.groupId });
     }
+  }
+
+  loadFormOptions() {
+    this.groupService.getGroups().subscribe({
+      next: groups => this.groups = groups ?? [],
+      error: () => this.groups = []
+    });
+
+    this.userService.getAllUsers().subscribe({
+      next: users => this.users = users ?? [],
+      error: () => this.users = []
+    });
   }
 
   onSubmit() {
@@ -64,7 +88,11 @@ export class TaskWindowComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
     
-    const dto: TaskDto = this.taskForm.value;
+    const dto = {
+      ...this.taskForm.value,
+      groupId: this.taskForm.value.groupId || undefined,
+      assignedToUserId: this.taskForm.value.assignedToUserId || undefined
+    } as TaskDto;
     
     if (dto.dueDate) {
       dto.dueDate = new Date(dto.dueDate).toISOString();

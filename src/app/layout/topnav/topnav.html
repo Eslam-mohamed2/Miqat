@@ -5,7 +5,20 @@
   </div>
   
   <div class="right-actions">
-    <button class="btn-quick-add" (click)="onQuickAdd()">+ Quick Add</button>
+    <div class="quick-add-wrap">
+      <button class="btn-quick-add" [class.active]="quickAddMenuOpen()" (click)="onQuickAdd()">+ Quick Add</button>
+
+      <div class="quick-add-menu" *ngIf="quickAddMenuOpen()">
+        <button type="button" class="quick-add-option" (click)="openTaskDialog()">
+          <mat-icon>task_alt</mat-icon>
+          <span>Task</span>
+        </button>
+        <button type="button" class="quick-add-option" (click)="openProjectDialog()">
+          <mat-icon>folder_special</mat-icon>
+          <span>Project</span>
+        </button>
+      </div>
+    </div>
     
     <div class="action-btn" (click)="uiService.toggleProjects()" [class.active]="uiService.projectsPanelOpen()">
       <mat-icon>folder_special</mat-icon>
@@ -45,6 +58,8 @@
     </div>
   </div>
 </div>
+
+<div class="quick-add-backdrop" *ngIf="quickAddMenuOpen()" (click)="closeQuickAddMenu()"></div>
 
 <!-- Overlay Panels -->
 <app-projects-panel 

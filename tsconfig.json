@@ -15,10 +15,7 @@
     "target": "ES2022",
     "module": "esnext",
     "moduleResolution": "bundler",
-    "baseUrl": ".",
-    "paths": {
-      "@angular/ssr": ["./node_modules/@angular/ssr"]
-    }
+    "ignoreDeprecations": "5.0"
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

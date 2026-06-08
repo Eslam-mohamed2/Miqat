@@ -32,6 +32,10 @@
           <span class="spinner-border spinner-border-sm me-2"></span> Loading...
         </div>
 
+        <div class="friend-error" *ngIf="errorMessage()">
+          {{ errorMessage() }}
+        </div>
+
         <!-- Suggestions Tab -->
         <div class="friends-grid" *ngIf="!loading() && activeTab() === 'suggestions'">
           <div class="empty-state" *ngIf="suggestionsList().length === 0">
@@ -51,7 +55,7 @@
             </div>
             <div class="actions">
               <button class="btn-save" (click)="sendRequest(user.id)" [disabled]="user.requestSent" [style.opacity]="user.requestSent ? 0.7 : 1">
-                {{ user.requestSent ? 'Request Sent ✓' : 'Add Friend' }}
+                {{ user.requestSent ? 'Request Sent' : 'Add Friend' }}
               </button>
             </div>
           </div>
