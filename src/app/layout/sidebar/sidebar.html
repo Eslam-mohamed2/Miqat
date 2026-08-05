@@ -107,9 +107,10 @@
       <span>Logout</span>
     </div>
 
-    <div class="user-profile" *ngIf="(user$ | async) as user" [routerLink]="['/settings']" (click)="closeMobileMenu()">
+    <div class="user-profile" *ngIf="currentUser() as user" [routerLink]="['/settings']" (click)="closeMobileMenu()">
       <div class="avatar-placeholder">
-        <img *ngIf="user.profilePictureUrl" [src]="user.profilePictureUrl" width="100%" height="100%" [style.borderRadius]="'50%'">
+        <img *ngIf="user.profilePictureUrl" [src]="user.profilePictureUrl" width="100%" height="100%"
+             referrerpolicy="no-referrer" [style.borderRadius]="'50%'">
       </div>
       <div class="user-info">
         <div class="user-name">{{ displayName(user) }}</div>

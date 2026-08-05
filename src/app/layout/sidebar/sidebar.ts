@@ -47,6 +47,9 @@ export class Sidebar implements OnInit {
 
   width = signal(this.restoreWidth());
   /** Fully hidden, as opposed to collapsed to the icon rail. */
+  /** Shared signal, so an avatar change anywhere lands here too. */
+  readonly currentUser = this.userService.currentUser;
+
   isHidden = signal(false);
   isResizing = signal(false);
 
@@ -73,7 +76,10 @@ export class Sidebar implements OnInit {
     // Both feed `| async`, which rethrows into the template on error — so each
     // stream degrades to an empty value instead of taking the sidebar down.
     this.groups$ = this.groupService.getGroups().pipe(catchError(() => of([])));
-    this.user$ = this.userService.getMe().pipe(catchError(() => of(null)));
+    // Kick off the fetch, but render from the shared signal: a one-shot
+    // observable never sees a later avatar change, which is why the sidebar
+    // kept the old picture after an upload.
+    this.userService.getMe().pipe(catchError(() => of(null))).subscribe();
   }
 
   /** UserDto exposes `fullName`, not `firstName`/`lastName`. */

@@ -71,6 +71,24 @@
   }
 }
 
+// Proof the banner is reading the picture rather than a random gradient.
+.cover-swatches {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  gap: 6px;
+  z-index: 1;
+}
+
+.swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
 .hero-body {
   display: flex;
   align-items: flex-end;

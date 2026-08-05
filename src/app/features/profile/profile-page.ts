@@ -9,6 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { FriendService } from '../../core/services/friend.service';
 import { GroupService } from '../../core/services/group.service';
 import { TaskService } from '../../core/services/task.service';
+import { ImagePaletteService } from '../../core/services/image-palette.service';
 import { MatIconModule } from '@angular/material/icon';
 import { GroupDto, MemberDto, TaskDto, UpdateProfileDto, UserDto } from '../../models/api.models';
 import { apiErrorMessage } from '../../core/http/api-error';
@@ -36,6 +37,7 @@ export class ProfilePage implements OnInit {
   private friendService = inject(FriendService);
   private groupService = inject(GroupService);
   private taskService = inject(TaskService);
+  private palette = inject(ImagePaletteService);
   private fb = inject(FormBuilder);
 
   isMe = signal(false);
@@ -65,8 +67,23 @@ export class ProfilePage implements OnInit {
 
   readonly isFriend = computed(() => this.friendshipStatus() === 'Friends');
 
-  /** A stable cover gradient per person, so a profile always looks the same. */
-  readonly coverStyle = computed(() => {
+  /**
+   * Banner colours sampled from the profile picture, when one can be read.
+   * Null until extraction finishes — or permanently, for an image whose host
+   * sends no CORS headers.
+   */
+  private sampledCover = signal<string | null>(null);
+  /** The palette itself, so the page can show what it picked. */
+  swatches = signal<string[]>([]);
+
+  /**
+   * The banner: the picture's own colours where available, otherwise a stable
+   * per-person gradient. The fallback is derived from the user id so a profile
+   * without a photo still looks like itself every time.
+   */
+  readonly coverStyle = computed(() => this.sampledCover() ?? this.fallbackCover());
+
+  private fallbackCover(): string {
     const seed = this.user()?.id ?? '';
     let hash = 0;
     for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
@@ -75,7 +92,17 @@ export class ProfilePage implements OnInit {
       hsl(${hue} 46% 22%) 0%,
       hsl(${(hue + 38) % 360} 44% 17%) 55%,
       hsl(${(hue + 74) % 360} 40% 14%) 100%)`;
-  });
+  }
+
+  /** Re-samples whenever the displayed person — or their picture — changes. */
+  private async applyPalette(url: string | null | undefined) {
+    this.sampledCover.set(null);
+    this.swatches.set([]);
+    const found = await this.palette.extract(url);
+    if (!found) return;
+    this.sampledCover.set(found.gradient);
+    this.swatches.set([found.dominant, ...found.accents]);
+  }
 
   ngOnInit() {
     this.profileForm = this.fb.group({
@@ -119,6 +146,7 @@ export class ProfilePage implements OnInit {
     this.userService.getMe().subscribe({
       next: (data) => {
         this.user.set(data);
+        this.applyPalette(data.profilePictureUrl);
         this.profileForm.patchValue(data);
         if (data.dateOfBirth) {
            this.profileForm.get('dateOfBirth')?.setValue(data.dateOfBirth.split('T')[0]);
@@ -135,6 +163,7 @@ export class ProfilePage implements OnInit {
     this.userService.getUserById(id).subscribe({
       next: (data) => {
         this.user.set(data);
+        this.applyPalette(data.profilePictureUrl);
         this.loadFriendshipStatus(id);
         this.loadSharedContext(id);
         this.loading.set(false);
@@ -263,10 +292,16 @@ export class ProfilePage implements OnInit {
       if (file.size > 5 * 1024 * 1024) { this.showToast('File too large. Max 5MB', 'error'); return; }
       this.isUploading.set(true);
       this.userService.uploadProfileImage(file).subscribe({
-        next: () => {
+        next: url => {
           this.isUploading.set(false);
-          this.showToast('Profile image updated!');
-          this.loadMyProfile();
+          // The service published it to `currentUser` already; mirror it into
+          // this page's own copy so the header updates without a re-fetch.
+          if (url) {
+            this.user.update(u => (u ? { ...u, profilePictureUrl: url } : u));
+            // Re-colour the banner from the picture just uploaded.
+            this.applyPalette(url);
+          }
+          this.showToast('Profile image updated across the app');
         },
         error: () => {
           this.isUploading.set(false);

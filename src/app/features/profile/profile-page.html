@@ -14,7 +14,12 @@
 
     <!-- ── Cover + identity ────────────────────────────────────────────────── -->
     <header class="profile-hero">
-      <div class="cover" [style.background]="coverStyle()"></div>
+      <div class="cover" [style.background]="coverStyle()">
+        <!-- Shown only when the colours actually came from the picture. -->
+        <div class="cover-swatches" *ngIf="swatches().length" title="Colours sampled from the profile picture">
+          <span class="swatch" *ngFor="let c of swatches()" [style.background]="c"></span>
+        </div>
+      </div>
 
       <div class="hero-body">
         <div class="avatar-wrap">

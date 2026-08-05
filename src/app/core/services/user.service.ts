@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, UpdateProfileDto, UserDto } from '../../models/api.models';
 import { unwrapApi, unwrapApiList } from '../http/api-response';
@@ -79,11 +79,50 @@ export class UserService {
       .pipe(unwrapApiList<UserDto>());
   }
 
-  uploadProfileImage(file: File): Observable<unknown> {
+  /**
+   * Uploads a new profile picture and publishes it to the whole app.
+   *
+   * The new URL is written into `currentUser` here rather than left for the
+   * calling page to re-fetch: the sidebar, the topbar and every avatar read
+   * that signal, so this is what makes the change appear everywhere at once
+   * instead of only on the page that performed the upload.
+   *
+   * Each upload gets a fresh blob name server-side, so the URL always changes
+   * and there is no stale-cache problem to work around.
+   */
+  uploadProfileImage(file: File): Observable<string | null> {
     const formData = new FormData();
     formData.append('file', file);
     return this.http
-      .post<unknown | ApiResponse<unknown>>(`${this.apiUrl}/upload-profile-image`, formData)
-      .pipe(unwrapApi<unknown>());
+      .post<unknown>(`${this.apiUrl}/upload-profile-image`, formData)
+      .pipe(
+        map(response => this.readImageUrl(response)),
+        tap(url => {
+          if (url) this.setProfilePicture(url);
+          // A response without a usable URL still means the upload succeeded,
+          // so fall back to asking the server what it now holds.
+          else this.refreshMe();
+        })
+      );
+  }
+
+  /** Publishes a new avatar URL to every subscriber of `currentUser`. */
+  setProfilePicture(url: string) {
+    this.currentUser.update(current =>
+      current ? { ...current, profilePictureUrl: url } : current);
+  }
+
+  /** Re-reads the signed-in user; safe to call fire-and-forget. */
+  refreshMe(): void {
+    this.getMe().subscribe({ error: () => {} });
+  }
+
+  /** The API answers `{ profileImageUrl }`, but tolerate the usual variations. */
+  private readImageUrl(response: unknown): string | null {
+    const body = (response as { data?: unknown })?.data ?? response;
+    if (typeof body === 'string') return body;
+    const record = body as Record<string, unknown> | null;
+    const url = record?.['profileImageUrl'] ?? record?.['profilePictureUrl'] ?? record?.['url'];
+    return typeof url === 'string' && url ? url : null;
   }
 }

@@ -49,7 +49,12 @@ export class SettingsPage {
   profileForm!: FormGroup;
   passwordForm!: FormGroup;
 
-  user = signal<UserDto | null>(null);
+  /**
+   * The shared copy, so an avatar changed here (or anywhere) is reflected
+   * everywhere the moment it lands. The form still reads its values from the
+   * fetch below — this is only the display source.
+   */
+  readonly user = this.userService.currentUser;
 
   isLoading = signal(true);
   isSaving = signal(false);
@@ -99,8 +104,6 @@ export class SettingsPage {
     this.isLoading.set(true);
     this.userService.getMe().subscribe({
       next: data => {
-        this.user.set(data);
-
         const [firstName = '', ...rest] = (data.fullName ?? '').trim().split(' ');
 
         this.profileForm.reset({
@@ -172,8 +175,9 @@ export class SettingsPage {
     this.userService.uploadProfileImage(file).subscribe({
       next: () => {
         this.isUploading.set(false);
-        this.showToast('Profile picture updated');
-        this.loadProfile();
+        // The service has already published the new URL to `currentUser`, so
+        // there is nothing to re-fetch — every avatar in the app has updated.
+        this.showToast('Profile picture updated across the app');
       },
       error: err => {
         this.isUploading.set(false);
