@@ -1,3 +1,5 @@
+@use '../../../../../styles/tokens' as *;
+
 .sidebar-container {
   display: flex;
   flex-direction: column;
@@ -100,20 +102,29 @@ h4 {
 .calendars-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 
   .section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+  }
 
-    .add-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      &:hover { color: var(--text-primary); }
+  .header-btn {
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      color: var(--text-primary);
+      border-color: var(--text-muted);
     }
   }
 }
@@ -121,33 +132,85 @@ h4 {
 .calendar-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 2px;
 }
 
+// The whole row is the control. Previously this was a <mat-checkbox> plus a
+// separate colour dot pushed to the far right, so the name, the box and the
+// colour were three disconnected things with only the tiny box clickable.
 .calendar-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  margin: 0 -8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
 
-  ::ng-deep .mdc-checkbox {
-    padding: 0;
-    margin-right: 8px;
-    .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
-      border-color: var(--checkbox-color, var(--primary)) !important;
-      background-color: var(--checkbox-color, var(--primary)) !important;
+  &:hover { background: var(--bg-hover); }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+
+  // Filtered-out projects stay readable but clearly inactive.
+  &.off {
+    .cal-name { color: var(--text-muted); }
+    .cal-box {
+      background: transparent;
+      border-color: var(--border);
     }
   }
+}
 
-  .dot-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
+.cal-box {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--cal-color, var(--primary));
+  border: 1.5px solid var(--cal-color, var(--primary));
+  transition: background 0.15s ease, border-color 0.15s ease;
 
-  span {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+    line-height: 13px;
+    color: #fff;
   }
+}
+
+.cal-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-count {
+  flex: 0 0 auto;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
 }
 
 .schedule-section {
@@ -223,7 +286,7 @@ h4 {
   }
 }
 
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   .sidebar-container {
     flex-direction: row;
     flex-wrap: wrap;
@@ -249,7 +312,7 @@ h4 {
   }
 }
 
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   .sidebar-container {
     flex-direction: column;
     gap: 24px;
@@ -260,4 +323,33 @@ h4 {
     width: 100%;
     max-width: none;
   }
+}
+
+// ── Added with the real month grid ──────────────────────────────────────────
+// The grid now carries a date per cell, so "today" is marked on the circle
+// itself and days bleeding in from the neighbouring month are dimmed.
+.day-cell.outside .day-circle {
+  color: var(--text-muted);
+  opacity: 0.45;
+}
+
+.day-circle.today {
+  background: var(--teal-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+.event-day {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--teal-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+// Replaces the empty list that still reserved its full height.
+.empty-hint {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
 }

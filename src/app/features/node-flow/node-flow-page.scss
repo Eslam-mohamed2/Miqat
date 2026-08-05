@@ -1,15 +1,20 @@
+@use '../../../styles/tokens' as *;
+
 .node-flow-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: #181b21;
+  // Fills the shell's content area rather than the viewport. It used to be
+  // absolutely positioned against the page, which laid it over the sidebar and
+  // topnav — that is why you could not navigate away from these pages.
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  background-color: var(--bg-calendar);
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(127, 127, 127, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(127, 127, 127, 0.16) 1px, transparent 1px);
   background-size: 40px 40px;
   overflow: hidden;
+
 
   .edges-layer {
     position: absolute;
@@ -34,11 +39,11 @@
       position: absolute;
       width: 200px;
       min-height: 80px;
-      background: #1e2240;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--icon-bg-board);
+      border: 1px solid var(--border-card);
       border-radius: 12px;
       padding: 12px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--shadow-card);
       pointer-events: auto;
       cursor: grab;
       display: flex;
@@ -51,17 +56,14 @@
       }
 
       &.selected {
-        border-color: #7c8ef5;
+        border-color: var(--teal-primary);
         box-shadow: 0 0 0 2px rgba(124, 142, 245, 0.3);
       }
 
-      &.task {
-        border-top: 4px solid #2ec4a0;
-      }
-
-      &.event {
-        border-top: 4px solid #f4a835;
-      }
+      // Type is already spelled out by the icon and the TASK/EVENT label, so
+      // the accent is free to carry status — the same colours the list and the
+      // kanban use, applied on the left border below.
+      &.event .type-icon { color: var(--orange-accent); }
 
       .node-header {
         display: flex;
@@ -72,27 +74,34 @@
           font-size: 14px;
           width: 14px;
           height: 14px;
-          color: rgba(255, 255, 255, 0.5);
+          // Was rgba(255,255,255,.5) — white text on the light theme's pale node
+          // background, i.e. invisible.
+          color: var(--text-muted);
         }
 
         .type-label {
           font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.5px;
-          color: rgba(255, 255, 255, 0.5);
+          color: var(--text-muted);
           flex-grow: 1;
         }
 
         .close-icon {
+          background: none;
+          border: 0;
+          padding: 0;
+          line-height: 0;
+
           font-size: 16px;
           width: 16px;
           height: 16px;
-          color: rgba(255, 255, 255, 0.3);
+          color: var(--text-muted);
           cursor: pointer;
           transition: color 0.2s;
 
           &:hover {
-            color: #ff4d4f;
+            color: #ef4444;
           }
         }
       }
@@ -102,14 +111,14 @@
           width: 100%;
           background: transparent;
           border: none;
-          color: #fff;
+          color: var(--text-primary);
           font-family: 'Inter', sans-serif;
           font-size: 14px;
           font-weight: 500;
           outline: none;
 
           &:focus {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(127, 127, 127, 0.22);
             border-radius: 4px;
           }
         }
@@ -122,9 +131,10 @@
     bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(30, 34, 64, 0.9);
+    // Was a hardcoded navy that stayed dark in the light theme.
+    background: var(--bg-topbar);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-card);
     border-radius: 12px;
     padding: 10px;
     display: flex;
@@ -136,25 +146,36 @@
     .divider {
       width: 1px;
       height: 24px;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--border-card);
       margin: 0 5px;
     }
 
     .tool-btn {
+      // Real <button>s now, so strip the UA chrome first.
+      background: none;
+      border: 0;
+      padding: 0;
+      font: inherit;
+
+      &:focus-visible {
+        outline: 2px solid var(--teal-primary);
+        outline-offset: 2px;
+      }
+
       width: 40px;
       height: 40px;
       border-radius: 8px;
       display: flex;
       justify-content: center;
       align-items: center;
-      color: #aaa;
+      color: var(--text-secondary);
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #fff;
+        background: rgba(127, 127, 127, 0.22);
+        color: var(--text-primary);
         
         .tooltip {
           opacity: 1;
@@ -164,17 +185,17 @@
 
       &.active {
         background: rgba(124, 142, 245, 0.2);
-        color: #7c8ef5;
+        color: var(--text-active);
       }
 
       &.task-btn.active {
         background: rgba(46, 196, 160, 0.2);
-        color: #2ec4a0;
+        color: var(--teal-primary);
       }
 
       &.event-btn.active {
         background: rgba(244, 168, 53, 0.2);
-        color: #f4a835;
+        color: var(--orange-accent);
       }
 
       .tooltip {
@@ -182,8 +203,8 @@
         top: -35px;
         left: 50%;
         transform: translateY(5px) translateX(-50%);
-        background: #181b21;
-        color: #fff;
+        background: var(--bg-card);
+        color: var(--text-primary);
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 12px;
@@ -194,4 +215,65 @@
       }
     }
   }
+}
+
+// ── Responsive ──────────────────────────────────────────────────────────────
+// The toolbar is centred by transform on desktop; on narrow screens it spans the
+// width instead so its buttons can wrap rather than overflow.
+@include below($bp-tablet) {
+  .node-flow-container .toolbar {
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+}
+
+@include below($bp-phone) {
+  .node-flow-container .toolbar {
+    gap: 4px;
+
+    // The separators cost horizontal room the buttons need more.
+    .divider { display: none; }
+  }
+}
+
+
+// ── Added with the coordinate fixes ─────────────────────────────────────────
+// A left border carrying the task's real status colour, so the board reads the
+// same way the list and the kanban do.
+.flow-node {
+  border-left: 4px solid var(--teal-primary);
+
+  // In link mode the whole node is the target, so say so.
+  &.linkable { cursor: crosshair; }
+
+  .open-hint {
+    position: absolute;
+    right: 10px;
+    bottom: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover .open-hint { opacity: 1; }
+}
+
+.board-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  text-align: center;
 }

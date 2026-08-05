@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,7 +8,7 @@ import { GroupService } from '../../core/services/group.service';
 import { TaskService } from '../../core/services/task.service';
 import { UserService } from '../../core/services/user.service';
 import { TaskWindowComponent } from '../../features/dashboard/task-window/task-window';
-import { TaskDto } from '../../models/api.models';
+import { MemberDto, TaskDto, UserDto } from '../../models/api.models';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { finalize } from 'rxjs/operators';
 
@@ -48,11 +48,20 @@ export class ProjectDetailsPanel {
   private dialog = inject(MatDialog);
 
   project = signal<any>(null);
-  members = signal<any[]>([]);
-  allUsers = signal<any[]>([]);
+  members = signal<MemberDto[]>([]);
+  allUsers = signal<UserDto[]>([]);
   tasks = signal<TaskDto[]>([]);
   isLoading = signal(false);
   tasksLoading = signal(false);
+
+  /**
+   * Only people who are not already in the project, so the picker cannot offer
+   * an add that the API would just reject as a duplicate.
+   */
+  addableUsers = computed(() => {
+    const memberIds = new Set(this.members().map(m => m.userId));
+    return this.allUsers().filter(user => !memberIds.has(user.id));
+  });
 
   isEditing = signal(false);
   isSaving = signal(false);
@@ -97,13 +106,13 @@ export class ProjectDetailsPanel {
     });
 
     // Load Group members
+    // GroupService.getMembers() already normalises the bare-array and paged
+    // `{ items }` shapes, so this just consumes an array.
     this.groupService.getMembers(id).subscribe({
-      next: (data: any) => {
-        // Handle paged response data.items or direct array
-        this.members.set(data.items || data || []);
-      },
-      error: (err: any) => {
+      next: members => this.members.set(members),
+      error: err => {
         console.error('Failed to load group members', err);
+        this.members.set([]);
       }
     });
 
@@ -146,19 +155,61 @@ export class ProjectDetailsPanel {
     });
   }
 
+  /**
+   * Adding a member also sends them a notification — that happens server-side in
+   * GroupService.AddMemberAsync, so nothing extra is needed here.
+   */
   addMember(userId: string) {
     if (!userId || !this.project()) return;
-    
+
     const projectId = this.project().id;
     this.groupService.addMember(projectId, userId).subscribe({
-      next: () => {
-        // Refresh members
-        this.groupService.getMembers(projectId).subscribe((data: any) => {
-          this.members.set(data.items || data || []);
-        });
-      },
+      next: () => this.refreshMembers(projectId),
       error: (err) => console.error('Failed to add member', err)
     });
+  }
+
+  removeMember(userId: string) {
+    if (!userId || !this.project()) return;
+
+    const member = this.members().find(m => m.userId === userId);
+    if (member && !confirm(`Remove ${member.fullName} from this project?`)) return;
+
+    const projectId = this.project().id;
+    const snapshot = this.members();
+    this.members.update(list => list.filter(m => m.userId !== userId));
+
+    this.groupService.removeMember(projectId, userId).subscribe({
+      next: () => this.refreshMembers(projectId),
+      error: (err) => {
+        this.members.set(snapshot);
+        console.error('Failed to remove member', err);
+      }
+    });
+  }
+
+  private refreshMembers(projectId: string) {
+    this.groupService.getMembers(projectId).subscribe({
+      next: members => {
+        this.members.set(members);
+        this.project.update((current: any) =>
+          current ? { ...current, memberCount: members.length } : current);
+      },
+      error: () => { /* keep whatever is on screen */ }
+    });
+  }
+
+  /** First letter of a member's name, for the initials avatar. */
+  memberInitial(name: string): string {
+    return (name || '?').trim().charAt(0).toUpperCase();
+  }
+
+  /** Stable colour per member so an avatar keeps its tint between renders. */
+  memberColor(userId: string): string {
+    const palette = ['#7c8ef5', '#2ec4a0', '#f4a835', '#f4845f', '#ef4444', '#9b6dff'];
+    let hash = 0;
+    for (const char of userId || '') hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    return palette[hash % palette.length];
   }
 
   toggleEdit() {

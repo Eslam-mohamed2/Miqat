@@ -1,0 +1,90 @@
+<section class="thread" [class.compact]="compact">
+
+  <header class="thread-head">
+    <h4>Discussion</h4>
+    <span class="count" *ngIf="comments().length">{{ comments().length }}</span>
+  </header>
+
+  <p class="hint" *ngIf="loading()">Loading discussion…</p>
+  <p class="hint" *ngIf="!loading() && !comments().length">
+    No comments yet — start the discussion, or type <b>&#64;</b> to pull someone in.
+  </p>
+
+  <div class="list" *ngIf="comments().length">
+    <article class="comment-row" *ngFor="let c of comments(); trackBy: trackById">
+      <!-- referrerpolicy is not cosmetic: Google avatar hosts reject requests
+           that carry a Referer they do not recognise, so these load as broken
+           images without it. If one fails anyway, fall back to initials rather
+           than leaving a torn-image glyph in the thread. -->
+      <img *ngIf="c.authorProfilePictureUrl && !avatarFailed(c.authorId); else avatarFallback"
+           [src]="c.authorProfilePictureUrl" [alt]="c.authorName || 'User'" class="avatar"
+           referrerpolicy="no-referrer" (error)="onAvatarError(c.authorId)" />
+      <ng-template #avatarFallback>
+        <span class="avatar initials">{{ initials(c.authorName) }}</span>
+      </ng-template>
+
+      <div class="bubble-wrap">
+        <div class="bubble">
+          <a class="author" [routerLink]="['/profile', c.authorId]">{{ c.authorName || 'Unknown' }}</a>
+          <p class="text"><ng-container
+              *ngFor="let part of parts(c)"><a *ngIf="part.mentionOf; else plain"
+                class="mention" [routerLink]="['/profile', part.mentionOf.userId]"
+                >{{ part.text }}</a><ng-template #plain>{{ part.text }}</ng-template></ng-container></p>
+        </div>
+        <div class="meta">
+          <span>{{ when(c.createdAt) }}</span>
+          <button type="button" class="link-btn" *ngIf="isMine(c)" (click)="remove(c)">Delete</button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Composer ────────────────────────────────────────────────────────── -->
+  <div class="composer">
+    <div class="composer-box">
+      <textarea #composer rows="2" placeholder="Write a comment…  Type @ to mention someone"
+                maxlength="2000" [value]="draft()"
+                (input)="onInput($event)" (click)="onClick($event)"
+                (keydown)="onKeydown($event)" (blur)="closeMenu()"></textarea>
+
+      <!-- Mousedown, not click: blur fires first and would close the menu. -->
+      <ul class="mention-menu" *ngIf="menuOpen()" role="listbox">
+        <li *ngFor="let user of suggestions(); let i = index; trackBy: trackById"
+            role="option" [attr.aria-selected]="i === activeIndex()"
+            [class.active]="i === activeIndex()"
+            (mouseenter)="activeIndex.set(i)"
+            (mousedown)="$event.preventDefault(); choose(user)">
+          <img *ngIf="user.profilePictureUrl && !avatarFailed(user.userId); else menuInitials"
+               [src]="user.profilePictureUrl" [alt]="user.fullName" class="menu-avatar"
+               referrerpolicy="no-referrer" (error)="onAvatarError(user.userId)" />
+          <ng-template #menuInitials>
+            <span class="menu-avatar initials">{{ initials(user.fullName) }}</span>
+          </ng-template>
+          <span class="menu-text">
+            <strong>{{ user.fullName }}</strong>
+            <small>{{ user.relationship }}</small>
+          </span>
+          <span class="menu-tag" *ngIf="!user.hasAccess">needs access</span>
+        </li>
+      </ul>
+    </div>
+
+    <p class="grant-note" *ngIf="grantsAccessTo().length">
+      <mat-icon>lock_open</mat-icon>
+      <span>
+        <ng-container *ngFor="let u of grantsAccessTo(); let last = last"
+          ><b>{{ u.fullName }}</b>{{ last ? '' : ', ' }}</ng-container>
+        {{ grantsAccessTo().length === 1 ? 'will be given' : 'will be given' }} access to this task when you post.
+      </span>
+    </p>
+
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+
+    <div class="composer-actions">
+      <span class="shortcut">Ctrl + Enter to send</span>
+      <button type="button" class="send" [disabled]="posting() || !draft().trim()" (click)="post()">
+        {{ posting() ? 'Posting…' : 'Comment' }}
+      </button>
+    </div>
+  </div>
+</section>

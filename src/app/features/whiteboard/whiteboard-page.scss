@@ -1,13 +1,18 @@
+@use '../../../styles/tokens' as *;
+
 .whiteboard-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: #181b21;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  // Fills the shell's content area rather than the viewport. It used to be
+  // absolutely positioned against the page, which laid it over the sidebar and
+  // topnav — that is why you could not navigate away from these pages.
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  background-color: var(--bg-calendar);
+  background-image: radial-gradient(rgba(127, 127, 127, 0.22) 1px, transparent 1px);
   background-size: 20px 20px;
   overflow: hidden;
+
 
   canvas {
     position: absolute;
@@ -18,6 +23,9 @@
     z-index: 1;
     touch-action: none; // Prevent scrolling on touch devices
     cursor: crosshair;
+
+    // Crosshair implies "you can draw here", which is wrong while selecting.
+    &.select-mode { cursor: default; }
   }
 
   .notes-layer {
@@ -33,7 +41,7 @@
       position: absolute;
       width: 200px;
       height: 200px;
-      background: #f4a835;
+      background: var(--orange-accent);
       border-radius: 8px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       padding: 10px;
@@ -51,6 +59,16 @@
       .note-header {
         display: flex;
         justify-content: flex-end;
+
+        .note-close {
+          display: flex;
+          background: none;
+          border: 0;
+          padding: 0;
+          cursor: pointer;
+          line-height: 0;
+        }
+
         mat-icon {
           font-size: 18px;
           width: 18px;
@@ -83,9 +101,11 @@
     bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(30, 34, 64, 0.9);
+    // Was a hardcoded rgba(30,34,64,.9) navy, which stayed dark in the light
+    // theme. The token follows the platform.
+    background: var(--bg-topbar);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-card);
     border-radius: 12px;
     padding: 10px;
     display: flex;
@@ -97,7 +117,7 @@
     .divider {
       width: 1px;
       height: 24px;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--border-card);
       margin: 0 5px;
     }
 
@@ -108,14 +128,36 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      color: #aaa;
+      color: var(--text-secondary);
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
+      // These are real <button>s now so they are keyboard reachable; the UA's
+      // own background, border and padding have to come off first.
+      background: none;
+      border: 0;
+      padding: 0;
+      font: inherit;
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
+      &.danger:hover {
+        background: rgba(239, 68, 68, 0.18);
+        color: #ef4444;
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--teal-primary);
+        outline-offset: 2px;
+      }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #fff;
+        background: rgba(127, 127, 127, 0.22);
+        color: var(--text-primary);
         
         .tooltip {
           opacity: 1;
@@ -125,7 +167,7 @@
 
       &.active {
         background: rgba(46, 196, 160, 0.2);
-        color: #2ec4a0;
+        color: var(--teal-primary);
       }
 
       .tooltip {
@@ -133,8 +175,8 @@
         top: -35px;
         left: 50%;
         transform: translateY(5px) translateX(-50%);
-        background: #181b21;
-        color: #fff;
+        background: var(--bg-card);
+        color: var(--text-primary);
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 12px;
@@ -145,12 +187,18 @@
       }
     }
 
+    // Sized to sit level with the mat-icon glyphs beside it.
+    .tool-svg {
+      display: block;
+    }
+
     .color-btn {
       width: 24px;
       height: 24px;
       border-radius: 50%;
       cursor: pointer;
       border: 2px solid transparent;
+      padding: 0;
       transition: all 0.2s;
 
       &:hover {
@@ -158,9 +206,35 @@
       }
 
       &.active {
-        border-color: #fff;
+        border-color: var(--text-primary);
         transform: scale(1.2);
       }
     }
+  }
+}
+
+// ── Responsive ──────────────────────────────────────────────────────────────
+// The toolbar is centred by transform on desktop; on narrow screens it spans the
+// width instead so its buttons can wrap rather than overflow.
+@include below($bp-tablet) {
+  .whiteboard-container .toolbar {
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+}
+
+@include below($bp-phone) {
+  .whiteboard-container .toolbar {
+    gap: 4px;
+
+    // The separators cost horizontal room the buttons need more.
+    .divider { display: none; }
   }
 }

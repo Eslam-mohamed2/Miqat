@@ -1,3 +1,5 @@
+@use '../../styles/tokens' as *;
+
 label {
   font-family: "Luckiest Guy";
   font-size: 16px !important;
@@ -216,7 +218,7 @@ input {
   transform-origin: center;
 }
 
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   .flip-clock .time {
     font-size: 140px;
     font-weight: 700;
@@ -247,7 +249,7 @@ input {
 }
 
 /* Fix mobile responsiveness for the Home button and layout */
-@media (max-width: 991.98px) {
+@include below($bp-laptop) {
   .mobile-container {
     width: 70%;
     background-color: #ffffff;
@@ -260,32 +262,10 @@ input {
     padding-top: 20px;
   }
 
-  .custom-desgin[_ngcontent-ng-c809329504] {
-    position: absolute;
-    width: 45px;
-    height: 45px;
-    top: 1 !important;
-    top: 2%;
-    left: 2%;
-    color: white;
-    background-color: white;
-    text-align: center;
-    border-radius: 60px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-      transform: translateX(-50%) translateY(-3px);
-    }
-  }
-
   .auth-container {
     min-height: auto;
     padding: 80px 0;
-    background-image: url(../../assets/stacked-waves-haikei.png) !important;
-    background-size: cover;
+    background: url('../../assets/blob-scene-haikei.png') no-repeat center center/cover !important;
   }
 
   .form-container {
@@ -316,14 +296,10 @@ input {
   }
 }
 
-@media (max-width: 700px) {
-}
 
 /* 600px and below */
-@media (max-width: 600px) {
-}
 
-@media (max-width: 576px) {
+@include below($bp-phone-lg) {
   .custom-desgin {
     position: absolute;
     width: 45px;
@@ -360,7 +336,7 @@ input {
 }
 
 /* 500px and below */
-@media (max-width: 500px) {
+@include below($bp-phone) {
   .vh-100 {
     height: 120vh !important;
   }
@@ -370,7 +346,7 @@ input {
 }
 
 /* 400px and below */
-@media (max-width: 400px) {
+@include below($bp-phone-md) {
   .auth-container {
     min-height: auto;
     padding: 80px 0;
@@ -381,7 +357,7 @@ input {
     height: 130vh !important;
   }
 
-  .mobile-container[_ngcontent-ng-c809329504] {
+  .mobile-container {
     width: 69%;
     background-color: #ffffff;
     border-radius: 33px;
@@ -392,12 +368,10 @@ input {
 }
 
 /* 300px and below */
-@media (max-width: 360px) {
-  .vh-100[_ngcontent-ng-c809329504] {
+@include below($bp-phone-sm) {
+  .vh-100 {
     height: 150vh !important;
   }
 }
 
 /* 200px and below */
-@media (max-width: 200px) {
-}

@@ -40,8 +40,21 @@
     <div class="card-skeleton" *ngFor="let i of [1,2,3]"></div>
   </div>
 
+  <!-- Error State -->
+  <div class="empty-state" *ngIf="!loading() && errorMessage()">
+    <div class="empty-icon-wrap">
+      <mat-icon>cloud_off</mat-icon>
+    </div>
+    <p class="empty-title">Couldn't load projects</p>
+    <p class="empty-sub">{{ errorMessage() }}</p>
+    <button class="btn-create-first" (click)="loadGroups()">
+      <mat-icon>refresh</mat-icon>
+      Try again
+    </button>
+  </div>
+
   <!-- Empty State -->
-  <div class="empty-state" *ngIf="!loading() && filteredGroups().length === 0">
+  <div class="empty-state" *ngIf="!loading() && !errorMessage() && filteredGroups().length === 0">
     <div class="empty-icon-wrap">
       <mat-icon>folder_open</mat-icon>
     </div>
@@ -61,8 +74,8 @@
 
       <!-- Top: Avatar + Status -->
       <div class="card-top">
-        <div class="project-avatar" [style.background]="group.color + '22'" [style.border-color]="group.color + '44'">
-          <span class="initials" [style.color]="group.color">{{ getInitials(group.name) }}</span>
+        <div class="project-avatar" [style.background]="getColor(group) + '22'" [style.border-color]="getColor(group) + '44'">
+          <span class="initials" [style.color]="getColor(group)">{{ getInitials(group.name) }}</span>
         </div>
         <div class="status-chip" [style.color]="getStatusColor(group)" [style.background]="getStatusColor(group) + '18'">
           <div class="status-dot" [style.background]="getStatusColor(group)"></div>
@@ -80,16 +93,16 @@
       <div class="card-stats">
         <div class="stat">
           <mat-icon>group</mat-icon>
-          <span>{{ group.memberCount ?? 0 }} members</span>
+          <span>{{ group.memberCount }} members</span>
         </div>
         <div class="stat">
           <mat-icon>task_alt</mat-icon>
-          <span>{{ group.taskCount ?? 0 }} tasks</span>
+          <span>{{ group.taskCount }} tasks</span>
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="card-footer" [style.border-top-color]="group.color + '33'">
+      <div class="card-footer" [style.border-top-color]="getColor(group) + '33'">
         <div class="card-date">
           <mat-icon>calendar_today</mat-icon>
           <span>{{ group.createdAt | date:'MMM d, y' }}</span>
@@ -105,7 +118,7 @@
       </div>
 
       <!-- Color bar -->
-      <div class="color-bar" [style.background]="group.color"></div>
+      <div class="color-bar" [style.background]="getColor(group)"></div>
     </div>
 
   </div>

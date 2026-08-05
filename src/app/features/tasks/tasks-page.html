@@ -1,0 +1,218 @@
+<div class="tasks-page">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-text">
+      <h1 class="greeting">Tasks</h1>
+      <p class="subtitle">
+        {{ stats().total }} task{{ stats().total === 1 ? '' : 's' }}
+        <span *ngIf="stats().overdue" class="sub-warn"> · {{ stats().overdue }} overdue</span>
+        <span *ngIf="stats().total"> · {{ stats().percent }}% done</span>
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <div class="view-toggle" role="tablist" aria-label="Task view">
+        <button type="button" role="tab" [attr.aria-selected]="view() === 'list'"
+                [class.active]="view() === 'list'" (click)="setView('list')">
+          <mat-icon>view_list</mat-icon><span>List</span>
+        </button>
+        <button type="button" role="tab" [attr.aria-selected]="view() === 'kanban'"
+                [class.active]="view() === 'kanban'" (click)="setView('kanban')">
+          <mat-icon>view_kanban</mat-icon><span>Kanban</span>
+        </button>
+      </div>
+
+      <button type="button" class="btn-new" (click)="openCreate()">
+        <mat-icon>add</mat-icon><span>New Task</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Filters ─────────────────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-field">
+      <mat-icon>search</mat-icon>
+      <input type="search" placeholder="Search tasks, tags…" aria-label="Search tasks"
+             [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+
+    <select aria-label="Filter by priority" [ngModel]="priorityFilter()" (ngModelChange)="priorityFilter.set($event)">
+      <option value="All">All priorities</option>
+      <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+    </select>
+
+    <select aria-label="Filter by project" [ngModel]="groupFilter()" (ngModelChange)="groupFilter.set($event)">
+      <option value="All">All projects</option>
+      <option *ngFor="let g of groups()" [value]="g.id">{{ g.name }}</option>
+    </select>
+
+    <button type="button" class="btn-clear" *ngIf="hasActiveFilters()" (click)="clearFilters()">
+      <mat-icon>close</mat-icon><span>Clear</span>
+    </button>
+  </div>
+
+  <!-- ── Error ───────────────────────────────────────────────────────────── -->
+  <div class="error-banner" *ngIf="errorMessage()" role="alert">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ errorMessage() }}</span>
+    <button type="button" (click)="errorMessage.set('')" aria-label="Dismiss">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- ── Loading ─────────────────────────────────────────────────────────── -->
+  <div class="skeleton-wrap" *ngIf="loading()">
+    <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5]"></div>
+  </div>
+
+  <ng-container *ngIf="!loading()">
+
+    <!-- ── Empty ─────────────────────────────────────────────────────────── -->
+    <div class="empty-state" *ngIf="!filtered().length">
+      <div class="empty-icon-wrap"><mat-icon>task_alt</mat-icon></div>
+      <p class="empty-title">{{ hasActiveFilters() ? 'No tasks match those filters' : 'No tasks yet' }}</p>
+      <p class="empty-sub">
+        {{ hasActiveFilters() ? 'Try clearing the filters to see everything.' : 'Create your first task to get started.' }}
+      </p>
+      <button type="button" class="btn-new" (click)="hasActiveFilters() ? clearFilters() : openCreate()">
+        <mat-icon>{{ hasActiveFilters() ? 'filter_alt_off' : 'add' }}</mat-icon>
+        <span>{{ hasActiveFilters() ? 'Clear filters' : 'New Task' }}</span>
+      </button>
+    </div>
+
+    <!-- ── List view ─────────────────────────────────────────────────────── -->
+    <div class="list-view" *ngIf="filtered().length && view() === 'list'">
+      <div class="table-scroll">
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th scope="col" class="col-title">
+                <button type="button" (click)="sortBy('title')">
+                  Task <mat-icon *ngIf="sortKey() === 'title'">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                </button>
+              </th>
+              <th scope="col">
+                <button type="button" (click)="sortBy('status')">
+                  Status <mat-icon *ngIf="sortKey() === 'status'">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                </button>
+              </th>
+              <th scope="col">
+                <button type="button" (click)="sortBy('priority')">
+                  Priority <mat-icon *ngIf="sortKey() === 'priority'">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                </button>
+              </th>
+              <th scope="col" class="col-due">
+                <button type="button" (click)="sortBy('dueDate')">
+                  Due <mat-icon *ngIf="sortKey() === 'dueDate'">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                </button>
+              </th>
+              <th scope="col" class="col-project">Project</th>
+              <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let task of sorted(); trackBy: trackById" (click)="openTask(task)" tabindex="0"
+                (keydown.enter)="openTask(task)" [class.is-saving]="isSaving(task.id)">
+              <td class="col-title">
+                <span class="task-title">{{ task.title }}</span>
+                <span class="task-desc" *ngIf="task.description">{{ task.description }}</span>
+                <div class="tag-row" *ngIf="tagList(task.tags).length">
+                  <span class="tag" *ngFor="let tag of tagList(task.tags)">{{ tag }}</span>
+                </div>
+              </td>
+              <td>
+                <!-- Doubles as the no-mouse way to change status, so the board is not
+                     the only path to moving a task. -->
+                <select class="status-select" [style.color]="statusColor(task.status)"
+                        [ngModel]="task.status" (ngModelChange)="moveTo(task, $event)"
+                        (click)="$event.stopPropagation()" aria-label="Change status">
+                  <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+                </select>
+              </td>
+              <td>
+                <span class="priority-pill" [style.color]="priorityColor(task.priority)"
+                      [style.background]="priorityColor(task.priority) + '1f'">{{ task.priority }}</span>
+              </td>
+              <td class="col-due">
+                <span class="due" [class.overdue]="isOverdue(task)">
+                  <mat-icon *ngIf="isOverdue(task)">schedule</mat-icon>{{ formatDue(task.dueDate) }}
+                </span>
+              </td>
+              <td class="col-project">
+                <span class="project-name" *ngIf="groupName(task); else noProject">{{ groupName(task) }}</span>
+                <ng-template #noProject><span class="muted">—</span></ng-template>
+              </td>
+              <td class="col-actions">
+                <button type="button" class="icon-btn" (click)="openEdit(task, $event)"
+                        [attr.aria-label]="'Quick edit ' + task.title">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button type="button" class="icon-btn danger" (click)="deleteTask(task, $event)"
+                        [attr.aria-label]="'Delete ' + task.title">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Kanban view ───────────────────────────────────────────────────── -->
+    <div class="kanban-view" *ngIf="filtered().length && view() === 'kanban'">
+      <p class="unknown-note" *ngIf="unknownStatusCount()">
+        {{ unknownStatusCount() }} task(s) have a status outside the five columns and are not shown here.
+        Switch to List view to see them.
+      </p>
+
+      <div class="kanban-board" cdkDropListGroup>
+        <section class="kanban-col" *ngFor="let col of columns()">
+          <header class="col-header" [style.border-top-color]="col.color">
+            <span class="col-dot" [style.background]="col.color"></span>
+            <h2 class="col-title">{{ col.label }}</h2>
+            <span class="col-count">{{ col.tasks.length }}</span>
+          </header>
+
+          <div class="col-body" cdkDropList [cdkDropListData]="col.tasks"
+               (cdkDropListDropped)="onDrop($event, col.value)">
+
+            <article class="task-card" *ngFor="let task of col.tasks; trackBy: trackById"
+                     cdkDrag [cdkDragData]="task" (click)="openTask(task)"
+                     [class.is-saving]="isSaving(task.id)">
+
+              <div class="card-drag-preview" *cdkDragPlaceholder></div>
+
+              <div class="card-top">
+                <span class="priority-bar" [style.background]="priorityColor(task.priority)"></span>
+                <h3 class="card-title">{{ task.title }}</h3>
+                <button type="button" class="icon-btn danger" (click)="deleteTask(task, $event)"
+                        [attr.aria-label]="'Delete ' + task.title">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+
+              <p class="card-desc" *ngIf="task.description">{{ task.description }}</p>
+
+              <div class="tag-row" *ngIf="tagList(task.tags).length">
+                <span class="tag" *ngFor="let tag of tagList(task.tags)">{{ tag }}</span>
+              </div>
+
+              <footer class="card-foot">
+                <span class="due" [class.overdue]="isOverdue(task)">
+                  <mat-icon>event</mat-icon>{{ formatDue(task.dueDate) }}
+                </span>
+                <span class="project-chip" *ngIf="groupName(task)">{{ groupName(task) }}</span>
+              </footer>
+
+              <span class="saving-dot" *ngIf="isSaving(task.id)" aria-label="Saving"></span>
+            </article>
+
+            <p class="col-empty" *ngIf="!col.tasks.length">Drop tasks here</p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

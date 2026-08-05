@@ -1,9 +1,12 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UiService {
+  private router = inject(Router);
+
   notificationPanelOpen = signal(false);
   projectsPanelOpen = signal(false);
   projectDetailsOpen = signal(false);
@@ -23,10 +26,18 @@ export class UiService {
     }
   }
 
+  /**
+   * Opens a project as a full workspace page rather than the old slide-over
+   * panel. A project holds a task table, a team roster and progress — that does
+   * not fit in a 580px drawer.
+   *
+   * Every existing caller (sidebar, projects panel, notification and mention
+   * rows) still calls this, so the navigation stays in one place.
+   */
   openProjectDetails(id: string) {
     this.closeAll();
     this.selectedProjectId.set(id);
-    this.projectDetailsOpen.set(true);
+    this.router.navigate(['/projects', id]);
   }
 
   closeProjectDetails() {

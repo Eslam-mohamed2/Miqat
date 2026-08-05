@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { UserService } from '../../../../core/services/user.service';
 import { MatIconModule } from '@angular/material/icon';
 import { TaskService } from '../../../../core/services/task.service';
 import { TaskDto } from '../../../../models/api.models';
@@ -34,6 +35,28 @@ export interface CalendarDay {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MainCalendar implements OnInit {
+  private userService = inject(UserService);
+
+  /**
+   * The signed-in user's own zone with its current UTC offset — this chip was
+   * hardcoded to "PST (GMT-8)" regardless of who was looking at it. Reading the
+   * shared signal means it also updates when the zone is changed in Settings.
+   */
+  readonly timeZoneLabel = computed(() => {
+    const zone = this.userService.timeZone();
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: zone, timeZoneName: 'shortOffset'
+      }).formatToParts(new Date());
+      const offset = parts.find(part => part.type === 'timeZoneName')?.value ?? '';
+      // "Africa/Cairo" -> "Cairo (GMT+3)"
+      const city = zone.split('/').pop()?.replace(/_/g, ' ') ?? zone;
+      return offset ? `${city} (${offset})` : city;
+    } catch {
+      return zone;
+    }
+  });
+
   private taskService = inject(TaskService);
   private groupService = inject(GroupService);
   public calendarState = inject(CalendarStateService);

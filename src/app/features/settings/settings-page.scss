@@ -1,401 +1,521 @@
 @use '../../../styles/tokens' as *;
 
+// NOTE: profile-page.scss does `@extend .settings-container`, so this container
+// is shared. It used to be `height: 100%` with `overflow: hidden` on the content
+// row, which clipped the profile page instead of letting it scroll — hence the
+// squashed layout there on narrow screens.
 .settings-container {
-  padding: 32px 48px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-app);
+  position: relative;
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+
+  @include below($bp-laptop)    { padding: 1.5rem; }
+  @include below($bp-tablet-sm) { padding: 1rem; }
+  @include below($bp-phone)     { padding: 0.75rem; }
 }
 
+// ── Header ──────────────────────────────────────────────────────────────────
 .settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 1.5rem;
 
   h1 {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 2rem;
+    font-weight: 800;
+    color: $text-primary;
     margin: 0;
-    color: var(--text-primary);
+
+    @include below($bp-tablet-sm) { font-size: 1.5rem; }
+  }
+
+  .page-sub {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: $text-secondary;
   }
 }
 
-.header-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 0 16px;
-  width: 300px;
-  height: 40px;
-
-  mat-icon { font-size: 18px; width: 18px; height: 18px; color: var(--text-muted); }
-  input {
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--text-primary);
-    font-size: 13px;
-    width: 100%;
-  }
-}
-
+// ── Layout ──────────────────────────────────────────────────────────────────
 .settings-content {
-  display: flex;
-  gap: 60px;
-  flex: 1;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+
+  // Below laptop the nav becomes a horizontal strip above the content rather
+  // than a column squeezed against it.
+  @include below($bp-laptop) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
 }
 
-// ── Sidebar ───────────────────────────────────────────
 .settings-sidebar {
-  width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+  position: sticky;
+  top: 1rem;
+
+  @include below($bp-laptop) {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid $border-card;
+    padding-bottom: 2px;
+
+    &::-webkit-scrollbar { display: none; }
+  }
 }
 
 .sidebar-item {
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-radius: $radius-btn;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 10px 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  text-align: left;
+  transition: $transition-std;
+  white-space: nowrap;
 
-  &:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+  mat-icon { font-size: 19px; width: 19px; height: 19px; }
+
+  &:hover { background: $bg-card-hover; color: $text-primary; }
+
   &.active {
-    background: var(--bg-active-nav);
-    color: $teal-primary;
-    font-weight: 600;
+    background: $bg-active-nav;
+    color: $text-active;
+  }
+
+  @include below($bp-laptop) {
+    width: auto;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+
+    &.active {
+      background: transparent;
+      border-bottom-color: $teal-primary;
+    }
   }
 }
 
-// ── Main Content ──────────────────────────────────────
-.main-content {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
+.main-content { min-width: 0; }
 
-.scroll-area {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 20px;
-  padding-bottom: 60px;
-
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-}
-
+// ── Cards ───────────────────────────────────────────────────────────────────
 .settings-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 32px;
-  margin-bottom: 32px;
-  max-width: 800px;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+  padding: 1.5rem;
 
-  h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
-  .section-desc { font-size: 13px; color: var(--text-secondary); margin: 0 0 24px; }
+  & + .settings-card { margin-top: 1rem; }
+
+  @include below($bp-tablet-sm) { padding: 1rem; }
+
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0 0 0.25rem;
+  }
+
+  .section-desc {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin: 0 0 1.25rem;
+  }
 }
 
-// ── Profile Card ──────────────────────────────────────
-.user-avatar-section {
+// ── Identity ────────────────────────────────────────────────────────────────
+.identity-row {
   display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 32px;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid $border-subtle;
+
+  // Stacked and centred on phones; side-by-side leaves neither part enough room.
+  @include below($bp-phone-lg) {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 }
 
 .avatar-large {
-  width: 80px;
-  height: 80px;
+  position: relative;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   overflow: hidden;
+  flex-shrink: 0;
+  background: $bg-card-hover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   img { width: 100%; height: 100%; object-fit: cover; }
+
+  .initials {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: $text-secondary;
+  }
+
+  .avatar-busy {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @include below($bp-phone-lg) { width: 76px; height: 76px; }
+}
+
+.identity-text {
+  flex: 1;
+  min-width: 0;
+
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .muted { color: $text-secondary; font-size: 0.875rem; margin: 2px 0 0; overflow-wrap: anywhere; }
+  .muted.small { font-size: 0.8rem; color: $text-muted; }
 }
 
 .avatar-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
 
-  .btn-upload {
-    padding: 8px 16px;
-    background: var(--bg-active-nav);
-    color: $teal-primary;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    &:hover { filter: brightness(1.1); }
-  }
+  .hint { font-size: 0.78rem; color: $text-muted; }
 
-  .btn-remove {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    &:hover { color: #f4845f; }
-  }
-
-  .avatar-hint { width: 100%; margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
+  @include below($bp-phone-lg) { justify-content: center; }
 }
 
+// ── Forms ───────────────────────────────────────────────────────────────────
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+
+  // One column once a half-width field would be too narrow to type in.
+  @include below($bp-tablet-sm) { grid-template-columns: minmax(0, 1fr); }
+
+  .full { grid-column: 1 / -1; }
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  min-width: 0;
 
-  &.full { grid-column: span 2; }
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $text-secondary;
+    margin-bottom: 6px;
+  }
 
-  label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-  
-  input, textarea {
-    background: var(--bg-card);
-    border: 1px solid var(--border-input);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text-primary);
-    font-size: 14px;
+  input,
+  select {
+    width: 100%;
+    background: $bg-input;
+    border: 1px solid $border-input;
+    border-radius: $radius-input;
+    color: $text-primary;
+    font-size: 0.9rem;
+    font-family: inherit;
+    padding: 10px 12px;
     outline: none;
-    transition: all 0.2s;
+    transition: $transition-std;
 
-    &:focus { border-color: $teal-primary; box-shadow: 0 0 0 2px var(--teal-glow); }
+    &:focus {
+      border-color: $teal-primary;
+      box-shadow: 0 0 0 3px $teal-glow;
+    }
+
+    &:disabled { opacity: 0.65; cursor: not-allowed; }
+    &::placeholder { color: $text-muted; }
+  }
+
+  // Native option lists are painted by the OS and do not inherit the field's
+  // background, so they need their own or they render unreadable in dark mode.
+  select option { background: $bg-card; color: $text-primary; }
+
+  .field-hint  { font-size: 0.75rem; color: $text-muted; margin: 5px 0 0; }
+  .field-error { font-size: 0.75rem; color: #ef4444; margin: 5px 0 0; }
+}
+
+.password-field {
+  position: relative;
+
+  input { padding-right: 42px; }
+
+  .reveal {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: $text-muted;
+    cursor: pointer;
+
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+    &:hover { color: $text-primary; background: $bg-card-hover; }
   }
 }
-
-.input-with-icon {
-  position: relative;
-  mat-icon { position: absolute; left: 12px; top: 11px; font-size: 18px; width: 18px; height: 18px; color: var(--text-muted); }
-  input { padding-left: 40px; width: 100%; }
-}
-
-.char-count { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 4px; }
 
 .card-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 24px;
+  gap: 10px;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid $border-subtle;
 
-  .btn-cancel {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-weight: 500;
-    cursor: pointer;
-    &:hover { color: var(--text-primary); }
-  }
+  // Full-width stacked buttons on phones, primary action on top.
+  @include below($bp-phone-lg) {
+    flex-direction: column-reverse;
 
-  .btn-save {
-    padding: 10px 20px;
-    background: $teal-primary;
-    color: #0d0d0d;
-    border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-    &:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    button { width: 100%; justify-content: center; }
   }
 }
 
-// ── Preferences Section ───────────────────────────────
-.pref-group {
-  margin-bottom: 32px;
-  label { display: block; font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; }
+// ── Buttons ─────────────────────────────────────────────────────────────────
+.btn-save,
+.btn-cancel,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: $radius-btn;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: $transition-std;
+  white-space: nowrap;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
+.btn-save {
+  background: $btn-quick-add-bg;
+  color: $btn-quick-add-text;
+  border: 0;
+
+  &:hover:not(:disabled) { background: $btn-quick-add-hover; }
+}
+
+.btn-cancel,
+.btn-ghost {
+  background: transparent;
+  border: 1px solid $border-card;
+  color: $text-primary;
+
+  &:hover:not(:disabled) { background: $bg-card-hover; }
+}
+
+// ── Theme picker ────────────────────────────────────────────────────────────
 .theme-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+
+  @include below($bp-phone-lg) { grid-template-columns: minmax(0, 1fr); }
 }
 
 .theme-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  cursor: pointer;
   position: relative;
+  background: transparent;
+  border: 2px solid $border-card;
+  border-radius: $radius-card;
+  padding: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  transition: $transition-std;
 
-  span { font-size: 13px; font-weight: 500; text-align: center; color: var(--text-secondary); }
+  &:hover { border-color: $text-muted; }
+  &.selected { border-color: $teal-primary; }
 
-  &.selected {
-    span { color: $teal-primary; font-weight: 600; }
+  .theme-name {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: $text-primary;
   }
 
-  .check-dot {
+  .check {
     position: absolute;
-    bottom: 30px;
-    right: 12px;
-    mat-icon { font-size: 18px; width: 18px; height: 18px; color: $teal-primary; background: #fff; border-radius: 50%; }
+    top: 8px;
+    right: 8px;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: $teal-primary;
   }
 }
 
 .theme-preview {
-  height: 100px;
+  height: 72px;
   border-radius: 8px;
-  border: 2px solid transparent;
-  background: #f3f4f6;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  overflow: hidden;
+  border: 1px solid $border-subtle;
 
-  .preview-header { height: 12px; width: 100%; border-radius: 4px; }
-  .preview-content { height: 40px; width: 100%; border-radius: 4px; }
+  .preview-header { height: 30%; }
+  .preview-content { height: 70%; }
 
   &.light {
-    background: #fff;
-    border-color: #e5e7eb;
-    .preview-header { background: #f3f4f6; }
-    .preview-content { background: #f9fafb; border: 1px solid #f3f4f6; }
+    .preview-header  { background: #ffffff; }
+    .preview-content { background: #f3f4f6; }
   }
 
   &.dark {
-    background: #0d0d0d;
-    border-color: #333;
-    .preview-header { background: #1a1a1a; }
-    .preview-content { background: #111; border: 1px solid #1a1a1a; }
+    .preview-header  { background: #161616; }
+    .preview-content { background: #0d0d0d; }
   }
 
+  // Split down the middle: the point of "system" is that it is both.
   &.system {
-    background: linear-gradient(135deg, #fff 50%, #0d0d0d 50%);
-    border-color: #e5e7eb;
+    .preview-header  { background: linear-gradient(90deg, #ffffff 50%, #161616 50%); }
+    .preview-content { background: linear-gradient(90deg, #f3f4f6 50%, #0d0d0d 50%); }
   }
 }
 
-.theme-card.selected .theme-preview { border-color: $teal-primary; }
-
-.toggle-group {
+.resolved-note {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 24px;
+  gap: 7px;
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  color: $text-secondary;
 
-  .toggle-info {
-    display: flex;
-    flex-direction: column;
-    label { margin-bottom: 4px; }
-    span { font-size: 12px; color: var(--text-muted); }
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+  strong { color: $text-primary; text-transform: capitalize; }
+}
+
+// ── Toast ───────────────────────────────────────────────────────────────────
+.toast-notification {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-left: 4px solid $teal-primary;
+  border-radius: $radius-btn;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  color: $text-primary;
+  font-size: 0.875rem;
+  padding: 0.85rem 1rem;
+
+  // Kept non-interactive when hidden so it cannot swallow clicks.
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+
+  mat-icon { font-size: 19px; width: 19px; height: 19px; color: $teal-primary; }
+
+  &.error {
+    border-left-color: #ef4444;
+    mat-icon { color: #ef4444; }
+  }
+
+  &.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  // Spans the width on phones rather than hanging off the right edge.
+  @include below($bp-phone-lg) {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    max-width: none;
+  }
+
+  @include reduced-motion { transition: none; }
+}
+
+// ── Spinner + skeleton ──────────────────────────────────────────────────────
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: settings-spin 0.7s linear infinite;
+  display: inline-block;
+
+  &.sm {
+    width: 14px;
+    height: 14px;
+    border-color: rgba(0, 0, 0, 0.25);
+    border-top-color: currentColor;
+  }
+
+  @include reduced-motion { animation: none; }
+}
+
+@keyframes settings-spin { to { transform: rotate(360deg); } }
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .sk-line {
+    height: 14px;
+    border-radius: 6px;
+    width: 60%;
+    background: linear-gradient(90deg, $bg-card 25%, $bg-card-hover 37%, $bg-card 63%);
+    background-size: 400% 100%;
+    animation: settings-shimmer 1.4s ease infinite;
+
+    &.wide  { width: 90%; }
+    &.short { width: 35%; }
+
+    @include reduced-motion { animation: none; }
   }
 }
 
-.toggle-switch {
-  width: 44px;
-  height: 24px;
-  background: var(--bg-card-hover);
-  border-radius: 12px;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  .switch-handle {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 16px;
-    height: 16px;
-    background: #fff;
-    border-radius: 50%;
-    transition: all 0.3s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  }
-
-  &.on {
-    background: $teal-primary;
-    .switch-handle { left: 24px; }
-  }
-}
-
-// ── Responsive Layouts ───────────────────────────────
-@media (max-width: 992px) {
-  .settings-container {
-    padding: 20px 24px;
-  }
-  
-  .settings-content {
-    flex-direction: column;
-    gap: 24px;
-    overflow: visible;
-  }
-
-  .settings-sidebar {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .sidebar-item {
-    flex: 1;
-    min-width: 120px;
-    text-align: center;
-    padding: 8px 12px;
-  }
-
-  .main-content {
-    overflow: visible;
-  }
-
-  .scroll-area {
-    padding-right: 0;
-    overflow-y: visible;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 576px) {
-  .settings-container {
-    padding: 16px;
-  }
-
-  .settings-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 24px;
-
-    h1 {
-      font-size: 20px;
-    }
-  }
-
-  .header-search {
-    width: 100%;
-  }
-
-  .settings-sidebar {
-    flex-direction: column;
-  }
-
-  .sidebar-item {
-    width: 100%;
-  }
+@keyframes settings-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }

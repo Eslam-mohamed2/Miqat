@@ -1,4 +1,5 @@
 @use "sass:math";
+@use '../../styles/tokens' as *;
 
 // Hero section entrance animations (CSS, no deprecated @angular/animations)
 @keyframes heroFadeIn {
@@ -650,22 +651,12 @@
   transform: translateX(0);
 }
 
-@media (max-width: 1920px) {
-}
 
-@media (max-width: 1440px) {
-}
 
-@media (max-width: 1366px) {
-}
 
-@media (max-width: 1280px) {
-}
 
-@media (max-width: 1100px) {
-}
 
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   main .container-fluid {
     max-width: 100%;
     overflow-x: hidden;
@@ -859,7 +850,7 @@
   }
 }
 
-@media (max-width: 990px) {
+@include below($bp-laptop) {
   .clock-rain {
     position: absolute;
     top: 50%;
@@ -886,10 +877,8 @@
   }
 }
 
-@media (max-width: 820px) {
-}
 
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   main .container-fluid {
     max-width: 100%;
     overflow-x: hidden;
@@ -1120,7 +1109,7 @@
 
 // done
 
-@media (max-width: 720px) {
+@include below($bp-tablet) {
   .bg-Custom {
     height: 90vh !important;
     padding-top: 5rem !important;
@@ -1170,8 +1159,8 @@
   }
 }
 
-@media (max-width: 680px) {
-  .clock-rain[_ngcontent-ng-c1347661038] {
+@include below($bp-tablet-sm) {
+  .clock-rain {
     position: absolute;
     top: 65%;
     left: 0%;
@@ -1182,13 +1171,9 @@
   }
 }
 
-@media (max-width: 640px) {
-}
 
-@media (max-width: 600px) {
-}
 
-@media (max-width: 576px) {
+@include below($bp-phone-lg) {
   .container-fluid {
     padding: 0 !important;
   }
@@ -1389,11 +1374,9 @@
   }
 }
 
-@media (max-width: 540px) {
-}
 
-@media (max-width: 480px) {
-  .clock-rain[_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038] {
+@include below($bp-phone) {
+  .clock-rain {
     position: absolute;
     top: 59%;
     left: 0%;
@@ -1404,8 +1387,8 @@
   }
 }
 
-@media (max-width: 420px) {
-  .clock-rain[_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038] {
+@include below($bp-phone-md) {
+  .clock-rain {
     position: absolute;
     top: 55%;
     left: 0%;
@@ -1416,8 +1399,8 @@
   }
 }
 
-@media (max-width: 380px) {
-  .clock-rain[_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038][_ngcontent-ng-c1347661038] {
+@include below($bp-phone-sm) {
+  .clock-rain {
     position: absolute;
     top: 51%;
     left: 0%;

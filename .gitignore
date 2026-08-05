@@ -40,3 +40,13 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Build/diagnostic logs — these were committed by accident
+build_output.txt
+build_full.txt
+all_problems.txt
+all_warnings.txt
+
+# Local environment overrides
+.env
+.env.local

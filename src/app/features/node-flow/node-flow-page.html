@@ -1,23 +1,22 @@
-<div class="node-flow-container" (click)="onBackgroundClick($event)">
-  
+<div #board class="node-flow-container" (click)="onBackgroundClick($event)"
+     (mousemove)="onMouseMove($event)" (mouseup)="onMouseUp()" (mouseleave)="onMouseUp()">
+
   <!-- SVG Layer for Links -->
   <svg class="edges-layer">
     <defs>
-      <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-      refX="9" refY="3.5" orient="auto">
+      <marker id="arrowhead" markerWidth="10" markerHeight="7"
+              refX="9" refY="3.5" orient="auto">
         <polygon points="0 0, 10 3.5, 0 7" fill="#7c8ef5" />
       </marker>
     </defs>
-    
-    <!-- Render all confirmed edges -->
-    <path *ngFor="let edge of edges()"
+
+    <path *ngFor="let edge of edges(); trackBy: trackByEdgeId"
           [attr.d]="getEdgePath(edge)"
           fill="none"
           stroke="#7c8ef5"
           stroke-width="2"
           marker-end="url(#arrowhead)"/>
-          
-    <!-- Render active linking edge -->
+
     <path *ngIf="linkingFromNodeId()"
           [attr.d]="getLinkingPath()"
           fill="none"
@@ -29,48 +28,69 @@
 
   <!-- HTML Layer for Nodes -->
   <div class="nodes-layer">
-    <div *ngFor="let node of nodes()" 
-         class="flow-node" 
+    <div *ngFor="let node of nodes(); trackBy: trackByNodeId"
+         class="flow-node"
          [class.selected]="linkingFromNodeId() === node.id"
          [class.task]="node.type === 'task'"
          [class.event]="node.type === 'event'"
-         [style.left.px]="node.x" 
+         [class.linkable]="tool() === 'link'"
+         [style.left.px]="node.x"
          [style.top.px]="node.y"
+         [style.borderLeftColor]="statusColor(node.status)"
          (mousedown)="onNodeMouseDown($event, node)"
          (click)="onNodeClick($event, node)">
-         
+
       <div class="node-header">
         <mat-icon class="type-icon">{{ node.type === 'task' ? 'check_circle' : 'event' }}</mat-icon>
         <span class="type-label">{{ node.type | uppercase }}</span>
-        <mat-icon class="close-icon" (click)="deleteNode($event, node.id)">close</mat-icon>
+        <button type="button" class="close-icon" (click)="deleteNode($event, node.id)"
+                [attr.aria-label]="'Remove ' + node.title">
+          <mat-icon>close</mat-icon>
+        </button>
       </div>
-      
+
       <div class="node-body">
-        <input type="text" [(ngModel)]="node.title" (mousedown)="$event.stopPropagation()" class="node-title-input">
+        <!-- Written back through the signal: [(ngModel)] mutated the node object
+             in place, which a zoneless app never picks up. -->
+        <input type="text" class="node-title-input"
+               [value]="node.title"
+               (input)="updateNodeTitle(node.id, $any($event.target).value)"
+               (mousedown)="$event.stopPropagation()"
+               (click)="$event.stopPropagation()" />
       </div>
+
+      <span class="open-hint" *ngIf="node.taskId && tool() === 'select'">Open task →</span>
     </div>
   </div>
 
+  <p class="board-empty" *ngIf="!loading() && !nodes().length">
+    No tasks to map yet. Use the buttons below to add one.
+  </p>
+
   <!-- Toolbar -->
   <div class="toolbar" (click)="$event.stopPropagation()">
-    <div class="tool-btn" [class.active]="tool() === 'select'" (click)="setTool('select')">
+    <button type="button" class="tool-btn" [class.active]="tool() === 'select'"
+            (click)="setTool('select')">
       <mat-icon>near_me</mat-icon>
-      <span class="tooltip">Select & Move</span>
-    </div>
-    <div class="tool-btn" [class.active]="tool() === 'link'" (click)="setTool('link')">
+      <span class="tooltip">Select &amp; move</span>
+    </button>
+    <button type="button" class="tool-btn" [class.active]="tool() === 'link'"
+            (click)="setTool('link')">
       <mat-icon>timeline</mat-icon>
-      <span class="tooltip">Connect Nodes</span>
-    </div>
-    
+      <span class="tooltip">Connect nodes</span>
+    </button>
+
     <div class="divider"></div>
 
-    <div class="tool-btn task-btn" [class.active]="tool() === 'add-task'" (click)="setTool('add-task')">
+    <button type="button" class="tool-btn task-btn" [class.active]="tool() === 'add-task'"
+            (click)="setTool('add-task')">
       <mat-icon>check_circle</mat-icon>
-      <span class="tooltip">Add Task</span>
-    </div>
-    <div class="tool-btn event-btn" [class.active]="tool() === 'add-event'" (click)="setTool('add-event')">
+      <span class="tooltip">Add task</span>
+    </button>
+    <button type="button" class="tool-btn event-btn" [class.active]="tool() === 'add-event'"
+            (click)="setTool('add-event')">
       <mat-icon>event</mat-icon>
-      <span class="tooltip">Add Event</span>
-    </div>
+      <span class="tooltip">Add event</span>
+    </button>
   </div>
 </div>

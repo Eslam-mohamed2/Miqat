@@ -1,0 +1,356 @@
+@use '../../../styles/tokens' as *;
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.thread-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  .count {
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: $bg-input;
+    border: 1px solid $border-card;
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-secondary;
+    text-align: center;
+  }
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: $text-muted;
+
+  b { color: $teal-primary; }
+}
+
+.error {
+  margin: 0;
+  font-size: 12.5px;
+  color: #ef4444;
+}
+
+// ── Thread ──────────────────────────────────────────────────────────────────
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  // Long threads scroll inside the card rather than pushing the composer away.
+  max-height: 420px;
+  overflow-y: auto;
+  // Setting overflow on one axis makes the other compute to `auto` too, so any
+  // stray pixel of horizontal overflow shows a scrollbar. Nothing here is meant
+  // to scroll sideways — every text run already wraps.
+  overflow-x: clip;
+  padding-right: 4px;
+}
+
+// Named `comment-row`, not `row`: Bootstrap's grid is global here and its
+// `.row { margin-inline: -12px }` plus `.row > * { width: 100%; padding-inline:
+// 12px }` both applied. The negative margins made every row 24px wider than the
+// scroll container (the stray horizontal scrollbar), and the 12px side padding
+// ate a border-box avatar down to a 10px-wide sliver stretched to full height.
+.comment-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  // Belt and braces against global rules like Bootstrap's `.row > *`: with
+  // border-box sizing, injected side padding shrinks the *content* box and a
+  // photo renders as a squashed sliver. A min-width plus a square aspect ratio
+  // keeps the circle round whatever else the cascade adds.
+  min-width: 34px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  background: $bg-input;
+
+  &.initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: $teal-primary;
+    border: 1px solid $border-card;
+  }
+}
+
+.bubble-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
+// Facebook-style: the name sits inside the bubble, the timestamp under it.
+.bubble {
+  display: inline-block;
+  max-width: 100%;
+  padding: 8px 12px 9px;
+  border-radius: 16px;
+  background: $bg-input;
+  border: 1px solid $border-card;
+}
+
+.author {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: $text-primary;
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+}
+
+.text {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: $text-primary;
+  // Comments are free text: honour typed newlines, and never let an unbroken
+  // string widen the card.
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mention {
+  color: $teal-primary;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 0 2px;
+  background: var(--teal-glow);
+
+  &:hover { text-decoration: underline; }
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 0 12px;
+  font-size: 11.5px;
+  color: $text-muted;
+}
+
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: $text-muted;
+  cursor: pointer;
+
+  &:hover { color: #ef4444; }
+}
+
+// ── Composer ────────────────────────────────────────────────────────────────
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid $border-card;
+}
+
+.composer-box {
+  position: relative;
+
+  textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 62px;
+    padding: 10px 12px;
+    border-radius: $radius-input;
+    border: 1px solid $border-input;
+    background: $bg-input;
+    color: $text-primary;
+    font: inherit;
+    font-size: 13.5px;
+    line-height: 1.5;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &::placeholder { color: $text-muted; }
+
+    &:focus {
+      outline: none;
+      border-color: $teal-primary;
+      box-shadow: 0 0 0 3px var(--teal-glow);
+    }
+  }
+}
+
+// ── @mention menu ───────────────────────────────────────────────────────────
+// Anchored above the textarea so it never falls off the bottom of a dialog.
+.mention-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid $border-card;
+  background: $bg-card;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+
+    &.active { background: $bg-card-hover; }
+  }
+}
+
+.menu-avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: $bg-input;
+
+  &.initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: $teal-primary;
+    border: 1px solid $border-card;
+  }
+}
+
+.menu-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+
+  strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    font-size: 11px;
+    color: $text-muted;
+  }
+}
+
+.menu-tag {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--orange-accent);
+  background: rgba(244, 132, 95, 0.14);
+  border: 1px solid rgba(244, 132, 95, 0.3);
+}
+
+.grant-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: $text-secondary;
+  background: rgba(244, 132, 95, 0.1);
+  border: 1px solid rgba(244, 132, 95, 0.25);
+
+  mat-icon {
+    flex: 0 0 auto;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--orange-accent);
+  }
+
+  b { color: $text-primary; }
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shortcut {
+  font-size: 11.5px;
+  color: $text-muted;
+}
+
+.send {
+  padding: 8px 22px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: $btn-quick-add-text;
+  background: $teal-primary;
+  transition: background 0.15s ease, opacity 0.15s ease;
+
+  &:hover:not(:disabled) { background: $teal-dark; }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ── Compact variant (dialog) ────────────────────────────────────────────────
+
+.thread.compact {
+  .list { max-height: 240px; }
+  .avatar { width: 30px; height: 30px; min-width: 30px; }
+}
+
+@include below($bp-phone-lg) {
+  .composer-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .shortcut { text-align: center; }
+  .send { width: 100%; }
+  .list { max-height: 320px; }
+}

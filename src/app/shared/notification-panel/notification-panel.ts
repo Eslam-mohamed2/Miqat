@@ -6,15 +6,8 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { NotificationService } from '../../core/services/notification.service';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
-
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  type?: string; // 'task' | 'mention' | 'system' | 'reminder'
-}
+import { NotificationDto } from '../../models/api.models';
+import { apiErrorMessage } from '../../core/http/api-error';
 
 @Component({
   selector: 'app-notification-panel',
@@ -65,8 +58,9 @@ export class NotificationPanel implements OnChanges {
 
   private notificationService = inject(NotificationService);
 
-  notifications = signal<Notification[]>([]);
+  notifications = signal<NotificationDto[]>([]);
   loading = signal(true);
+  errorMessage = signal('');
   dismissedIds = signal<Set<string>>(new Set());
 
   visibleNotifications = computed(() => {
@@ -84,13 +78,17 @@ export class NotificationPanel implements OnChanges {
 
   loadNotifications() {
     this.loading.set(true);
+    this.errorMessage.set('');
     this.notificationService.getNotifications().subscribe({
-      next: (data: any[]) => {
-        this.notifications.set(data ?? []);
+      next: (data) => {
+        this.notifications.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        this.notifications.set(this.getMockNotifications());
+      error: (err) => {
+        // Previously this substituted invented notifications, which made an outage
+        // look like a working feed. Surface the failure instead.
+        this.notifications.set([]);
+        this.errorMessage.set(apiErrorMessage(err, 'Could not load notifications.'));
         this.loading.set(false);
       }
     });
@@ -157,15 +155,5 @@ export class NotificationPanel implements OnChanges {
     const diffHr = Math.floor(diffMin / 60);
     if (diffHr < 24) return `${diffHr}h ago`;
     return `${Math.floor(diffHr / 24)}d ago`;
-  }
-
-  private getMockNotifications(): Notification[] {
-    return [
-      { id: '1', title: 'Task assigned to you', message: 'Design Sprint planning assigned by Ahmed', isRead: false, createdAt: new Date(Date.now() - 5 * 60000).toISOString(), type: 'task' },
-      { id: '2', title: 'You were mentioned', message: '@you in "Website Redesign" discussion', isRead: false, createdAt: new Date(Date.now() - 30 * 60000).toISOString(), type: 'mention' },
-      { id: '3', title: 'Reminder', message: 'Sprint review starts in 1 hour', isRead: false, createdAt: new Date(Date.now() - 60 * 60000).toISOString(), type: 'reminder' },
-      { id: '4', title: 'Project update', message: 'Mobile App v2 moved to In Progress', isRead: true, createdAt: new Date(Date.now() - 3 * 3600000).toISOString(), type: 'system' },
-      { id: '5', title: 'New comment', message: 'Sara commented on your task', isRead: true, createdAt: new Date(Date.now() - 5 * 3600000).toISOString(), type: 'mention' },
-    ];
   }
 }

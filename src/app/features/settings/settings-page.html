@@ -1,58 +1,67 @@
-<div class="settings-container position-relative">
-  <!-- Toast Notification -->
-  <div class="toast-notification position-fixed top-0 end-0 m-4 p-3 rounded shadow" 
-       [ngClass]="toastError() ? 'bg-danger text-white' : 'bg-success text-white'"
-       style="z-index: 1050; transition: opacity 0.3s;"
-       [style.opacity]="showToastState() ? '1' : '0'"
-       [style.pointer-events]="showToastState() ? 'auto' : 'none'">
-    {{ toastMessage() }}
+<div class="settings-container">
+
+  <!-- Toast -->
+  <div class="toast-notification" [class.error]="toastError()" [class.show]="showToastState()"
+       role="status" aria-live="polite">
+    <mat-icon>{{ toastError() ? 'error_outline' : 'check_circle' }}</mat-icon>
+    <span>{{ toastMessage() }}</span>
   </div>
 
-  <div class="settings-header">
+  <header class="settings-header">
     <h1>Settings</h1>
-    <div class="header-search">
-      <mat-icon>search</mat-icon>
-      <input type="text" placeholder="Search settings...">
-    </div>
-  </div>
+    <p class="page-sub">Manage your account, appearance and security.</p>
+  </header>
 
   <div class="settings-content">
-    <!-- Sidebar -->
-    <div class="settings-sidebar">
-      <div 
-        class="sidebar-item" 
-        *ngFor="let tab of tabs" 
-        [class.active]="activeTab() === tab.name"
-        (click)="setTab(tab.name)">
+
+    <!-- Section nav -->
+    <nav class="settings-sidebar" role="tablist" aria-label="Settings sections">
+      <button type="button" role="tab" class="sidebar-item" *ngFor="let tab of tabs"
+              [class.active]="activeTab() === tab.name"
+              [attr.aria-selected]="activeTab() === tab.name"
+              (click)="setTab(tab.name)">
+        <mat-icon>{{ tab.icon }}</mat-icon>
         <span>{{ tab.name }}</span>
-      </div>
-    </div>
+      </button>
+    </nav>
 
-    <!-- Main Content -->
     <div class="main-content">
-      <div class="scroll-area">
-        
-        <!-- Loading State -->
-        <div class="text-center py-5" *ngIf="isLoading()">
-          <span class="spinner-border spinner-border-sm me-2 text-primary"></span> Loading...
-        </div>
 
-        <!-- Profile Section -->
-        <div class="settings-card profile-card" *ngIf="!isLoading() && activeTab() === 'Profile'">
-          <div class="card-header">
-            <div class="user-avatar-section">
-              <div class="avatar-large position-relative d-flex justify-content-center align-items-center bg-secondary text-white fw-bold fs-2">
-                <img *ngIf="user().avatarUrl" [src]="user().avatarUrl" alt="User Avatar" style="width: 100%; height: 100%; object-fit: cover;">
-                <span *ngIf="!user().avatarUrl">{{ user().firstName?.charAt(0) }}{{ user().lastName?.charAt(0) }}</span>
-                <div *ngIf="isUploading()" class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.5);">
-                  <span class="spinner-border spinner-border-sm text-white"></span>
-                </div>
+      <!-- Loading -->
+      <div class="settings-card skeleton-card" *ngIf="isLoading()">
+        <div class="sk-line wide"></div>
+        <div class="sk-line"></div>
+        <div class="sk-line short"></div>
+      </div>
+
+      <ng-container *ngIf="!isLoading()">
+
+        <!-- ── PROFILE ──────────────────────────────────────────────────── -->
+        <section class="settings-card" *ngIf="activeTab() === 'Profile'">
+          <div class="identity-row">
+            <div class="avatar-large">
+              <img *ngIf="user()?.profilePictureUrl; else initialsAvatar"
+                   [src]="user()!.profilePictureUrl" alt="Your profile picture" />
+              <ng-template #initialsAvatar><span class="initials">{{ initials() }}</span></ng-template>
+
+              <div class="avatar-busy" *ngIf="isUploading()">
+                <span class="spinner"></span>
               </div>
+            </div>
+
+            <div class="identity-text">
+              <h2>{{ user()?.fullName || 'Your account' }}</h2>
+              <p class="muted">{{ user()?.email }}</p>
+              <p class="muted small" *ngIf="memberSince()">Member since {{ memberSince() }}</p>
+
               <div class="avatar-actions">
-                <input type="file" #fileInput (change)="uploadImage($event)" accept=".jpg,.jpeg,.png,.gif" style="display: none;">
-                <button class="btn-upload" (click)="fileInput.click()" [disabled]="isUploading()">Upload new</button>
-                <button class="btn-remove" (click)="removeImage()" [disabled]="isUploading() || !user().avatarUrl">Remove</button>
-                <p class="avatar-hint">JPG, GIF or PNG. 5MB max.</p>
+                <input type="file" #fileInput (change)="uploadImage($event)"
+                       accept=".jpg,.jpeg,.png" hidden />
+                <button type="button" class="btn-ghost" (click)="fileInput.click()" [disabled]="isUploading()">
+                  <mat-icon>photo_camera</mat-icon>
+                  {{ isUploading() ? 'Uploading…' : 'Change picture' }}
+                </button>
+                <span class="hint">JPG or PNG, 5MB max.</span>
               </div>
             </div>
           </div>
@@ -60,166 +69,179 @@
           <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
             <div class="form-grid">
               <div class="form-field">
-                <label>First Name</label>
-                <input type="text" formControlName="firstName">
+                <label for="firstName">First name</label>
+                <input id="firstName" type="text" formControlName="firstName" autocomplete="given-name" />
+                <p class="field-error" *ngIf="profileForm.get('firstName')?.touched && profileForm.get('firstName')?.invalid">
+                  First name is required.
+                </p>
               </div>
+
               <div class="form-field">
-                <label>Last Name</label>
-                <input type="text" formControlName="lastName">
+                <label for="lastName">Last name</label>
+                <input id="lastName" type="text" formControlName="lastName" autocomplete="family-name" />
               </div>
+
               <div class="form-field full">
-                <label>Email Address</label>
-                <div class="input-with-icon">
-                  <mat-icon>mail_outline</mat-icon>
-                  <input type="email" formControlName="email">
-                </div>
+                <label for="email">Email address</label>
+                <input id="email" type="email" formControlName="email" autocomplete="email" />
+                <p class="field-hint">Your sign-in address can't be changed here.</p>
               </div>
+
+              <div class="form-field">
+                <label for="phoneNumber">Phone number</label>
+                <input id="phoneNumber" type="tel" formControlName="phoneNumber"
+                       placeholder="+20 100 000 0000" autocomplete="tel" />
+              </div>
+
+              <div class="form-field">
+                <label for="country">Country</label>
+                <input id="country" type="text" formControlName="country"
+                       placeholder="Egypt" autocomplete="country-name" />
+              </div>
+
+              <div class="form-field">
+                <label for="timeZone">Time zone</label>
+                <select id="timeZone" formControlName="timeZone">
+                  <option value="">Not set</option>
+                  <option *ngFor="let zone of timeZones" [value]="zone">{{ zone }}</option>
+                </select>
+                <p class="field-hint">Used for due dates and reminders.</p>
+              </div>
+
+              <div class="form-field">
+                <label for="gender">Gender</label>
+                <select id="gender" formControlName="gender">
+                  <option value="">Prefer not to say</option>
+                  <option *ngFor="let option of genders" [value]="option">{{ option }}</option>
+                </select>
+              </div>
+
               <div class="form-field full">
-                <label>Bio</label>
-                <textarea rows="4" formControlName="bio"></textarea>
-                <div class="char-count">{{ 275 - (profileForm.get('bio')?.value?.length || 0) }} characters left</div>
+                <label for="dateOfBirth">Date of birth</label>
+                <input id="dateOfBirth" type="date" formControlName="dateOfBirth" />
               </div>
             </div>
 
             <div class="card-footer">
-              <button type="button" class="btn-cancel" (click)="loadProfile()">Cancel</button>
+              <button type="button" class="btn-cancel" (click)="loadProfile()" [disabled]="isSaving()">
+                Reset
+              </button>
               <button type="submit" class="btn-save" [disabled]="profileForm.invalid || isSaving()">
-                <span *ngIf="isSaving()" class="spinner-border spinner-border-sm me-2"></span>
-                Save Changes
+                <span class="spinner sm" *ngIf="isSaving()"></span>
+                {{ isSaving() ? 'Saving…' : 'Save changes' }}
               </button>
             </div>
           </form>
-        </div>
+        </section>
 
-        <!-- Preferences Section (Only shown in Profile/Global) -->
-        <div class="settings-card preferences-card" *ngIf="!isLoading() && activeTab() === 'Profile'">
-          <h3>Preferences</h3>
-          <p class="section-desc">Manage your app experience and display settings.</p>
+        <!-- ── APPEARANCE ───────────────────────────────────────────────── -->
+        <section class="settings-card" *ngIf="activeTab() === 'Appearance'">
+          <h3>Theme</h3>
+          <p class="section-desc">
+            Choose how Miqat looks. <strong>System</strong> follows your device and
+            switches automatically when it does.
+          </p>
 
-          <div class="pref-group">
-            <label>Theme</label>
-            <div class="theme-options">
-              <div class="theme-card" [class.selected]="themeService.getTheme() === 'light'" (click)="themeService.setTheme('light')">
-                <div class="theme-preview light">
-                   <div class="preview-header"></div>
-                   <div class="preview-content"></div>
-                </div>
-                <span>Light</span>
-                <div class="check-dot" *ngIf="themeService.getTheme() === 'light'"><mat-icon>check_circle</mat-icon></div>
+          <div class="theme-options" role="radiogroup" aria-label="Theme">
+            <button type="button" role="radio" class="theme-card"
+                    [class.selected]="isThemeSelected('light')"
+                    [attr.aria-checked]="isThemeSelected('light')" (click)="setTheme('light')">
+              <div class="theme-preview light">
+                <div class="preview-header"></div>
+                <div class="preview-content"></div>
               </div>
+              <span class="theme-name">Light</span>
+              <mat-icon class="check" *ngIf="isThemeSelected('light')">check_circle</mat-icon>
+            </button>
 
-              <div class="theme-card" [class.selected]="themeService.getTheme() === 'dark'" (click)="themeService.setTheme('dark')">
-                <div class="theme-preview dark">
-                   <div class="preview-header"></div>
-                   <div class="preview-content"></div>
-                </div>
-                <span>Dark</span>
-                <div class="check-dot" *ngIf="themeService.getTheme() === 'dark'"><mat-icon>check_circle</mat-icon></div>
+            <button type="button" role="radio" class="theme-card"
+                    [class.selected]="isThemeSelected('dark')"
+                    [attr.aria-checked]="isThemeSelected('dark')" (click)="setTheme('dark')">
+              <div class="theme-preview dark">
+                <div class="preview-header"></div>
+                <div class="preview-content"></div>
               </div>
+              <span class="theme-name">Dark</span>
+              <mat-icon class="check" *ngIf="isThemeSelected('dark')">check_circle</mat-icon>
+            </button>
 
-              <div class="theme-card system" (click)="themeService.setTheme('system')">
-                <div class="theme-preview system">
-                   <div class="preview-header"></div>
-                   <div class="preview-content"></div>
-                </div>
-                <span>System</span>
+            <button type="button" role="radio" class="theme-card"
+                    [class.selected]="isThemeSelected('system')"
+                    [attr.aria-checked]="isThemeSelected('system')" (click)="setTheme('system')">
+              <div class="theme-preview system">
+                <div class="preview-header"></div>
+                <div class="preview-content"></div>
               </div>
-            </div>
+              <span class="theme-name">System</span>
+              <mat-icon class="check" *ngIf="isThemeSelected('system')">check_circle</mat-icon>
+            </button>
           </div>
 
-          <div class="pref-group toggle-group">
-            <div class="toggle-info">
-              <label>Compact Mode</label>
-              <span>Reduce spacing to show more content on screen.</span>
-            </div>
-            <div class="toggle-switch" [class.on]="compactMode()" (click)="toggleCompactMode()">
-              <div class="switch-handle"></div>
-            </div>
-          </div>
-        </div>
+          <p class="resolved-note" *ngIf="isThemeSelected('system')">
+            <mat-icon>info_outline</mat-icon>
+            Currently showing the <strong>{{ themeService.theme() }}</strong> theme, matching your device.
+          </p>
+        </section>
 
-        <!-- Notifications Tab -->
-        <div class="settings-card" *ngIf="!isLoading() && activeTab() === 'Notifications'">
-          <h3>Notification Preferences</h3>
-          <p class="section-desc">Choose what we get in touch about and when.</p>
+        <!-- ── SECURITY ─────────────────────────────────────────────────── -->
+        <section class="settings-card" *ngIf="activeTab() === 'Security'">
+          <h3>Password</h3>
+          <p class="section-desc">
+            Use at least 8 characters with an uppercase letter, a number and a symbol.
+          </p>
 
-          <div class="pref-group toggle-group mt-4">
-            <div class="toggle-info">
-              <label>Email Notifications</label>
-              <span>Receive updates and alerts via email.</span>
-            </div>
-            <div class="toggle-switch" [class.on]="emailNotifications()" (click)="emailNotifications.set(!emailNotifications())">
-              <div class="switch-handle"></div>
-            </div>
-          </div>
-
-          <div class="pref-group toggle-group mt-4">
-            <div class="toggle-info">
-              <label>Push Notifications</label>
-              <span>Receive real-time alerts on your device.</span>
-            </div>
-            <div class="toggle-switch" [class.on]="pushNotifications()" (click)="pushNotifications.set(!pushNotifications())">
-              <div class="switch-handle"></div>
-            </div>
-          </div>
-
-          <div class="pref-group toggle-group mt-4">
-            <div class="toggle-info">
-              <label>Weekly Summary</label>
-              <span>Get a weekly digest of your tasks and activities.</span>
-            </div>
-            <div class="toggle-switch" [class.on]="weeklySummary()" (click)="weeklySummary.set(!weeklySummary())">
-              <div class="switch-handle"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Security Tab -->
-        <div class="settings-card" *ngIf="!isLoading() && activeTab() === 'Security'">
-          <h3>Security & Password</h3>
-          <p class="section-desc">Manage your password and security settings.</p>
-
-          <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="mt-4">
+          <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
             <div class="form-grid">
               <div class="form-field full">
-                <label>Current Password</label>
-                <div class="input-with-icon position-relative">
-                  <input [type]="showPassword1 ? 'text' : 'password'" formControlName="currentPassword" class="w-100 p-2 pe-5" style="border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-primary);">
-                  <mat-icon class="position-absolute end-0 top-50 translate-middle-y me-2 text-muted" style="cursor: pointer;" (click)="showPassword1 = !showPassword1">
-                     {{ showPassword1 ? 'visibility_off' : 'visibility' }}
-                  </mat-icon>
+                <label for="currentPassword">Current password</label>
+                <div class="password-field">
+                  <input id="currentPassword" [type]="showCurrentPassword() ? 'text' : 'password'"
+                         formControlName="currentPassword" autocomplete="current-password" />
+                  <button type="button" class="reveal" (click)="showCurrentPassword.set(!showCurrentPassword())"
+                          [attr.aria-label]="showCurrentPassword() ? 'Hide password' : 'Show password'">
+                    <mat-icon>{{ showCurrentPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
                 </div>
               </div>
+
               <div class="form-field full">
-                <label>New Password</label>
-                <div class="input-with-icon position-relative">
-                  <input [type]="showPassword2 ? 'text' : 'password'" formControlName="newPassword" class="w-100 p-2 pe-5" style="border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-primary);">
-                  <mat-icon class="position-absolute end-0 top-50 translate-middle-y me-2 text-muted" style="cursor: pointer;" (click)="showPassword2 = !showPassword2">
-                     {{ showPassword2 ? 'visibility_off' : 'visibility' }}
-                  </mat-icon>
+                <label for="newPassword">New password</label>
+                <div class="password-field">
+                  <input id="newPassword" [type]="showNewPassword() ? 'text' : 'password'"
+                         formControlName="newPassword" autocomplete="new-password" />
+                  <button type="button" class="reveal" (click)="showNewPassword.set(!showNewPassword())"
+                          [attr.aria-label]="showNewPassword() ? 'Hide password' : 'Show password'">
+                    <mat-icon>{{ showNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
                 </div>
               </div>
+
               <div class="form-field full">
-                <label>Confirm New Password</label>
-                <div class="input-with-icon position-relative">
-                  <input [type]="showPassword3 ? 'text' : 'password'" formControlName="confirmPassword" class="w-100 p-2 pe-5" style="border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-primary);">
-                  <mat-icon class="position-absolute end-0 top-50 translate-middle-y me-2 text-muted" style="cursor: pointer;" (click)="showPassword3 = !showPassword3">
-                     {{ showPassword3 ? 'visibility_off' : 'visibility' }}
-                  </mat-icon>
+                <label for="confirmPassword">Confirm new password</label>
+                <div class="password-field">
+                  <input id="confirmPassword" [type]="showConfirmPassword() ? 'text' : 'password'"
+                         formControlName="confirmPassword" autocomplete="new-password" />
+                  <button type="button" class="reveal" (click)="showConfirmPassword.set(!showConfirmPassword())"
+                          [attr.aria-label]="showConfirmPassword() ? 'Hide password' : 'Show password'">
+                    <mat-icon>{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
                 </div>
+                <p class="field-error" *ngIf="passwordForm.hasError('mismatch') && passwordForm.get('confirmPassword')?.touched">
+                  Passwords do not match.
+                </p>
               </div>
             </div>
 
-            <div class="card-footer mt-4">
-              <button type="submit" class="btn-save" [disabled]="passwordForm.invalid || isSaving()">
-                <span *ngIf="isSaving()" class="spinner-border spinner-border-sm me-2"></span>
-                Change Password
+            <div class="card-footer">
+              <button type="submit" class="btn-save" [disabled]="passwordForm.invalid || isChangingPassword()">
+                <span class="spinner sm" *ngIf="isChangingPassword()"></span>
+                {{ isChangingPassword() ? 'Changing…' : 'Change password' }}
               </button>
             </div>
           </form>
-        </div>
+        </section>
 
-      </div>
+      </ng-container>
     </div>
   </div>
 </div>

@@ -1,4 +1,6 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { trigger, transition, style, animate, stagger, query } from '@angular/animations';
@@ -8,11 +10,14 @@ import { MiniCalendar } from '../mini-calendar/mini-calendar';
 import { UpcomingAgenda } from '../upcoming-agenda/upcoming-agenda';
 import { RecentWorkspaces } from '../recent-workspaces/recent-workspaces';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import { TaskWindowComponent } from '../task-window/task-window';
 import { TaskService } from '../../../core/services/task.service';
 import { TaskDto } from '../../../models/api.models';
 import { UserService } from '../../../core/services/user.service';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { UserDto } from '../../../models/api.models';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -51,34 +56,39 @@ import { Observable } from 'rxjs';
 })
 export class DashboardPage implements OnInit {
   private dialog = inject(MatDialog);
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
+  // Colours come from tokens, not literals: these were hardcoded dark hexes
+  // (#1e2240, #2d2010, #1b3a35), so the icon tiles stayed navy and brown on the
+  // light theme instead of following it.
   quickActionCards = [
     {
       id: 'event',
       title: 'New Event',
       description: 'Schedule a meeting or task',
       icon: 'event',
-      iconBg: '#1b3a35',
-      iconColor: '#2ec4a0',
+      iconBg: 'var(--icon-bg-event)',
+      iconColor: 'var(--icon-fg-event)',
       route: '/calendar/new'
     },
     {
       id: 'board',
-      title: 'New Board',
-      description: 'Start a blank whiteboard',
+      title: 'Whiteboard',
+      description: 'Sketch and plan visually',
       icon: 'dashboard_customize',
-      iconBg: '#1e2240',
-      iconColor: '#7c8ef5',
-      route: '/whiteboard/new'
+      iconBg: 'var(--icon-bg-board)',
+      iconColor: 'var(--icon-fg-board)',
+      route: '/whiteboard'
     },
     {
       id: 'flow',
-      title: 'New Flow',
-      description: 'Create a node diagram',
+      title: 'Node Flow',
+      description: 'Map your tasks as a flow',
       icon: 'account_tree',
-      iconBg: '#2d2010',
-      iconColor: '#f4a835',
-      route: '/node-flow/new',
+      iconBg: 'var(--icon-bg-flow)',
+      iconColor: 'var(--icon-fg-flow)',
+      route: '/node-flow',
       hasDecoration: true
     }
   ];
@@ -86,29 +96,48 @@ export class DashboardPage implements OnInit {
   public taskService = inject(TaskService);
   public userService = inject(UserService);
   tasks$!: Observable<TaskDto[]>;
-  user$!: Observable<any>;
+  user$!: Observable<UserDto | null>;
 
   ngOnInit() {
-    this.tasks$ = this.taskService.getTasks();
-    this.user$ = this.userService.getMe();
+    // Both are consumed with `| async`, which rethrows into the template on
+    // error — degrade to empty instead of blanking the dashboard.
+    this.tasks$ = this.taskService.getTasks().pipe(catchError(() => of([])));
+    this.user$ = this.userService.getMe().pipe(catchError(() => of(null)));
   }
-  onQuickAction(card: any) {
-    if (card.id === 'event') {
-      const dialogRef = this.dialog.open(TaskWindowComponent, {
-        width: '600px',
-        maxWidth: '95vw',
-        disableClose: true,
-        panelClass: 'custom-dialog-container',
-        autoFocus: false
-      });
+  /** UserDto carries `fullName`; there is no `firstName` field to read. */
+  firstName(user: UserDto | null): string {
+    const first = user?.fullName?.trim().split(/\s+/)[0];
+    return first || 'there';
+  }
 
-      dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-          console.log('Task/Event created successfully:', result);
-        }
-      });
-    } else {
-      console.log('Action clicked:', card);
+  /**
+   * "New Event" opens the quick-add dialog; the other two are pages, and used to
+   * fall into an empty `else` — clicking them did nothing at all.
+   */
+  onQuickAction(card: { id: string; route?: string }) {
+    if (card.id === 'event') {
+      this.dialog
+        .open(TaskWindowComponent, {
+          width: '600px',
+          maxWidth: '95vw',
+          disableClose: true,
+          panelClass: 'custom-dialog-container',
+          autoFocus: false
+        })
+        .afterClosed()
+        .subscribe(result => {
+          // A new task changes the agenda and the chart, so refetch on save.
+          // The explicit markForCheck is required: the app is zoneless and this
+          // component is OnPush, so swapping the observable behind an `| async`
+          // is otherwise never noticed.
+          if (result) {
+            this.tasks$ = this.taskService.getTasks().pipe(catchError(() => of([])));
+            this.cdr.markForCheck();
+          }
+        });
+      return;
     }
+
+    if (card.route) this.router.navigate([card.route]);
   }
 }

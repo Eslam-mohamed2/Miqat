@@ -121,15 +121,37 @@
     border: 1px solid rgba(46, 196, 160, 0.3);
   }
   
+  // A counter, not a dot. This was sized as a plain 8x8 indicator while the
+  // template renders a number inside it, so the digit stretched the box to
+  // ~16x8 — a squashed ellipse sitting on top of the glyph rather than a badge
+  // in its corner.
   .badge {
     position: absolute;
-    top: 6px;
-    right: 8px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+    // Pinned to the button's top-right corner and nudged outwards, clear of the
+    // 20px icon centred beneath it.
+    top: -5px;
+    right: -5px;
+    // Grows for "9+" instead of distorting: a pill radius, not a 50% circle on
+    // a box whose width depends on its text.
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    font-family: inherit;
+    color: #fff;
     background: $amber-dot;
+    // Separates the badge from whatever it overlaps.
     box-shadow: 0 0 0 2px $bg-topbar;
+    pointer-events: none;
   }
 
   .tooltip {
@@ -151,7 +173,7 @@
   }
 }
 
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   .topnav {
     padding: 0 16px;
     gap: 12px;
@@ -221,7 +243,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@include below($bp-tablet-sm) {
   .topnav {
     height: auto;
     min-height: 56px;

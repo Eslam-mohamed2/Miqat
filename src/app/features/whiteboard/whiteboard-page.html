@@ -1,6 +1,8 @@
-<div class="whiteboard-container" (mousemove)="dragNote($event)" (mouseup)="endDragNote()">
-  
+<div class="whiteboard-container" (mousemove)="dragNote($event)" (mouseup)="endDragNote()"
+     (mouseleave)="endDragNote()">
+
   <canvas #canvas
+          [class.select-mode]="tool() === 'select'"
           (pointerdown)="onPointerDown($event)"
           (pointermove)="onPointerMove($event)"
           (pointerup)="onPointerUp($event)"
@@ -9,44 +11,76 @@
 
   <!-- Sticky Notes Overlay -->
   <div class="notes-layer">
-    <div *ngFor="let note of notes()" 
-         class="sticky-note" 
-         [style.left.px]="note.x" 
+    <div *ngFor="let note of notes(); trackBy: trackByNoteId"
+         class="sticky-note"
+         [style.left.px]="note.x"
          [style.top.px]="note.y"
          [style.backgroundColor]="note.color"
          (mousedown)="startDragNote($event, note)">
       <div class="note-header">
-        <mat-icon (click)="deleteNote(note.id)">close</mat-icon>
+        <button type="button" class="note-close" (click)="deleteNote($event, note.id)"
+                aria-label="Delete note">
+          <mat-icon>close</mat-icon>
+        </button>
       </div>
-      <textarea [(ngModel)]="note.text" (mousedown)="$event.stopPropagation()"></textarea>
+      <!-- Written back through the signal; binding [(ngModel)] straight to the
+           object mutated it in place, which a zoneless app never notices. -->
+      <textarea [value]="note.text"
+                (input)="updateNoteText(note.id, $any($event.target).value)"
+                (mousedown)="$event.stopPropagation()"
+                placeholder="Type a note…"></textarea>
     </div>
   </div>
 
   <!-- Toolbar -->
   <div class="toolbar">
-    <div class="tool-btn" [class.active]="tool() === 'select'" (click)="setTool('select')">
+    <button type="button" class="tool-btn" [class.active]="tool() === 'select'"
+            (click)="setTool('select')">
       <mat-icon>near_me</mat-icon>
-      <span class="tooltip">Select</span>
-    </div>
-    <div class="tool-btn" [class.active]="tool() === 'pen'" (click)="setTool('pen')">
+      <span class="tooltip">Select &amp; move</span>
+    </button>
+    <button type="button" class="tool-btn" [class.active]="tool() === 'pen'"
+            (click)="setTool('pen')">
       <mat-icon>edit</mat-icon>
       <span class="tooltip">Pen</span>
-    </div>
-    <div class="tool-btn" [class.active]="tool() === 'eraser'" (click)="setTool('eraser')">
-      <mat-icon>ink_eraser</mat-icon>
+    </button>
+    <button type="button" class="tool-btn" [class.active]="tool() === 'eraser'"
+            (click)="setTool('eraser')">
+      <!-- Inline SVG, not <mat-icon>ink_eraser</mat-icon>: this app loads the
+           classic Material Icons font, which has no `ink_eraser` glyph (that is
+           a Material Symbols name). The ligature fell back to the literal text
+           and mat-icon's 24px overflow clipped it, so the button looked empty. -->
+      <svg class="tool-svg" viewBox="0 0 24 24" width="22" height="22"
+           fill="none" stroke="currentColor" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m14.5 3.5 6 6a1.5 1.5 0 0 1 0 2.1l-7.4 7.4H8.4l-4.9-4.9a1.5 1.5 0 0 1 0-2.1l9-9a1.5 1.5 0 0 1 2 0Z" />
+        <path d="M8.4 19h12.1" />
+        <path d="m9 9 6 6" />
+      </svg>
       <span class="tooltip">Eraser</span>
-    </div>
-    <div class="tool-btn" [class.active]="tool() === 'note'" (click)="setTool('note')">
+    </button>
+    <button type="button" class="tool-btn" [class.active]="tool() === 'note'"
+            (click)="setTool('note')">
       <mat-icon>sticky_note_2</mat-icon>
-      <span class="tooltip">Sticky Note</span>
-    </div>
-    
+      <span class="tooltip">Sticky note</span>
+    </button>
+
     <div class="divider"></div>
 
-    <div class="color-btn" style="background: #2ec4a0" [class.active]="currentColor() === '#2ec4a0'" (click)="setColor('#2ec4a0')"></div>
-    <div class="color-btn" style="background: #7c8ef5" [class.active]="currentColor() === '#7c8ef5'" (click)="setColor('#7c8ef5')"></div>
-    <div class="color-btn" style="background: #f4a835" [class.active]="currentColor() === '#f4a835'" (click)="setColor('#f4a835')"></div>
-    <div class="color-btn" style="background: #f4845f" [class.active]="currentColor() === '#f4845f'" (click)="setColor('#f4845f')"></div>
-    <div class="color-btn" style="background: #e879f9" [class.active]="currentColor() === '#e879f9'" (click)="setColor('#e879f9')"></div>
+    <button type="button" class="color-btn" *ngFor="let c of ['#2ec4a0','#7c8ef5','#f4a835','#f4845f','#e879f9']"
+            [style.background]="c" [class.active]="currentColor() === c"
+            (click)="setColor(c)" [attr.aria-label]="'Colour ' + c">
+    </button>
+
+    <div class="divider"></div>
+
+    <button type="button" class="tool-btn" [disabled]="!canUndo()" (click)="undo()">
+      <mat-icon>undo</mat-icon>
+      <span class="tooltip">Undo</span>
+    </button>
+    <button type="button" class="tool-btn danger" [disabled]="isEmpty()" (click)="clear()">
+      <mat-icon>delete_sweep</mat-icon>
+      <span class="tooltip">Clear board</span>
+    </button>
   </div>
 </div>

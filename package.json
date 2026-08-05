@@ -9,7 +9,7 @@
     "build:client": "ng build --configuration=client",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:Miqat": "node dist/Miqat/server/server.mjs"
+    "serve:ssr:Miqat": "node dist/miqat/server/server.mjs"
   },
   "dependencies": {
     "@abacritt/angularx-social-login": "^2.6.0",
@@ -27,6 +27,7 @@
     "@angular/ssr": "20.3.18",
     "@fortawesome/angular-fontawesome": "^3.0.0",
     "@fortawesome/fontawesome-free": "^7.0.1",
+    "@microsoft/signalr": "^10.0.11",
     "@swimlane/ngx-charts": "^23.1.0",
     "bootstrap": "^5.3.8",
     "d3-shape": "^3.2.0",

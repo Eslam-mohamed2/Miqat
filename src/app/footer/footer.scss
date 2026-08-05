@@ -1,3 +1,5 @@
+@use '../../styles/tokens' as *;
+
 // Footer logo - responsive sizing
 .footer-logo {
   height: 56px;
@@ -13,7 +15,7 @@ footer {
 }
 
 // Tablet
-@media (max-width: 1024) {
+@include below($bp-laptop) {
   .footer-logo {
     height: 48px;
     max-width: 150px;
@@ -31,7 +33,7 @@ footer {
 }
 
 // Mobile
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   .footer-logo {
     height: 70px;
     max-width: 150px;
@@ -63,7 +65,7 @@ footer {
 }
 }
 
-@media (max-width: 575px) {
+@include below($bp-phone-lg) {
   .footer-logo {
     height: 34px;
     max-width: 110px;

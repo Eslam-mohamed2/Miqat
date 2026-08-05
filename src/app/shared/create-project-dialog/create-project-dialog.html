@@ -30,11 +30,11 @@
           id="project-name"
           type="text"
           placeholder="e.g. Website Redesign, Mobile App v2"
-          [(ngModel)]="name"
-          [ngModel]="name()"
-          (ngModelChange)="name.set($event)"
+          [value]="name()"
+          (input)="name.set($any($event.target).value)"
           maxlength="60"
           autocomplete="off"
+          (keydown.enter)="isValid() && create()"
         />
         <span class="char-count">{{ name().length }}/60</span>
       </div>
@@ -80,16 +80,27 @@
 
     <!-- Team Members -->
     <div class="field-group">
-      <label class="field-label">Invite Members</label>
-      <div class="members-list" style="max-height: 120px; overflow-y: auto; border: 1px solid var(--border-input); border-radius: 8px; padding: 8px; background: var(--bg-input);">
-        <label class="member-item" *ngFor="let user of users()" style="display: flex; align-items: center; gap: 8px; padding: 6px; cursor: pointer; border-radius: 4px; transition: background 0.2s;">
-          <input type="checkbox" [checked]="selectedUserIds().includes(user.id)" (change)="toggleUser(user.id)">
-          <div style="display: flex; flex-direction: column;">
-            <span style="font-size: 13px; font-weight: 500;">{{ user.name || user.userName }}</span>
-            <span style="font-size: 11px; color: var(--text-muted);">{{ user.email }}</span>
-          </div>
+      <label class="field-label">
+        Invite Members
+        <span class="selected-count" *ngIf="selectedUserIds().length">
+          {{ selectedUserIds().length }} selected
+        </span>
+      </label>
+
+      <div class="members-list">
+        <label class="member-item" *ngFor="let user of users()"
+               [class.checked]="selectedUserIds().includes(user.id)">
+          <input type="checkbox" class="member-check"
+                 [checked]="selectedUserIds().includes(user.id)"
+                 (change)="toggleUser(user.id)" />
+          <span class="member-box"><mat-icon>check</mat-icon></span>
+          <span class="member-avatar">{{ initials(user.name) }}</span>
+          <span class="member-name">{{ user.name }}</span>
         </label>
-        <div *ngIf="users().length === 0" style="padding: 8px; font-size: 12px; color: var(--text-muted); text-align: center;">No users found</div>
+
+        <p class="members-empty" *ngIf="!users().length">
+          Add friends first to invite them here.
+        </p>
       </div>
     </div>
 

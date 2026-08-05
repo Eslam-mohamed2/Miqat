@@ -1,21 +1,42 @@
 @use '../../../../styles/tokens' as *;
 
 .quick-card {
+  display: block;
+  width: 100%;
+  // The element is a <button> now, so the UA's centred text and grey chrome
+  // have to be undone before the card styling below reads correctly.
+  text-align: left;
+  font: inherit;
+  appearance: none;
+
   background: $bg-card;
   border: 1px solid $border-card;
   border-radius: $radius-card;
   padding: 20px 22px 22px;
   cursor: pointer;
   position: relative;
-  transition: $transition-std;
   min-height: 130px;
   overflow: hidden;
 
+  // Only the two properties that actually change. `transition: all` also
+  // animated background, border and box-shadow on every hover, which is what
+  // made the card feel like it was catching up with the pointer.
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  // Keeps the text from resampling mid-animation on the transform.
+  will-change: transform;
+
   &:hover {
     background: $bg-card-hover;
-    border-color: #333;
-    transform: translateY(-1px);
+    border-color: $border-input;
+    transform: translateY(-2px);
     box-shadow: $shadow-card;
+  }
+
+  &:active { transform: translateY(0); }
+
+  &:focus-visible {
+    outline: 2px solid $teal-primary;
+    outline-offset: 2px;
   }
 }
 
@@ -23,10 +44,15 @@
   position: absolute;
   top: 16px;
   right: 16px;
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
   color: $text-muted;
+  // The arrow used to be the only thing on the card that moved, and it moved on
+  // a layout property. Transform + opacity keep it on the compositor.
+  transition: transform 0.18s ease, color 0.18s ease;
+
+  .quick-card:hover & {
+    color: $teal-primary;
+    transform: translate(2px, -2px);
+  }
 }
 
 .icon-container {
@@ -36,7 +62,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   mat-icon {
     font-size: 22px;
     width: 22px;
@@ -55,6 +81,7 @@
   font-size: 13px;
   color: $text-secondary;
   margin-top: 4px;
+  margin-bottom: 0;
 }
 
 .decoration-blob {
@@ -63,4 +90,14 @@
   right: 0;
   width: 40px;
   height: 40px;
+  pointer-events: none;
+}
+
+@include reduced-motion {
+  .quick-card,
+  .arrow-icon {
+    transition: none;
+  }
+  .quick-card:hover { transform: none; }
+  .quick-card:hover .arrow-icon { transform: none; }
 }

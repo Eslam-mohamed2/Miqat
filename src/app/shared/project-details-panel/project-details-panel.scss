@@ -13,7 +13,9 @@
   top: 0;
   right: 0;
   width: 580px;
-  height: 100vh;
+  // dvh so the panel ends at the visible viewport edge on mobile rather than
+  // underneath the browser's own chrome.
+  height: 100dvh;
   background: #ffffff;
   z-index: 1001;
   box-shadow: -10px 0 50px rgba(0,0,0,0.1);
@@ -21,15 +23,22 @@
   overflow-y: auto;
   border-left: 1px solid #e5e7eb;
 
-  @media (max-width: 640px) {
-    width: 100vw;
+  @supports not (height: 100dvh) { height: 100vh; }
+
+  @include below($bp-tablet) {
+    width: 85%;
+  }
+
+  // 100% not 100vw — vw counts the scrollbar gutter and overflows the page.
+  @include below($bp-tablet-sm) {
+    width: 100%;
   }
 }
 
 .panel-container {
   padding: 0 40px 60px;
 
-  @media (max-width: 640px) {
+  @include below($bp-tablet-sm) {
     padding: 0 18px 42px;
   }
 }
@@ -173,10 +182,102 @@
   background: #f59e0b;
 }
 
+// ── Members ────────────────────────────────────────────────────────────────
+// Named chips rather than a stack of overlapping avatars: the panel has the
+// width for it, and a name you can read beats a tooltip you have to hunt for.
+.member-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 3px 10px 3px 3px;
+  max-width: 100%;
+
+  .member-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+
+    &.initials {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+  }
+
+  .member-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1a1a1b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  .member-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+    &:hover { background: #fee2e2; color: #ef4444; }
+  }
+}
+
+.member-empty {
+  font-size: 12.5px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.add-member-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+
+  .add-member-select {
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    border: 1px dashed var(--border-input, #d1d5db);
+    max-width: 100%;
+  }
+
+  .add-member-hint {
+    font-size: 11.5px;
+    color: #9ca3af;
+  }
+}
+
 .avatar-group {
   display: flex;
   align-items: center;
-  
+
   .avatar {
     width: 28px;
     height: 28px;
@@ -588,7 +689,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@include below($bp-tablet-sm) {
   .top-bar {
     align-items: flex-start;
     gap: 12px;

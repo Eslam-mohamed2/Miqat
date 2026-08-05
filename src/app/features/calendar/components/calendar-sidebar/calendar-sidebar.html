@@ -1,5 +1,5 @@
 <div class="sidebar-container">
-  
+
   <div class="mini-calendar-section">
     <div class="mini-calendar-header">
       <h4>{{ calendarState.currentMonth() | date:'MMMM yyyy' }}</h4>
@@ -8,20 +8,20 @@
         <mat-icon class="icon-btn" (click)="calendarState.nextMonth()">chevron_right</mat-icon>
       </div>
     </div>
-    
+
     <div class="mini-calendar-grid">
       <div class="day-name">S</div>
       <div class="day-name">M</div>
       <div class="day-name">T</div>
       <div class="day-name">W</div>
-      <div class="day-name highlight">T</div>
+      <div class="day-name">T</div>
       <div class="day-name">F</div>
       <div class="day-name">S</div>
 
       <ng-container *ngFor="let week of miniCalendarWeeks()">
-        <!-- Hardcoding today's date highlight requires more logic, for now remove 'day === 19' dummy highlight -->
-        <div class="day-cell" *ngFor="let day of week">
-          <div class="day-circle">{{ day }}</div>
+        <div class="day-cell" *ngFor="let day of week; trackBy: trackByDay"
+             [class.outside]="!day.inMonth">
+          <div class="day-circle" [class.today]="day.isToday">{{ day.day }}</div>
         </div>
       </ng-container>
     </div>
@@ -32,16 +32,32 @@
   <div class="calendars-section">
     <div class="section-header">
       <h4>My Calendars</h4>
-      <mat-icon class="add-icon">add</mat-icon>
+      <!-- Replaces a bare "+" icon that toggled nothing; this is the control the
+           list actually needs once more than a couple of projects exist. -->
+      <button type="button" class="header-btn" *ngIf="calendars().length"
+              (click)="setAll(!allShown())">
+        {{ allShown() ? 'Hide all' : 'Show all' }}
+      </button>
     </div>
-    
+
     <div class="calendar-list">
-      <div class="calendar-item" *ngFor="let cal of calendars()">
-        <mat-checkbox [checked]="cal.checked" [color]="'primary'" class="custom-checkbox" [style.--checkbox-color]="cal.color">
-          {{ cal.name }}
-        </mat-checkbox>
-        <div class="dot-indicator" [style.backgroundColor]="cal.color"></div>
-      </div>
+      <!-- A plain button rather than <mat-checkbox>: the whole row is the hit
+           target, and the project colour comes straight from the group instead
+           of being forced through the MDC checkbox's internals with ::ng-deep. -->
+      <button type="button" class="calendar-item" *ngFor="let cal of calendars(); trackBy: trackByCalendarId"
+              [class.off]="!cal.checked" (click)="toggleCalendar(cal.id)"
+              role="switch" [attr.aria-checked]="cal.checked"
+              [attr.aria-label]="cal.name">
+        <span class="cal-box" [style.--cal-color]="cal.color">
+          <mat-icon *ngIf="cal.checked">check</mat-icon>
+        </span>
+        <span class="cal-name">{{ cal.name }}</span>
+        <span class="cal-count" *ngIf="cal.taskCount">{{ cal.taskCount }}</span>
+      </button>
+
+      <p class="empty-hint" *ngIf="!loading() && !calendars().length">
+        No projects yet.
+      </p>
     </div>
   </div>
 
@@ -49,13 +65,18 @@
 
   <div class="schedule-section">
     <h4>Upcoming Schedule</h4>
+
+    <!-- Real date, in the user's own time zone. This used to read a hardcoded
+         "TODAY, OCT 19". -->
     <div class="schedule-date">
       <div class="date-dot"></div>
-      <span>TODAY, OCT 19</span>
+      <span>{{ todayLabel() }}</span>
     </div>
 
-    <div class="schedule-list">
-      <div class="schedule-card" *ngFor="let event of upcomingEvents()" [style.borderLeftColor]="event.color">
+    <div class="schedule-list" *ngIf="upcomingEvents().length">
+      <div class="schedule-card" *ngFor="let event of upcomingEvents()"
+           [style.borderLeftColor]="event.color">
+        <div class="event-day">{{ event.dayLabel }}</div>
         <div class="event-time">{{ event.time }}</div>
         <div class="event-title">{{ event.title }}</div>
         <div class="event-subtitle" *ngIf="event.subtitle">
@@ -64,6 +85,12 @@
         </div>
       </div>
     </div>
+
+    <!-- Previously an empty list that still reserved its full height, which is
+         the large blank area under the date. -->
+    <p class="empty-hint" *ngIf="!loading() && !upcomingEvents().length">
+      Nothing scheduled ahead.
+    </p>
   </div>
 
 </div>

@@ -1,3 +1,5 @@
+@use '../../../../../styles/tokens' as *;
+
 .main-calendar-container {
   display: flex;
   flex-direction: column;
@@ -262,7 +264,7 @@
 }
 
 // Media Query for responsiveness
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   .calendar-header {
     flex-direction: column;
     align-items: stretch;
@@ -313,7 +315,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@include below($bp-phone) {
   .month-title {
     font-size: 1.1rem;
   }
@@ -334,10 +336,9 @@
 // Modal styles
 .task-overlay-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  // inset covers the viewport without vw/vh, which avoids both the scrollbar
+  // gutter overflow and the mobile-chrome height gap.
+  inset: 0;
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
   z-index: 2000;

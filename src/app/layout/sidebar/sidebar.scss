@@ -1,8 +1,11 @@
 @use '../../../styles/tokens' as *;
 
 .sidebar {
-  width: 220px;
-  height: 100vh;
+  // 290px is the floor; the inline [style.width.px] binding drives the actual
+  // value so the drag handle can widen it up to 460px.
+  width: 290px;
+  min-width: 290px;
+  height: 100dvh;
   background: $bg-sidebar;
   border-right: 1px solid $border-subtle;
   padding: 20px 0 0 0;
@@ -11,12 +14,139 @@
   justify-content: space-between;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+
+  @supports not (height: 100dvh) { height: 100vh; }
+
+  // Mid-drag the width follows the pointer, so animating it would lag behind.
+  &.resizing {
+    transition: none;
+    user-select: none;
+  }
+
+  // Closed outright, as opposed to collapsed to the icon rail.
+  //
+  // Every property needs !important: `.sidebar.collapsed` is declared further
+  // down the file at equal specificity, so its `min-width: 72px` was winning and
+  // the rail stayed visible behind the reveal handle instead of disappearing.
+  &.hidden {
+    width: 0 !important;
+    min-width: 0 !important;
+    border-right: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none;
+  }
+
+  @include reduced-motion { transition: none; }
+}
+
+// ── Resize handle ───────────────────────────────────────────────────────────
+.resize-handle {
+  position: absolute;
+  top: 0;
+  // Sits inside the edge rather than straddling it, so the sidebar can keep
+  // overflow:hidden and the handle still stays visible.
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+  background: transparent;
+  transition: background 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    background: $teal-glow;
+    outline: none;
+  }
+
+  &:focus-visible { box-shadow: inset 0 0 0 1px $teal-primary; }
+
+  // Dragging a 6px target is a phone-unfriendly gesture, and the sidebar is a
+  // full-screen sheet there anyway.
+  @include below($bp-tablet) { display: none; }
+}
+
+// ── Close / reveal ──────────────────────────────────────────────────────────
+.sidebar-close {
+  position: absolute;
+  top: 14px;
+  right: 10px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: $text-muted;
+  cursor: pointer;
+  opacity: 0;
+  transition: $transition-std;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+  &:hover { background: $bg-card-hover; color: $text-primary; }
+
+  // The mobile sheet has its own close control in the header.
+  @include below($bp-tablet) { display: none; }
+}
+
+.sidebar:hover .sidebar-close,
+.sidebar:focus-within .sidebar-close { opacity: 1; }
+
+.sidebar.collapsed .sidebar-close { display: none; }
+
+.sidebar-reveal {
+  position: fixed;
+  // Vertically centred on the left edge, so it reads as the handle for the
+  // whole sidebar rather than something attached to the header.
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  z-index: 950;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 72px;
+  border: 1px solid $border-subtle;
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
+  background: $bg-sidebar;
+  color: $text-secondary;
+  cursor: pointer;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25);
+  transition: $transition-std;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+  // Widens on hover so it reads as a pull-out handle rather than a stray sliver.
+  &:hover {
+    width: 38px;
+    color: $text-active;
+    background: $bg-card-hover;
+  }
+
+  @include reduced-motion { transition: none; }
+  @include below($bp-tablet) { display: none; }
 }
 
 .mobile-sidebar-trigger,
 .mobile-sidebar-backdrop,
 .mobile-sheet-header {
   display: none;
+}
+
+// Sizing moved off the element (was an inline max-width/max-height) so the
+// collapsed rail can shrink the mark instead of hiding it and leaving a gap.
+.logo {
+  max-width: 100px;
+  max-height: 100px;
+  object-fit: contain;
 }
 
 .light-logo {
@@ -63,6 +193,23 @@
 .nav-groups {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// Was an inline `style="margin-top: 24px"`, which the collapsed rules could not
+// override — so collapsing left a 24px void where each group label had been.
+.nav-group.spaced {
+  margin-top: 24px;
+}
+
+// Likewise the dot carried an inline margin-right, so it sat 8px left of centre
+// in the collapsed rail.
+.project-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .nav-label-container {
@@ -214,13 +361,14 @@
 .sidebar {
   &.collapsed {
     width: 72px;
+    // Without this the 270px floor on .sidebar wins and the rail never narrows.
+    min-width: 72px;
 
     .logo-text,
     .nav-label,
     span,
     .user-info,
-    .chevron,
-    .logo {
+    .chevron {
       opacity: 0;
       visibility: hidden;
       width: 0;
@@ -229,6 +377,13 @@
       padding: 0;
       pointer-events: none;
       transition: opacity 0.2s;
+    }
+
+    // The logo shrinks to a compact mark rather than collapsing to nothing,
+    // which previously left the header as an empty band.
+    .logo {
+      max-width: 40px;
+      max-height: 40px;
     }
 
     .nav-label-container {
@@ -241,6 +396,29 @@
       }
     }
 
+    // With every label hidden, the 24px inter-group gaps became stretches of
+    // empty rail. A single hairline separates the groups instead.
+    .nav-group.spaced {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid $border-subtle;
+    }
+
+    // The label row collapses completely rather than leaving a blank strip.
+    .nav-label,
+    .nav-label-container {
+      margin: 0;
+      padding: 0;
+      height: 0;
+      min-height: 0;
+      overflow: hidden;
+      border: 0;
+    }
+
+    // The teal marker is anchored to the label; with the label gone it would
+    // otherwise float in the rail on its own.
+    .nav-label::after { display: none; }
+
     .nav-item {
       justify-content: center;
       padding: 10px 0;
@@ -250,6 +428,14 @@
       mat-icon {
         margin-right: 0;
       }
+    }
+
+    // Centred and slightly larger, since in the rail the dot is the only thing
+    // identifying the project.
+    .project-dot {
+      width: 11px;
+      height: 11px;
+      margin-right: 0;
     }
 
     .user-profile {
@@ -277,9 +463,31 @@
   }
 }
 
+// The footer is pinned to the bottom, which left ~390px of blank rail between
+// the last nav icon and these controls — reading as broken empty space rather
+// than as a footer. A hairline above it anchors the group so the gap becomes
+// deliberate breathing room instead of a void.
+// The footer is pinned to the bottom, which left ~390px of blank rail between
+// the last nav icon and these controls, reading as broken empty space rather
+// than as a footer. A full-width rule drawn just above it anchors the group, so
+// the gap becomes deliberate breathing room instead of a void.
+//
+// The line is a ::before rather than a border because .nav-item carries side
+// margins and an 8px radius, which would leave a short, rounded stub.
 .toggle-btn-wrapper {
   margin-top: auto;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    right: -10px;
+    top: -8px;
+    height: 1px;
+    background: $border-subtle;
+  }
 
   .toggle-icon {
     transition: transform 0.3s ease;
@@ -304,7 +512,7 @@
   }
 }
 
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   .mobile-sidebar-trigger {
     position: fixed;
     left: 50%;
@@ -396,8 +604,12 @@
     right: 0;
     bottom: 0;
     z-index: 1001;
-    width: 100%;
-    height: min(82vh, 680px);
+    // !important because the component binds an inline pixel width for the
+    // desktop resize handle, and an inline style would otherwise leave this
+    // full-width sheet stuck at the desktop width.
+    width: 100% !important;
+    min-width: 0 !important;
+    height: min(82dvh, 680px);
     padding-top: 0;
     border-right: 0;
     border-top: 1px solid $border-subtle;
@@ -405,6 +617,8 @@
     box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.35);
     transform: translateY(100%);
     transition: transform 0.28s ease;
+
+    @supports not (height: 82dvh) { height: min(82vh, 680px); }
 
     &.mobile-open {
       transform: translateY(0);
@@ -452,7 +666,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@include below($bp-phone) {
   .sidebar {
     height: 86vh;
     border-radius: 16px 16px 0 0;
@@ -478,4 +692,27 @@
       white-space: nowrap;
     }
   }
+}
+
+/* Nav entries whose destination does not exist yet: visible, but not clickable. */
+.nav-item.disabled {
+  cursor: default;
+  opacity: 0.45;
+  pointer-events: none;
+
+  .nav-badge-soon {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(148, 163, 184, 0.18);
+    color: #94a3b8;
+  }
+}
+
+.sidebar.collapsed .nav-item.disabled .nav-badge-soon {
+  display: none;
 }

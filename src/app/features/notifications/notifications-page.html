@@ -1,57 +1,123 @@
-<div class="notifications-page">
-  <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div class="header-left">
+<div class="notifications-page" (click)="closeMenu()">
+
+  <header class="page-header">
+    <div class="title-row">
       <h1 class="greeting">Notifications</h1>
-      <p class="subtitle text-muted">Stay updated with your latest activity.</p>
-    </div>
-    <div class="header-right">
-      <button class="btn btn-outline-primary rounded-3 d-flex align-items-center gap-2" (click)="markAllRead()" *ngIf="unreadCount() > 0">
-        <mat-icon>done_all</mat-icon>
+      <button type="button" class="link-btn" *ngIf="unreadCount() > 0"
+              (click)="markAllRead(); $event.stopPropagation()">
         Mark all as read
       </button>
     </div>
+
+    <!-- All / Unread pills -->
+    <div class="filter-pills" role="tablist" aria-label="Filter notifications">
+      <button type="button" role="tab" [attr.aria-selected]="filter() === 'all'"
+              [class.active]="filter() === 'all'"
+              (click)="filter.set('all'); $event.stopPropagation()">
+        All
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="filter() === 'unread'"
+              [class.active]="filter() === 'unread'"
+              (click)="filter.set('unread'); $event.stopPropagation()">
+        Unread
+        <span class="pill-count" *ngIf="unreadCount() > 0">{{ unreadCount() }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  <div class="skeleton-list" *ngIf="loading()">
+    <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5]">
+      <div class="skeleton-avatar"></div>
+      <div class="skeleton-lines">
+        <div class="skeleton-line long"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="notifications-container">
-    <div class="loading-state text-center py-5" *ngIf="loading()">
-      <span class="spinner-border spinner-border-sm me-2"></span> Loading...
+  <ng-container *ngIf="!loading()">
+
+    <!-- Error -->
+    <div class="state-card" *ngIf="errorMessage()">
+      <div class="state-icon"><mat-icon>cloud_off</mat-icon></div>
+      <p class="state-title">Couldn't load notifications</p>
+      <p class="state-sub">{{ errorMessage() }}</p>
+      <button type="button" class="primary-btn"
+              (click)="loadNotifications(); $event.stopPropagation()">Try again</button>
     </div>
 
-    <div class="empty-state" *ngIf="!loading() && visibleNotifications().length === 0">
-      <div class="empty-icon-wrap">
-        <mat-icon>notifications_off</mat-icon>
-      </div>
-      <p class="empty-title">You're all caught up!</p>
-      <p class="empty-sub">No notifications at the moment.</p>
+    <!-- Empty -->
+    <div class="state-card" *ngIf="!errorMessage() && !visible().length">
+      <div class="state-icon"><mat-icon>notifications_none</mat-icon></div>
+      <p class="state-title">
+        {{ filter() === 'unread' ? 'No unread notifications' : "You're all caught up" }}
+      </p>
+      <p class="state-sub">
+        {{ filter() === 'unread'
+            ? 'Everything here has been read.'
+            : 'When something happens, it will show up here.' }}
+      </p>
+      <button type="button" class="ghost-btn" *ngIf="filter() === 'unread'"
+              (click)="filter.set('all'); $event.stopPropagation()">
+        Show all
+      </button>
     </div>
 
-    <div class="notification-list" *ngIf="!loading() && visibleNotifications().length > 0" [@listAnim]="visibleNotifications().length">
-      
-      <div class="notif-item" *ngFor="let n of visibleNotifications()" [class.unread]="!n.isRead" [@itemLeave] (click)="markAsRead(n.id)">
-        <div class="notif-icon" [style.background]="getTypeBg(n.type)">
-          <mat-icon [style.color]="getTypeColor(n.type)">{{ getTypeIcon(n.type) }}</mat-icon>
-        </div>
+    <!-- Feed -->
+    <section class="notif-group" *ngFor="let group of groups()">
+      <h2 class="group-title">{{ group.title }}</h2>
 
-        <div class="notif-content">
-          <div class="notif-top">
-            <span class="notif-title">{{ n.title }}</span>
-            <span class="notif-time">{{ formatTime(n.createdAt) }}</span>
+      <div class="notif-list" [@listAnim]="group.items.length">
+        <article class="notif-row" *ngFor="let n of group.items; trackBy: trackById"
+                 [class.unread]="!n.isRead" (click)="open(n)" tabindex="0"
+                 (keydown.enter)="open(n)">
+
+          <!-- Avatar with the type badge overlaid -->
+          <div class="avatar-wrap">
+            <div class="avatar" [style.background]="avatarColor(n)">{{ initials(n) }}</div>
+            <span class="type-badge" [style.background]="typeColor(n.type)"
+                  [attr.aria-label]="typeLabel(n.type)">
+              <mat-icon>{{ typeIcon(n.type) }}</mat-icon>
+            </span>
           </div>
-          <p class="notif-message">{{ n.message }}</p>
-        </div>
 
-        <div class="notif-actions">
-          <button class="action-icon" (click)="markAsRead(n.id); $event.stopPropagation()" *ngIf="!n.isRead" title="Mark as read">
-            <mat-icon>check_circle_outline</mat-icon>
-          </button>
-          <button class="action-icon dismiss" (click)="dismiss(n.id, $event)" title="Delete">
-            <mat-icon>delete_outline</mat-icon>
-          </button>
-        </div>
+          <div class="notif-body">
+            <p class="notif-text">
+              <strong *ngIf="n.triggeredByUserName">{{ n.triggeredByUserName }}</strong>
+              <span class="msg">{{ n.message || n.title }}</span>
+            </p>
+            <span class="notif-time" [class.accent]="!n.isRead">{{ formatTime(n.createdAt) }}</span>
+          </div>
 
-        <div class="unread-dot" *ngIf="!n.isRead"></div>
+          <div class="row-end">
+            <span class="unread-dot" *ngIf="!n.isRead" aria-label="Unread"></span>
+
+            <div class="menu-wrap">
+              <button type="button" class="kebab" (click)="toggleMenu(n.id, $event)"
+                      [attr.aria-expanded]="openMenuId() === n.id" aria-label="More options">
+                <mat-icon>more_horiz</mat-icon>
+              </button>
+
+              <div class="menu" *ngIf="openMenuId() === n.id" (click)="$event.stopPropagation()">
+                <button type="button" *ngIf="!n.isRead" (click)="markOne(n, $event)">
+                  <mat-icon>check_circle_outline</mat-icon> Mark as read
+                </button>
+                <button type="button" class="danger" (click)="dismiss(n, $event)">
+                  <mat-icon>delete_outline</mat-icon> Remove this notification
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
       </div>
-      
+    </section>
+
+    <div class="load-more-row" *ngIf="hasMore()">
+      <button type="button" class="ghost-btn" (click)="loadMore()" [disabled]="loadingMore()">
+        {{ loadingMore() ? 'Loading…' : 'Load more (' + notifications().length + ' of ' + totalCount() + ')' }}
+      </button>
     </div>
-  </div>
+
+  </ng-container>
 </div>

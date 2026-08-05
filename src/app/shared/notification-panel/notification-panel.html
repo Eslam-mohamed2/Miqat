@@ -24,8 +24,21 @@
     <div class="skeleton" *ngFor="let i of [1,2,3]"></div>
   </div>
 
+  <!-- Error State -->
+  <div class="empty-state" *ngIf="!loading() && errorMessage()">
+    <div class="empty-icon-wrap">
+      <mat-icon>cloud_off</mat-icon>
+    </div>
+    <p class="empty-title">Couldn't load notifications</p>
+    <p class="empty-sub">{{ errorMessage() }}</p>
+    <button class="btn-text" (click)="loadNotifications()">
+      <mat-icon>refresh</mat-icon>
+      Try again
+    </button>
+  </div>
+
   <!-- Empty State -->
-  <div class="empty-state" *ngIf="!loading() && visibleNotifications().length === 0">
+  <div class="empty-state" *ngIf="!loading() && !errorMessage() && visibleNotifications().length === 0">
     <div class="empty-icon-wrap">
       <mat-icon>notifications_off</mat-icon>
     </div>

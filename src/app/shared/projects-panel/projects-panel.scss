@@ -13,7 +13,9 @@
   top: 0;
   right: 0;
   width: 480px;
-  height: 100vh;
+  // dvh follows the visible viewport, so the panel's footer is not hidden behind
+  // mobile browser chrome the way a 100vh panel is.
+  height: 100dvh;
   background: $bg-sidebar;
   border-left: 1px solid $border-subtle;
   z-index: 901;
@@ -22,7 +24,14 @@
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 
-  @media (max-width: 540px) { width: 100vw; }
+  @supports not (height: 100dvh) { height: 100vh; }
+
+  // Below tablet a fixed 480px panel covers nearly the whole screen anyway, so
+  // it steps down with the viewport instead of overhanging it.
+  @include below($bp-tablet) { width: 82%; }
+
+  // 100% rather than 100vw: vw includes the scrollbar gutter and overflows.
+  @include below($bp-phone-lg) { width: 100%; }
 }
 
 // ── Header ────────────────────────────────────────────

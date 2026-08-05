@@ -262,21 +262,21 @@ h4 { font-size: 1rem; }
 }
 
 // ========== Responsive: prevent horizontal overflow ==========
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   body, html {
     overflow-x: hidden;
     max-width: 100%;
   }
 }
 
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   body, html {
     overflow-x: hidden;
     max-width: 100%;
   }
 }
 
-@media (max-width: 576px) {
+@include below($bp-phone-lg) {
   body, html {
     overflow-x: hidden;
     max-width: 100%;
@@ -336,7 +336,23 @@ html, body {
 }
 
 /* Material dialog override for TaskWindow dialog panel */
-.cdk-overlay-pane.custom-dialog-container .mat-mdc-dialog-surface {
-  border-radius: 20px !important;
-  overflow: hidden;
+.cdk-overlay-pane.custom-dialog-container {
+  /* Callers pass width: '600px'. On a narrow viewport that panel is wider than
+     the screen, and the gutter below keeps it off both edges rather than letting
+     it run under them. */
+  width: min(600px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100dvh - 32px);
+
+  .mat-mdc-dialog-surface {
+    border-radius: 20px !important;
+    overflow: hidden;
+    /* The surface must not exceed the panel or the dialog's own scroll area
+       never engages and the footer buttons end up off-screen. */
+    max-height: inherit;
+  }
+}
+
+@supports not (max-height: 100dvh) {
+  .cdk-overlay-pane.custom-dialog-container { max-height: calc(100vh - 32px); }
 }
