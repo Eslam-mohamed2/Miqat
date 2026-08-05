@@ -1,0 +1,54 @@
+<!-- The topbar's search box. Read-only: clicking it opens the palette, which is
+     where the real input lives, so focus and results share one element. -->
+<button type="button" class="search-trigger" (click)="openPalette()"
+        aria-label="Search tasks, projects and people">
+  <mat-icon class="search-icon">search</mat-icon>
+  <span class="trigger-text">Search tasks, projects, or people</span>
+  <span class="trigger-kbd">Ctrl K</span>
+</button>
+
+<div class="palette-backdrop" *ngIf="open()" (click)="close()">
+  <!-- Stops a click inside the panel from reaching the backdrop's close. -->
+  <div class="palette" (click)="$event.stopPropagation()" role="dialog" aria-label="Search">
+
+    <div class="palette-input">
+      <mat-icon>search</mat-icon>
+      <input #input type="text" [value]="query()"
+             (input)="onInput($event)" (keydown)="onKeydown($event)"
+             placeholder="Search tasks, projects, or people…"
+             autocomplete="off" spellcheck="false" />
+      <span class="spinner" *ngIf="loadingPeople()"></span>
+      <button type="button" class="esc" (click)="close()">esc</button>
+    </div>
+
+    <div class="palette-results" *ngIf="results().length; else noResults">
+      <ng-container *ngFor="let row of results(); let i = index; trackBy: trackByRow">
+        <p class="group-label" *ngIf="isFirstOfKind(i)">{{ kindLabel(row.kind) }}</p>
+
+        <button type="button" class="result" [class.active]="i === activeIndex()"
+                (mouseenter)="activeIndex.set(i)" (click)="go(row)">
+          <span class="result-dot" *ngIf="row.accent" [style.background]="row.accent"></span>
+          <mat-icon class="result-icon" *ngIf="!row.accent">{{ row.icon }}</mat-icon>
+          <span class="result-text">
+            <strong>{{ row.title }}</strong>
+            <small>{{ row.subtitle }}</small>
+          </span>
+          <mat-icon class="result-go">arrow_forward</mat-icon>
+        </button>
+      </ng-container>
+    </div>
+
+    <ng-template #noResults>
+      <p class="palette-empty">
+        Nothing matches “{{ query() }}”.
+        <span>Tasks and projects search your own; people search everyone.</span>
+      </p>
+    </ng-template>
+
+    <div class="palette-foot">
+      <span><b>↑</b><b>↓</b> navigate</span>
+      <span><b>↵</b> open</span>
+      <span><b>esc</b> close</span>
+    </div>
+  </div>
+</div>

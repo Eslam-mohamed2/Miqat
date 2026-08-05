@@ -1,7 +1,8 @@
 <div class="topnav">
   <div class="search-container">
-    <mat-icon class="search-icon">search</mat-icon>
-    <input type="text" placeholder="Search tasks, nodes, or events (Cmd+K)" />
+    <!-- The bare input here was decorative: it had no binding and no handler,
+         while its own placeholder advertised Cmd+K. -->
+    <app-global-search></app-global-search>
   </div>
   
   <div class="right-actions">

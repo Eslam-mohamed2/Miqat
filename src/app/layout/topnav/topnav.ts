@@ -11,6 +11,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { MentionService } from '../../core/services/mention.service';
 import { FriendService } from '../../core/services/friend.service';
 import { ProjectsPanel } from '../../shared/projects-panel/projects-panel';
+import { GlobalSearch } from '../../shared/global-search/global-search';
 import { CreateProjectDialog } from '../../shared/create-project-dialog/create-project-dialog';
 import { Observable, merge, of, timer } from 'rxjs';
 import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
@@ -25,8 +26,7 @@ const POLL_INTERVAL_MS = 60_000;
     CommonModule,
     MatDialogModule,
     ProjectsPanel,
-    RouterModule
-  ],
+    RouterModule, GlobalSearch],
   templateUrl: './topnav.html',
   styleUrl: './topnav.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
