@@ -356,3 +356,17 @@ html, body {
 @supports not (max-height: 100dvh) {
   .cdk-overlay-pane.custom-dialog-container { max-height: calc(100vh - 32px); }
 }
+
+/* ── Primary action button used across the auth flow ─────────────────────────
+   Global on purpose. This was defined only inside authentication.scss (scoped),
+   so on verify-otp, forgot-password and reset-password — components without
+   that stylesheet — `bg-image` resolved to nothing and `text-white` sat on the
+   white card: the Submit button was clickable but invisible. */
+.bg-image {
+  background-image: url('./assets/stacked-waves-haikei.png') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  border: 1px solid #2e6670 !important;
+}

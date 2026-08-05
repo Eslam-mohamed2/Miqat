@@ -167,6 +167,20 @@ export class Authentication implements OnInit, OnDestroy {
         });
       },
       error: (err) => {
+        // 502 means the account WAS created but the verification email did not
+        // go out. The only place the "Resend code" button exists is the OTP
+        // screen, so stranding the user here with a message telling them to use
+        // it would be a dead end — send them where the button is.
+        if (err?.status === 502) {
+          this.router.navigate(['/authentication/verify-otp'], {
+            queryParams: {
+              email: this.registerForm.value.email,
+              purpose: 'EmailVerification',
+              sendFailed: '1'
+            }
+          });
+          return;
+        }
         this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
         console.error('Registration error details:', err);
       }

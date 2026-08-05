@@ -48,6 +48,12 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       this.email.set(params['email'] || '');
       this.purpose.set(params['purpose'] === 'EmailVerification' ? 'EmailVerification' : 'PasswordReset');
+      // Registration succeeded but the email itself failed to send — say so up
+      // front instead of letting the user wait for a code that never left.
+      if (params['sendFailed'] === '1') {
+        this.errorMessage.set(
+          'Your account was created, but the code could not be emailed. Press "Resend code" to try again.');
+      }
       if (!this.email()) {
         this.router.navigate(['/authentication/forgot-password']);
       }
