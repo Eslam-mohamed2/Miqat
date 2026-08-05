@@ -89,17 +89,39 @@
         <p class="project-desc">{{ group.description || 'No description' }}</p>
       </div>
 
+      <!-- Owner -->
+      <div class="card-owner">
+        <span class="owner-avatar" [style.background]="getColor(group) + '22'"
+              [style.color]="getColor(group)">{{ getInitials(group.ownerName || '?') }}</span>
+        <span class="owner-label">
+          {{ isMine(group) ? 'Owned by you' : (group.ownerName || 'Unknown owner') }}
+        </span>
+      </div>
+
       <!-- Stats Row -->
       <div class="card-stats">
         <div class="stat">
           <mat-icon>group</mat-icon>
-          <span>{{ group.memberCount }} members</span>
+          <span>{{ group.memberCount }} {{ group.memberCount === 1 ? 'member' : 'members' }}</span>
         </div>
         <div class="stat">
           <mat-icon>task_alt</mat-icon>
-          <span>{{ group.taskCount }} tasks</span>
+          <span>{{ group.taskCount }} {{ group.taskCount === 1 ? 'task' : 'tasks' }}</span>
         </div>
       </div>
+
+      <!-- Progress: the number people actually want from a project card -->
+      <div class="card-progress" *ngIf="group.taskCount">
+        <div class="progress-head">
+          <span>{{ completed(group) }} of {{ group.taskCount }} done</span>
+          <strong [style.color]="getColor(group)">{{ percent(group) }}%</strong>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="percent(group)"
+               [style.background]="getColor(group)"></div>
+        </div>
+      </div>
+      <p class="card-progress empty" *ngIf="!group.taskCount">No tasks yet</p>
 
       <!-- Footer -->
       <div class="card-footer" [style.border-top-color]="getColor(group) + '33'">

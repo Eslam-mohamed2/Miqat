@@ -63,6 +63,8 @@ export interface TaskDto {
 export interface GroupDto {
   id: string; name: string; description?: string; color?: string; ownerId: string; ownerName?: string;
   memberCount: number; taskCount: number; createdAt: string;
+  /** Completed subset of taskCount, for the progress bar. */
+  completedTaskCount?: number;
 }
 
 /**

@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { GroupService } from '../../core/services/group.service';
+import { AuthService } from '../../core/services/auth.service';
 import { UiService } from '../../core/services/ui.service';
 import { CreateProjectDialog } from '../create-project-dialog/create-project-dialog';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
@@ -56,6 +57,7 @@ export class ProjectsPanel implements OnChanges {
   @Output() projectCreated = new EventEmitter<any>();
 
   private groupService = inject(GroupService);
+  private readonly myId = inject(AuthService).getCurrentUserId();
   private dialog = inject(MatDialog);
   public uiService = inject(UiService);
 
@@ -113,6 +115,20 @@ export class ProjectsPanel implements OnChanges {
 
   close() {
     this.closed.emit();
+  }
+
+  /** Completed count, tolerating an older API that does not send it. */
+  completed(group: GroupDto): number {
+    return group.completedTaskCount ?? 0;
+  }
+
+  percent(group: GroupDto): number {
+    if (!group.taskCount) return 0;
+    return Math.round((this.completed(group) / group.taskCount) * 100);
+  }
+
+  isMine(group: GroupDto): boolean {
+    return !!this.myId && group.ownerId === this.myId;
   }
 
   getInitials(name: string): string {
