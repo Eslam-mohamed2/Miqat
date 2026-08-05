@@ -167,16 +167,23 @@ export class CalendarSidebar implements OnInit {
   }
 
   toggleCalendar(id: string) {
-    this.calendars.update(list =>
-      list.map(cal => (cal.id === id ? { ...cal, checked: !cal.checked } : cal)));
+    // Delegated to the shared state so the grid sees it. The local `checked`
+    // flag used to be the only record of this, which is why unticking a project
+    // changed the tick and left its tasks on the calendar.
+    this.calendarState.toggleCalendar(id);
   }
 
   /** Drives the "Show all / Hide all" affordance above the list. */
-  readonly allShown = computed(() => this.calendars().every(c => c.checked));
+  readonly allShown = computed(() =>
+    this.calendars().every(c => this.calendarState.isCalendarVisible(c.id)));
+
+  isVisible(id: string): boolean {
+    return this.calendarState.isCalendarVisible(id);
+  }
 
   /** One click to get back to seeing everything after filtering things out. */
-  setAll(checked: boolean) {
-    this.calendars.update(list => list.map(cal => ({ ...cal, checked })));
+  setAll(visible: boolean) {
+    this.calendarState.setAllCalendars(this.calendars().map(c => c.id), visible);
   }
 
   trackByCalendarId = (_: number, cal: CalendarFilter) => cal.id;

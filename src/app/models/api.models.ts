@@ -72,6 +72,8 @@ export interface GroupDto {
 export interface NotificationDto {
   id: string; isRead: boolean; createdAt: string; type?: string; title?: string; message?: string;
   recipientUserId?: string;
+  /** Anchor within the linked task when the notification is about a comment. */
+  linkedCommentId?: string | null;
   /** Who caused it. Null for system-generated notifications. */
   triggeredByUserId?: string | null;
   triggeredByUserName?: string | null;

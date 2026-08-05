@@ -168,7 +168,15 @@ export class NotificationsPage implements OnInit {
       return;
     }
     if (entity === 'taskitem') {
-      this.router.navigate(['/tasks']);
+      // This dropped every task notification on the *list*, so "X commented on
+      // your task" made you go and find the task yourself. Go to the task, and
+      // when the notification is about a comment, straight to that comment.
+      if (n.linkedEntityId) {
+        this.router.navigate(['/tasks', n.linkedEntityId],
+          n.linkedCommentId ? { queryParams: { comment: n.linkedCommentId } } : {});
+      } else {
+        this.router.navigate(['/tasks']);
+      }
       return;
     }
     if (entity === 'friendship') {

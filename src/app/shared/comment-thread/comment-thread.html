@@ -11,7 +11,8 @@
   </p>
 
   <div class="list" *ngIf="comments().length">
-    <article class="comment-row" *ngFor="let c of comments(); trackBy: trackById">
+    <article class="comment-row" *ngFor="let c of comments(); trackBy: trackById"
+             [id]="'comment-' + c.id" [class.focused]="focusedId() === c.id">
       <!-- referrerpolicy is not cosmetic: Google avatar hosts reject requests
            that carry a Referer they do not recognise, so these load as broken
            images without it. If one fails anyway, fall back to initials rather

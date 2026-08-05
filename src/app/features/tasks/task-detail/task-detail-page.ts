@@ -52,6 +52,8 @@ export class TaskDetailPage {
   readonly priorities = PRIORITIES;
 
   taskId = signal<string | null>(null);
+  /** ?comment=<id> — set when arriving from a "new comment" notification. */
+  focusCommentId = signal<string | null>(null);
   task = signal<TaskDto | null>(null);
   members = signal<MemberDto[]>([]);
   loading = signal(true);
@@ -85,6 +87,10 @@ export class TaskDetailPage {
   });
 
   constructor() {
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(q => this.focusCommentId.set(q.get('comment')));
+
     this.route.paramMap
       .pipe(
         switchMap(params => {

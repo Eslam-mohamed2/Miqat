@@ -45,11 +45,11 @@
            target, and the project colour comes straight from the group instead
            of being forced through the MDC checkbox's internals with ::ng-deep. -->
       <button type="button" class="calendar-item" *ngFor="let cal of calendars(); trackBy: trackByCalendarId"
-              [class.off]="!cal.checked" (click)="toggleCalendar(cal.id)"
-              role="switch" [attr.aria-checked]="cal.checked"
+              [class.off]="!isVisible(cal.id)" (click)="toggleCalendar(cal.id)"
+              role="switch" [attr.aria-checked]="isVisible(cal.id)"
               [attr.aria-label]="cal.name">
         <span class="cal-box" [style.--cal-color]="cal.color">
-          <mat-icon *ngIf="cal.checked">check</mat-icon>
+          <mat-icon *ngIf="isVisible(cal.id)">check</mat-icon>
         </span>
         <span class="cal-name">{{ cal.name }}</span>
         <span class="cal-count" *ngIf="cal.taskCount">{{ cal.taskCount }}</span>

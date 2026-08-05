@@ -60,6 +60,20 @@ export class CommentThread {
   /** Compact rendering for the modal; the full page uses the roomier layout. */
   @Input() compact = false;
 
+  /**
+   * A comment to scroll to and mark, arrived at from a notification. Set before
+   * the thread has loaded, so the scroll happens once the rows exist rather
+   * than immediately.
+   */
+  @Input()
+  set focusCommentId(value: string | null | undefined) {
+    this.focusedId.set(value ?? null);
+    if (value) this.pendingScroll = true;
+  }
+
+  focusedId = signal<string | null>(null);
+  private pendingScroll = false;
+
   comments = signal<CommentDto[]>([]);
   loading = signal(false);
   posting = signal(false);
@@ -115,7 +129,11 @@ export class CommentThread {
     if (!id) return;
     this.loading.set(true);
     this.comments_.getForTask(id).subscribe({
-      next: thread => { this.comments.set(thread ?? []); this.loading.set(false); },
+      next: thread => {
+        this.comments.set(thread ?? []);
+        this.loading.set(false);
+        this.scrollToFocused();
+      },
       error: () => { this.comments.set([]); this.loading.set(false); }
     });
     // A failure here only costs the picker, so it must not surface as an error.
@@ -130,6 +148,24 @@ export class CommentThread {
     if (!id) return;
     this.comments_.getForTask(id).subscribe({
       next: thread => this.comments.set(thread ?? [])
+    });
+  }
+
+  /**
+   * Brings the linked comment into view once its row exists. The rAF is needed
+   * because the signal write above only queues a render — querying for the row
+   * in the same tick finds nothing.
+   */
+  private scrollToFocused() {
+    if (!this.pendingScroll) return;
+    const id = this.focusedId();
+    if (!id) return;
+    this.pendingScroll = false;
+
+    requestAnimationFrame(() => {
+      const row = document.getElementById(`comment-${id}`);
+      if (!row) return;
+      row.scrollIntoView({ block: 'center', behavior: 'smooth' });
     });
   }
 

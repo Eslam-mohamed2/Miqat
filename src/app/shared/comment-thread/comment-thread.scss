@@ -72,6 +72,14 @@
   align-items: flex-start;
 }
 
+// The comment a notification pointed at. Marked rather than merely scrolled to,
+// because "somewhere in the middle of the screen" is not an answer to "which
+// comment did they mean".
+.comment-row.focused .bubble {
+  border-color: $teal-primary;
+  box-shadow: 0 0 0 3px var(--teal-glow);
+}
+
 .avatar {
   flex: 0 0 auto;
   width: 34px;

@@ -10,6 +10,8 @@ import { forkJoin } from 'rxjs';
 
 export interface CalendarEvent {
   id: string;
+  /** Empty for personal tasks, which have no project row to switch off. */
+  groupId: string;
   time: string;
   title: string;
   description?: string;
@@ -69,7 +71,16 @@ export class MainCalendar implements OnInit {
   // Compute what to render based on the current View selection
   filteredWeeks = computed(() => {
     const view = this.currentView();
-    const all = this.weeks();
+    // Reading the hidden set here is what makes the sidebar's checkboxes do
+    // something: this computed already feeds the template, so dropping the
+    // events of a switched-off project re-renders the grid immediately.
+    const hidden = this.calendarState.hiddenCalendarIds();
+    const all = this.weeks().map(week => week.map(day => ({
+      ...day,
+      events: hidden.size
+        ? day.events.filter(e => !e.groupId || !hidden.has(e.groupId))
+        : day.events
+    })));
     if (view === 'month') return all;
 
     // For Week or Day, find the row containing 'today', or just use the first row if none found
@@ -149,6 +160,7 @@ export class MainCalendar implements OnInit {
                     const group = groups.find(g => g.id === t.groupId);
                     return {
                         id: t.id || '',
+                        groupId: t.groupId || '',
                         time: this.formatTime(t.dueDate!),
                         title: t.title,
                         description: t.description,
