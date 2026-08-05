@@ -67,6 +67,12 @@
     No tasks to map yet. Use the buttons below to add one.
   </p>
 
+  <!-- Autosave feedback; silent while idle so it never nags. -->
+  <div class="save-state" *ngIf="saveState() !== 'idle'" [class.saved]="saveState() === 'saved'">
+    <mat-icon>{{ saveState() === 'saved' ? 'cloud_done' : 'cloud_upload' }}</mat-icon>
+    {{ saveState() === 'saved' ? 'Saved' : 'Saving…' }}
+  </div>
+
   <!-- Toolbar -->
   <div class="toolbar" (click)="$event.stopPropagation()">
     <button type="button" class="tool-btn" [class.active]="tool() === 'select'"

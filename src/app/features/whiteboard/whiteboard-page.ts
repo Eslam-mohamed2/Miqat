@@ -3,8 +3,13 @@ import {
   OnDestroy, ViewChild, computed, inject, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BoardService } from '../../core/services/board.service';
 
 interface Point { x: number; y: number; }
 interface Stroke { color: string; width: number; points: Point[]; type: 'pen' | 'eraser'; }
@@ -26,6 +31,16 @@ const ERASER_WIDTH = 20;
 export class WhiteboardPage implements AfterViewInit, OnDestroy {
   @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
+  private boards = inject(BoardService);
+  private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
+
+  /** Null until the first save creates the row. */
+  private boardId: string | null = null;
+  /** Debounced so a stroke does not become a request per pointer move. */
+  private changed$ = new Subject<void>();
+  saveState = signal<'idle' | 'saving' | 'saved'>('idle');
+
   private ctx!: CanvasRenderingContext2D;
   private resizeObserver?: ResizeObserver;
 
@@ -46,8 +61,17 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
 
   private isDrawing = false;
 
+  constructor() {
+    // 1.2s after the last change: long enough that a continuous scribble is one
+    // request, short enough that closing the tab rarely loses anything.
+    this.changed$
+      .pipe(debounceTime(1200), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.persist());
+  }
+
   ngAfterViewInit() {
     this.resize();
+    this.restore();
 
     // A window resize listener was not enough: collapsing the sidebar changes
     // the board's width without the window changing at all, which left the
@@ -58,6 +82,62 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.resizeObserver?.disconnect();
+  }
+
+  // ── Persistence ───────────────────────────────────────────────────────────
+
+  /**
+   * Loads the board this route refers to.
+   *
+   * `/whiteboard/new` deliberately starts empty and unattached, so the next
+   * save creates a second board rather than overwriting the first.
+   */
+  private restore() {
+    // `/whiteboard/new` matches the literal route declared before `:id`, so it
+    // carries no route param — reading paramMap here returned null and the
+    // blank-board branch never fired. The URL segment is the reliable signal.
+    const segments = this.route.snapshot.url.map(s => s.path);
+    const last = segments[segments.length - 1];
+    if (last === 'new') return;
+    const id = last && last !== 'whiteboard' && last !== 'node-flow' ? last : null;
+
+    const load = id ? this.boards.getById(id) : this.boards.latest('Whiteboard');
+    load.subscribe(board => {
+      if (!board) return;
+      this.boardId = board.id;
+      try {
+        const data = JSON.parse(board.content || '{}');
+        if (Array.isArray(data.strokes)) this.strokes.set(data.strokes);
+        if (Array.isArray(data.notes)) this.notes.set(data.notes);
+        this.redraw();
+      } catch {
+        // A board we cannot parse is not worth destroying the editor over —
+        // start blank and let the next save overwrite it.
+      }
+    });
+  }
+
+  /** Called by every mutating action; the debounce upstream does the batching. */
+  private touch() {
+    this.changed$.next();
+  }
+
+  private persist() {
+    const content = JSON.stringify({ strokes: this.strokes(), notes: this.notes() });
+    this.saveState.set('saving');
+
+    const request = this.boardId
+      ? this.boards.update(this.boardId, 'Whiteboard', content)
+      : this.boards.create('Whiteboard', content, 'My whiteboard');
+
+    request.subscribe({
+      next: board => {
+        this.boardId = board?.id ?? this.boardId;
+        this.saveState.set('saved');
+        setTimeout(() => this.saveState.set('idle'), 1800);
+      },
+      error: () => this.saveState.set('idle')
+    });
   }
 
   /**
@@ -118,6 +198,7 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
       };
       this.notes.update(list => [...list, note]);
       this.history.update(h => [...h, { kind: 'note', id: note.id }]);
+      this.touch();
       this.tool.set('select');
       return;
     }
@@ -155,6 +236,7 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
     this.currentStroke = null;
     this.isDrawing = false;
     this.redraw();
+    this.touch();
   }
 
   private redraw() {
@@ -213,6 +295,7 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
     } else {
       this.notes.update(list => list.filter(n => n.id !== entry.id));
     }
+    this.touch();
   }
 
   clear() {
@@ -221,6 +304,7 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
     this.notes.set([]);
     this.history.set([]);
     this.redraw();
+    this.touch();
   }
 
   // ── Sticky notes ──────────────────────────────────────────────────────────
@@ -245,17 +329,20 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
   }
 
   endDragNote() {
+    if (this.draggingNoteId) this.touch();
     this.draggingNoteId = null;
   }
 
   updateNoteText(id: string, text: string) {
     this.notes.update(list => list.map(n => (n.id === id ? { ...n, text } : n)));
+    this.touch();
   }
 
   deleteNote(e: Event, id: string) {
     e.stopPropagation();
     this.notes.update(list => list.filter(n => n.id !== id));
     this.history.update(h => h.filter(entry => entry.kind !== 'note' || entry.id !== id));
+    this.touch();
   }
 
   trackByNoteId = (_: number, note: Note) => note.id;

@@ -1,9 +1,13 @@
 import {
-  ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild,
+  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, ViewChild,
   inject, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BoardService } from '../../core/services/board.service';
 import { MatIconModule } from '@angular/material/icon';
 import { TaskService } from '../../core/services/task.service';
 import { TaskDto } from '../../models/api.models';
@@ -42,6 +46,14 @@ const CLICK_SLOP = 4;
 export class NodeFlowPage implements OnInit {
   private taskService = inject(TaskService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private boards = inject(BoardService);
+  private destroyRef = inject(DestroyRef);
+
+  /** Null until the first save creates the row. */
+  private boardId: string | null = null;
+  private changed$ = new Subject<void>();
+  saveState = signal<'idle' | 'saving' | 'saved'>('idle');
 
   @ViewChild('board') boardRef!: ElementRef<HTMLElement>;
 
@@ -60,7 +72,42 @@ export class NodeFlowPage implements OnInit {
   /** Only meaningful while linking — see onMouseMove. */
   pointer = signal({ x: 0, y: 0 });
 
+  constructor() {
+    this.changed$
+      .pipe(debounceTime(1200), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.persist());
+  }
+
   ngOnInit() {
+    // See the whiteboard: the literal `/new` route carries no `:id` param.
+    const segments = this.route.snapshot.url.map(s => s.path);
+    const last = segments[segments.length - 1];
+    const id = last === 'new' ? 'new'
+             : (last && last !== 'node-flow' ? last : null);
+
+    // A saved diagram wins over the generated layout: the whole point of saving
+    // is that your arrangement survives. Only fall back to laying tasks out when
+    // there is nothing stored — or when /new was asked for explicitly.
+    if (id === 'new') { this.seedFromTasks(); return; }
+
+    const load = id ? this.boards.getById(id) : this.boards.latest('NodeFlow');
+    load.subscribe(board => {
+      if (!board) { this.seedFromTasks(); return; }
+      this.boardId = board.id;
+      try {
+        const data = JSON.parse(board.content || '{}');
+        this.nodes.set(Array.isArray(data.nodes) ? data.nodes : []);
+        this.edges.set(Array.isArray(data.edges) ? data.edges : []);
+        this.loading.set(false);
+        if (!this.nodes().length) this.seedFromTasks();
+      } catch {
+        this.seedFromTasks();
+      }
+    });
+  }
+
+  /** First run: lay the user's tasks out as a starting diagram. */
+  private seedFromTasks() {
     this.taskService.getTasks().subscribe({
       next: tasks => {
         this.nodes.set(this.layoutTasks(tasks ?? []));
@@ -70,6 +117,26 @@ export class NodeFlowPage implements OnInit {
         this.nodes.set([]);
         this.loading.set(false);
       }
+    });
+  }
+
+  private touch() { this.changed$.next(); }
+
+  private persist() {
+    const content = JSON.stringify({ nodes: this.nodes(), edges: this.edges() });
+    this.saveState.set('saving');
+
+    const request = this.boardId
+      ? this.boards.update(this.boardId, 'NodeFlow', content)
+      : this.boards.create('NodeFlow', content, 'My flow');
+
+    request.subscribe({
+      next: board => {
+        this.boardId = board?.id ?? this.boardId;
+        this.saveState.set('saved');
+        setTimeout(() => this.saveState.set('idle'), 1800);
+      },
+      error: () => this.saveState.set('idle')
     });
   }
 
@@ -133,6 +200,7 @@ export class NodeFlowPage implements OnInit {
   }
 
   onMouseUp() {
+    if (this.draggingNodeId && this.dragMoved) this.touch();
     this.draggingNodeId = null;
   }
 
@@ -158,6 +226,7 @@ export class NodeFlowPage implements OnInit {
         status: 'Pending'
       }]);
       this.tool.set('select');
+      this.touch();
     }
     this.linkingFromNodeId.set(null);
   }
@@ -188,6 +257,7 @@ export class NodeFlowPage implements OnInit {
         (edge.fromId === node.id && edge.toId === fromId));
       if (!exists) {
         this.edges.update(list => [...list, { id: `e_${Date.now()}`, fromId, toId: node.id }]);
+        this.touch();
       }
       this.linkingFromNodeId.set(null);
       return;
@@ -203,6 +273,7 @@ export class NodeFlowPage implements OnInit {
 
   updateNodeTitle(id: string, title: string) {
     this.nodes.update(list => list.map(n => (n.id === id ? { ...n, title } : n)));
+    this.touch();
   }
 
   deleteNode(e: Event, id: string) {
@@ -210,6 +281,7 @@ export class NodeFlowPage implements OnInit {
     this.nodes.update(list => list.filter(n => n.id !== id));
     this.edges.update(list => list.filter(edge => edge.fromId !== id && edge.toId !== id));
     if (this.linkingFromNodeId() === id) this.linkingFromNodeId.set(null);
+    this.touch();
   }
 
   // ── Edges ─────────────────────────────────────────────────────────────────
