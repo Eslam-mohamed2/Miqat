@@ -1,138 +1,117 @@
-<div class="settings-container friends-container">
-  <div class="settings-header">
-    <h1>Friends</h1>
-    <div class="header-search">
+<div class="friends-page">
+
+  <header class="page-header">
+    <h1 class="greeting">Friends</h1>
+
+    <div class="search-field">
       <mat-icon>search</mat-icon>
-      <input type="text" placeholder="Search users..." (input)="onSearch($event)">
+      <input type="search" placeholder="Search people…" aria-label="Search people"
+             [ngModel]="searchText()" (ngModelChange)="onSearch($event)" />
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="tab-bar" role="tablist" aria-label="Friends sections">
+    <button type="button" role="tab" *ngFor="let tab of tabs"
+            [class.active]="activeTab() === tab.key"
+            [attr.aria-selected]="activeTab() === tab.key"
+            (click)="setTab(tab.key)">
+      <mat-icon>{{ tab.icon }}</mat-icon>
+      <span class="tab-label">{{ tab.label }}</span>
+      <span class="tab-badge" *ngIf="tab.key === 'pending' && pendingCount() > 0">{{ pendingCount() }}</span>
+    </button>
+  </nav>
+
+  <!-- Error -->
+  <div class="error-banner" *ngIf="errorMessage()" role="alert">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ errorMessage() }}</span>
+    <button type="button" (click)="errorMessage.set('')" aria-label="Dismiss"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <!-- Loading -->
+  <div class="card-grid" *ngIf="loading()">
+    <div class="person-card skeleton" *ngFor="let i of [1,2,3,4,5,6]">
+      <div class="sk-avatar"></div>
+      <div class="sk-line long"></div>
+      <div class="sk-line short"></div>
+      <div class="sk-btn"></div>
     </div>
   </div>
 
-  <div class="settings-content">
-    <!-- Sidebar -->
-    <div class="settings-sidebar">
-      <div class="sidebar-item" [class.active]="activeTab() === 'suggestions'" (click)="setTab('suggestions')">
-        <span>Suggestions</span>
-      </div>
-      <div class="sidebar-item" [class.active]="activeTab() === 'friends'" (click)="setTab('friends')">
-        <span>My Friends</span>
-      </div>
-      <div class="sidebar-item" [class.active]="activeTab() === 'pending'" (click)="setTab('pending')">
-        <span>Pending Requests</span>
-      </div>
-      <div class="sidebar-item" [class.active]="activeTab() === 'sent'" (click)="setTab('sent')">
-        <span>Sent Requests</span>
-      </div>
+  <ng-container *ngIf="!loading()">
+
+    <!-- Empty -->
+    <div class="state-card" *ngIf="isEmpty()">
+      <div class="state-icon"><mat-icon>group_off</mat-icon></div>
+      <p class="state-title">{{ emptyTitle() }}</p>
+      <p class="state-sub">{{ emptySub() }}</p>
+      <button type="button" class="primary-btn" *ngIf="activeTab() !== 'suggestions'"
+              (click)="setTab('suggestions')">
+        Find people
+      </button>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-      <div class="scroll-area p-4">
-        
-        <div class="loading-state text-center" *ngIf="loading()">
-          <span class="spinner-border spinner-border-sm me-2"></span> Loading...
+    <!-- Grid -->
+    <div class="card-grid" *ngIf="visibleCards().length">
+      <article class="person-card" *ngFor="let card of visibleCards(); trackBy: trackByUser">
+
+        <button type="button" class="card-identity" (click)="viewProfile(card)">
+          <img class="avatar-img" *ngIf="card.avatarUrl; else initialsAvatar"
+               [src]="card.avatarUrl" [alt]="card.name" />
+          <ng-template #initialsAvatar>
+            <div class="avatar" [style.background]="avatarColor(card)">{{ initials(card.name) }}</div>
+          </ng-template>
+
+          <h2 class="person-name">{{ card.name }}</h2>
+          <p class="person-sub" *ngIf="card.subtitle">{{ card.subtitle }}</p>
+        </button>
+
+        <!-- Suggestions: add / requested -->
+        <div class="card-actions" *ngIf="activeTab() === 'suggestions'">
+          <button type="button" class="btn primary" *ngIf="!isRequested(card.userId)"
+                  [disabled]="isBusy(card.userId)" (click)="sendRequest(card)">
+            <mat-icon>person_add</mat-icon>
+            {{ isBusy(card.userId) ? 'Sending…' : 'Add friend' }}
+          </button>
+          <button type="button" class="btn muted" *ngIf="isRequested(card.userId)" disabled>
+            <mat-icon>check</mat-icon> Request sent
+          </button>
+          <button type="button" class="btn subtle" [disabled]="isBusy(card.userId)" (click)="block(card)">
+            Block
+          </button>
         </div>
 
-        <div class="friend-error" *ngIf="errorMessage()">
-          {{ errorMessage() }}
+        <!-- Received requests: confirm / delete -->
+        <div class="card-actions" *ngIf="activeTab() === 'pending'">
+          <button type="button" class="btn primary" [disabled]="isBusy(card.userId)" (click)="accept(card)">
+            Confirm
+          </button>
+          <button type="button" class="btn subtle" [disabled]="isBusy(card.userId)" (click)="reject(card)">
+            Delete
+          </button>
         </div>
 
-        <!-- Suggestions Tab -->
-        <div class="friends-grid" *ngIf="!loading() && activeTab() === 'suggestions'">
-          <div class="empty-state" *ngIf="suggestionsList().length === 0">
-            <mat-icon>person_search</mat-icon>
-            <p>No suggestions found.</p>
-          </div>
-          <div class="friend-card settings-card" *ngFor="let user of suggestionsList()">
-            <div class="user-info" (click)="viewProfile(user.id)" style="cursor: pointer;">
-              <div class="avatar-circle">
-                 <img *ngIf="user.profilePictureUrl" [src]="user.profilePictureUrl" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                 <span *ngIf="!user.profilePictureUrl">{{ user.fullName?.substring(0,2) || 'U' }}</span>
-              </div>
-              <div class="user-details">
-                <div class="name">{{ user.fullName }}</div>
-                <div class="text-muted small">{{ user.country || 'Unknown Location' }}</div>
-              </div>
-            </div>
-            <div class="actions">
-              <button class="btn-save" (click)="sendRequest(user.id)" [disabled]="user.requestSent" [style.opacity]="user.requestSent ? 0.7 : 1">
-                {{ user.requestSent ? 'Request Sent' : 'Add Friend' }}
-              </button>
-            </div>
-          </div>
+        <!-- Friends: profile / unfriend -->
+        <div class="card-actions" *ngIf="activeTab() === 'friends'">
+          <button type="button" class="btn primary" (click)="viewProfile(card)">
+            <mat-icon>account_circle</mat-icon> View profile
+          </button>
+          <button type="button" class="btn subtle" [disabled]="isBusy(card.userId)" (click)="unfriend(card)">
+            Unfriend
+          </button>
         </div>
 
-        <!-- My Friends Tab -->
-        <div class="friends-grid" *ngIf="!loading() && activeTab() === 'friends'">
-          <div class="empty-state" *ngIf="friendsList().length === 0">
-            <mat-icon>group_off</mat-icon>
-            <p>You have no friends yet.</p>
-          </div>
-          <div class="friend-card settings-card" *ngFor="let friend of friendsList()">
-            <div class="user-info" (click)="viewProfile(friend.friendUser?.id)" style="cursor: pointer;">
-              <div class="avatar-circle">
-                 <img *ngIf="friend.friendUser?.profilePictureUrl" [src]="friend.friendUser.profilePictureUrl" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                 <span *ngIf="!friend.friendUser?.profilePictureUrl">{{ friend.friendUser?.fullName?.substring(0,2) || 'FR' }}</span>
-              </div>
-              <div class="user-details">
-                <div class="name">{{ friend.friendUser?.fullName }}</div>
-                <div class="text-muted small">{{ friend.friendUser?.country || 'Unknown Location' }}</div>
-              </div>
-            </div>
-            <div class="actions">
-              <button class="btn-cancel" (click)="unfriend(friend.id)">Unfriend</button>
-              <button class="btn-cancel text-danger" (click)="blockUser(friend.friendUser?.id)">Block</button>
-            </div>
-          </div>
+        <!-- Sent: cancel -->
+        <div class="card-actions" *ngIf="activeTab() === 'sent'">
+          <button type="button" class="btn subtle wide" [disabled]="isBusy(card.userId)" (click)="cancelSent(card)">
+            <mat-icon>undo</mat-icon>
+            {{ isBusy(card.userId) ? 'Cancelling…' : 'Cancel request' }}
+          </button>
         </div>
 
-        <!-- Pending Requests Tab -->
-        <div class="friends-grid" *ngIf="!loading() && activeTab() === 'pending'">
-          <div class="empty-state" *ngIf="pendingList().length === 0">
-            <mat-icon>inbox</mat-icon>
-            <p>No pending requests.</p>
-          </div>
-          <div class="friend-card settings-card" *ngFor="let req of pendingList()">
-            <div class="user-info" (click)="viewProfile(req.sender?.id)" style="cursor: pointer;">
-              <div class="avatar-circle">
-                 <img *ngIf="req.sender?.profilePictureUrl" [src]="req.sender.profilePictureUrl" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                 <span *ngIf="!req.sender?.profilePictureUrl">{{ req.sender?.fullName?.substring(0,2) || 'PR' }}</span>
-              </div>
-              <div class="user-details">
-                <div class="name">{{ req.sender?.fullName }}</div>
-                <div class="text-muted small">{{ req.sender?.country || 'Unknown Location' }}</div>
-              </div>
-            </div>
-            <div class="actions d-flex gap-2">
-              <button class="btn-save" (click)="acceptRequest(req.id)">Accept</button>
-              <button class="btn-cancel" (click)="rejectRequest(req.id)">Reject</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sent Requests Tab -->
-        <div class="friends-grid" *ngIf="!loading() && activeTab() === 'sent'">
-          <div class="empty-state" *ngIf="sentList().length === 0">
-            <mat-icon>send</mat-icon>
-            <p>No sent requests.</p>
-          </div>
-          <div class="friend-card settings-card" *ngFor="let req of sentList()">
-            <div class="user-info" (click)="viewProfile(req.receiver?.id)" style="cursor: pointer;">
-              <div class="avatar-circle">
-                 <img *ngIf="req.receiver?.profilePictureUrl" [src]="req.receiver.profilePictureUrl" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                 <span *ngIf="!req.receiver?.profilePictureUrl">{{ req.receiver?.fullName?.substring(0,2) || 'SR' }}</span>
-              </div>
-              <div class="user-details">
-                <div class="name">{{ req.receiver?.fullName }}</div>
-                <div class="text-muted small">Pending...</div>
-              </div>
-            </div>
-            <div class="actions">
-              <button class="btn-cancel" (click)="cancelRequest(req.id)">Cancel</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      </article>
     </div>
-  </div>
+
+  </ng-container>
 </div>

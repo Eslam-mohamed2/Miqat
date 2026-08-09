@@ -1,3 +1,7 @@
+// Re-exported so every file that already does `@use '.../tokens' as *` gets the
+// responsive mixins too, without needing a second import line.
+@forward 'breakpoints';
+
 :root {
   // === BACKGROUND LAYERS ===
   --bg-app:         #0d0d0d;
@@ -26,6 +30,14 @@
   --icon-bg-event:  #1b3a35;
   --icon-bg-board:  #1e2240;
   --icon-bg-flow:   #2d2010;
+
+  // Icon foregrounds. These used to be literal hexes in dashboard-page.ts, which
+  // meant the light theme kept the dark theme's tiles. On a dark tile the bright
+  // accent reads well; the light theme overrides them below with darker shades
+  // that stay legible on a pale tile.
+  --icon-fg-event:  #2ec4a0;
+  --icon-fg-board:  #7c8ef5;
+  --icon-fg-flow:   #f4a835;
   
   // === CHART & ACCENT ===
   --teal-primary:   #2ec4a0;
@@ -36,6 +48,23 @@
   
   // Static shadows
   --shadow-card:    0 2px 12px rgba(0,0,0,0.4);
+
+  // === ALIASES ===
+  // Several pages (calendar, mentions, notifications, profile, friends) were
+  // written against these names, which were never defined. An undefined var()
+  // with no fallback makes the whole declaration invalid, so those surfaces
+  // rendered with no background and no border at all.
+  //
+  // They point at the real tokens rather than at literal colours, so the light
+  // theme below keeps working without redefining any of them: var() resolves
+  // when it is used, not when it is declared.
+  --surface:        var(--bg-card);
+  --surface-card:   var(--bg-card);
+  --surface-hover:  var(--bg-card-hover);
+  --bg-hover:       var(--bg-card-hover);
+  --border:         var(--border-card);
+  --border-color:   var(--border-card);
+  --primary:        var(--teal-primary);
 }
 
 html[data-theme='light'], 
@@ -66,6 +95,11 @@ body.light-mode {
   --icon-bg-event:  #e6f7f3;
   --icon-bg-board:  #eef0ff;
   --icon-bg-flow:   #fef3c7;
+
+  // Darker than the dark-theme accents so they hold contrast on a pale tile.
+  --icon-fg-event:  #0f766e;
+  --icon-fg-board:  #4453c4;
+  --icon-fg-flow:   #b45309;
 
   // === QUICK ADD BUTTON ===
   --btn-quick-add-text: #ffffff;

@@ -15,10 +15,10 @@
 
   <div class="modal-body px-4 py-4">
     <div
-      *ngIf="errorMessage"
+      *ngIf="errorMessage()"
       class="alert alert-danger px-3 py-2 text-sm rounded-3"
     >
-      {{ errorMessage }}
+      {{ errorMessage() }}
     </div>
 
     <form [formGroup]="taskForm" (ngSubmit)="onSubmit()">
@@ -51,7 +51,7 @@
           <label class="form-label fw-bold">Project</label>
           <select class="form-select" formControlName="groupId">
             <option value="">No Project</option>
-            <option *ngFor="let group of groups" [value]="group.id">{{ group.name }}</option>
+            <option *ngFor="let group of groups()" [value]="group.id">{{ group.name }}</option>
           </select>
         </div>
 
@@ -59,7 +59,7 @@
           <label class="form-label fw-bold">Assignee</label>
           <select class="form-select" formControlName="assignedToUserId">
             <option value="">Unassigned</option>
-            <option *ngFor="let user of users" [value]="user.id">{{ user.fullName || user.email }}</option>
+            <option *ngFor="let user of users()" [value]="user.id">{{ user.name }}</option>
           </select>
         </div>
       </div>
@@ -68,10 +68,14 @@
         <!-- Status -->
         <div class="col-md-6 mb-3">
           <label class="form-label fw-bold">Status</label>
+          <!-- Values must match the backend TaskStatus enum exactly. "InProgress"
+               was sent here previously, which the API cannot parse. -->
           <select class="form-select" formControlName="status">
             <option value="Pending">Pending</option>
-            <option value="InProgress">In Progress</option>
+            <option value="In_progress">In Progress</option>
             <option value="Completed">Completed</option>
+            <option value="On_hold">On Hold</option>
+            <option value="Cancelled">Cancelled</option>
           </select>
         </div>
 
@@ -82,6 +86,7 @@
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>
             <option value="High">High</option>
+            <option value="Critical">Critical</option>
           </select>
         </div>
       </div>
@@ -119,27 +124,36 @@
           type="button"
           class="btn btn-light px-4 me-3 rounded-pill fw-medium"
           (click)="onCancel()"
-          [disabled]="isLoading"
+          [disabled]="isLoading()"
         >
           Cancel
         </button>
         <button
           type="submit"
           class="btn bg-image px-5 rounded-pill fw-medium shadow-sm"
-          [disabled]="isLoading"
+          [disabled]="isLoading()"
         >
           <span
-            *ngIf="isLoading"
+            *ngIf="isLoading()"
             class="spinner-border spinner-border-sm me-2"
             role="status"
             aria-hidden="true"
           ></span>
-          <ng-container *ngIf="!isLoading">
+          <ng-container *ngIf="!isLoading()">
             {{ isEditMode ? 'Save Changes' : 'Create Task' }}
           </ng-container>
-          <ng-container *ngIf="isLoading">Saving...</ng-container>
+          <ng-container *ngIf="isLoading()">Saving...</ng-container>
         </button>
       </div>
     </form>
+
+    <!-- ── Discussion (existing tasks only) ─────────────────────────────── -->
+    <!-- The full task page carries the roomier version of this same thread. -->
+    <app-comment-thread *ngIf="isEditMode && taskId" [taskId]="taskId" [compact]="true">
+    </app-comment-thread>
+
+    <p class="open-full" *ngIf="isEditMode && taskId">
+      <a [routerLink]="['/tasks', taskId]" (click)="onCancel()">Open the full task page →</a>
+    </p>
   </div>
 </div>

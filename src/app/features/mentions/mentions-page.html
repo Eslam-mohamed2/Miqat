@@ -1,43 +1,99 @@
 <div class="mentions-page">
-  <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div class="header-left">
+
+  <header class="page-header">
+    <div class="title-row">
       <h1 class="greeting">Mentions</h1>
-      <p class="subtitle text-muted">See where you were mentioned in tasks and groups.</p>
+      <button type="button" class="link-btn" *ngIf="unreadCount() > 0" (click)="markAllRead()">
+        Mark all as read
+      </button>
+    </div>
+    <p class="subtitle">See where you were mentioned in tasks and projects.</p>
+
+    <div class="filter-pills" role="tablist" aria-label="Filter mentions">
+      <button type="button" role="tab" [attr.aria-selected]="filter() === 'all'"
+              [class.active]="filter() === 'all'" (click)="filter.set('all')">
+        All
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="filter() === 'unread'"
+              [class.active]="filter() === 'unread'" (click)="filter.set('unread')">
+        Unread
+        <span class="pill-count" *ngIf="unreadCount() > 0">{{ unreadCount() }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  <div class="skeleton-list" *ngIf="loading()">
+    <div class="skeleton-row" *ngFor="let i of [1,2,3,4]">
+      <div class="skeleton-avatar"></div>
+      <div class="skeleton-lines">
+        <div class="skeleton-line long"></div>
+        <div class="skeleton-line short"></div>
+      </div>
     </div>
   </div>
 
-  <div class="mentions-container">
-    <div class="loading-state text-center py-5" *ngIf="loading()">
-      <span class="spinner-border spinner-border-sm me-2"></span> Loading...
+  <ng-container *ngIf="!loading()">
+
+    <!-- Error -->
+    <div class="state-card" *ngIf="errorMessage()">
+      <div class="state-icon"><mat-icon>cloud_off</mat-icon></div>
+      <p class="state-title">Couldn't load mentions</p>
+      <p class="state-sub">{{ errorMessage() }}</p>
+      <button type="button" class="primary-btn" (click)="loadMentions()">Try again</button>
     </div>
 
-    <div class="empty-state" *ngIf="!loading() && mentions().length === 0">
-      <div class="empty-icon-wrap">
-        <mat-icon>alternate_email</mat-icon>
-      </div>
-      <p class="empty-title">No mentions yet</p>
-      <p class="empty-sub">When someone mentions you with @, it will appear here.</p>
+    <!-- Empty -->
+    <div class="state-card" *ngIf="!errorMessage() && !visible().length">
+      <div class="state-icon"><mat-icon>alternate_email</mat-icon></div>
+      <p class="state-title">
+        {{ filter() === 'unread' ? 'No unread mentions' : 'No mentions yet' }}
+      </p>
+      <p class="state-sub">
+        {{ filter() === 'unread'
+            ? 'Everything here has been read.'
+            : 'When someone mentions you with @, it will appear here.' }}
+      </p>
+      <button type="button" class="ghost-btn" *ngIf="filter() === 'unread'" (click)="filter.set('all')">
+        Show all
+      </button>
     </div>
 
-    <div class="mention-list" *ngIf="!loading() && mentions().length > 0" [@listAnim]="mentions().length">
-      
-      <div class="mention-item" *ngFor="let m of mentions()" [class.unread]="!m.isRead" (click)="markAsReadAndNavigate(m)">
-        <div class="mention-icon" [class.unread-bg]="!m.isRead">
-          <mat-icon>alternate_email</mat-icon>
+    <!-- Feed -->
+    <div class="mention-list" *ngIf="visible().length" [@listAnim]="visible().length">
+      <article class="mention-row" *ngFor="let m of visible(); trackBy: trackById"
+               [class.unread]="!m.isRead" (click)="markAsReadAndNavigate(m)"
+               tabindex="0" (keydown.enter)="markAsReadAndNavigate(m)">
+
+        <div class="avatar-wrap">
+          <img *ngIf="m.mentionedByUserProfilePictureUrl; else initialsAvatar"
+               [src]="m.mentionedByUserProfilePictureUrl" [alt]="m.mentionedByUserName || 'User'"
+               class="avatar" />
+          <ng-template #initialsAvatar>
+            <div class="avatar" [style.background]="avatarColor(m)">{{ initials(m) }}</div>
+          </ng-template>
+          <span class="type-badge"><mat-icon>alternate_email</mat-icon></span>
         </div>
 
-        <div class="mention-content">
-          <div class="mention-top">
-            <span class="mention-title">
-              <strong>{{ m.mentionedByUserName }}</strong> mentioned you in <strong>{{ m.entityName }}</strong>
+        <div class="mention-body">
+          <p class="mention-text">
+            <strong>{{ m.mentionedByUserName || 'Someone' }}</strong>
+            <span class="msg">mentioned you in</span>
+            <strong *ngIf="m.entityName">{{ m.entityName }}</strong>
+            <span class="msg" *ngIf="!m.entityName">{{ entityLabel(m) }}</span>
+          </p>
+
+          <div class="mention-meta">
+            <span class="entity-chip" [class.project]="isProject(m)" [class.comment]="isComment(m)">
+              <mat-icon>{{ entityIcon(m) }}</mat-icon>{{ entityChip(m) }}
             </span>
-            <span class="mention-time">{{ formatTime(m.createdAt) }}</span>
+            <span class="mention-time" [class.accent]="!m.isRead">{{ formatTime(m.createdAt) }}</span>
           </div>
         </div>
 
-        <div class="unread-dot" *ngIf="!m.isRead"></div>
-      </div>
-      
+        <span class="unread-dot" *ngIf="!m.isRead" aria-label="Unread"></span>
+      </article>
     </div>
-  </div>
+
+  </ng-container>
 </div>

@@ -22,8 +22,9 @@
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 
-  @media (max-width: 480px) {
-    width: 100vw;
+  @include below($bp-phone) {
+    // 100% not 100vw: vw includes the scrollbar gutter and overflows.
+    width: 100%;
   }
 }
 

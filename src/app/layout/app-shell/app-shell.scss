@@ -18,8 +18,11 @@
   flex: 1;
   overflow-y: auto;
   padding: 28px 32px;
+  // Anchors absolutely-positioned children (the canvas pages' layers) to the
+  // content area instead of the viewport.
+  position: relative;
 }
 
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   .page-content { padding: 16px; }
 }

@@ -1,0 +1,845 @@
+@use '../../../styles/tokens' as *;
+
+// A workspace page, not a panel: it takes the full content width the way a
+// Notion database page does, with a wide max so tables have room to breathe.
+.project-page {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 0 2rem 3rem;
+
+  @include below($bp-laptop)    { padding: 0 1.25rem 2rem; }
+  @include below($bp-tablet-sm) { padding: 0 0.85rem 1.5rem; }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.muted { color: $text-muted; }
+
+// ── Cover ───────────────────────────────────────────────────────────────────
+.cover {
+  height: 140px;
+  border-radius: 0 0 $radius-card $radius-card;
+  margin: 0 -2rem 0;
+
+  @include below($bp-laptop)    { margin: 0 -1.25rem; height: 110px; }
+  @include below($bp-tablet-sm) { margin: 0 -0.85rem; height: 80px; }
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
+.project-header {
+  margin-top: -25px;
+  margin-bottom: 1.5rem;
+
+  // Scaled down with the base value (was -28px against a -48px base): the cover
+  // is shorter here, so the overlap has to stay smaller than the desktop one,
+  // not larger.
+  @include below($bp-tablet-sm) { margin-top: -15px; }
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: $text-secondary;
+  margin-bottom: 0.75rem;
+
+  a { color: $text-secondary; text-decoration: none; &:hover { color: $text-primary; } }
+  strong { color: $text-primary; font-weight: 600; }
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+
+  // The trail collapses to just the project name where there is no room.
+  @include below($bp-tablet-sm) {
+    a, mat-icon, span { display: none; }
+    strong { display: inline; }
+  }
+}
+
+.title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.project-emblem {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  flex-shrink: 0;
+
+  @include below($bp-tablet-sm) { width: 48px; height: 48px; font-size: 1.1rem; border-radius: 12px; }
+}
+
+.title-text {
+  flex: 1;
+  min-width: 0;
+
+  .project-title {
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: $text-primary;
+    margin: 0;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+
+    @include below($bp-tablet)    { font-size: 1.6rem; }
+    @include below($bp-phone-lg)  { font-size: 1.35rem; }
+  }
+
+  .project-desc {
+    margin: 0.35rem 0 0;
+    font-size: 0.92rem;
+    color: $text-secondary;
+    overflow-wrap: anywhere;
+  }
+}
+
+.title-edit {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .edit-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: $text-secondary;
+    }
+
+    input[type='color'] {
+      width: 34px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid $border-input;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+    }
+  }
+}
+
+.edit-input {
+  width: 100%;
+  background: $bg-input;
+  border: 1px solid $border-input;
+  border-radius: $radius-input;
+  color: $text-primary;
+  font-size: 0.9rem;
+  padding: 9px 12px;
+  outline: none;
+  font-family: inherit;
+
+  &:focus { border-color: $teal-primary; }
+
+  &.title { font-size: 1.3rem; font-weight: 700; }
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 52px;
+
+  @include below($bp-tablet-sm) { margin-top: 0; width: 100%; }
+}
+
+// ── Meta ────────────────────────────────────────────────────────────────────
+.meta-strip {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid $border-card;
+
+  .meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.85rem;
+    color: $text-secondary;
+
+    mat-icon { font-size: 17px; width: 17px; height: 17px; }
+  }
+
+  .members-meta { cursor: pointer; &:hover { color: $text-primary; } }
+}
+
+.avatar-stack {
+  display: flex;
+  align-items: center;
+
+  .mini-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    border: 2px solid var(--bg-app);
+    margin-right: -8px;
+
+    &.more { background: $bg-card-hover; color: $text-secondary; }
+  }
+}
+
+// ── Progress ────────────────────────────────────────────────────────────────
+.progress-block {
+  margin-top: 1rem;
+  max-width: 460px;
+
+  .progress-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 6px;
+  }
+
+  .progress-label { font-size: 0.8rem; font-weight: 700; color: $text-secondary; }
+  .progress-value { font-size: 0.8rem; color: $text-muted; }
+
+  .progress-track {
+    height: 7px;
+    border-radius: 20px;
+    background: $bg-card-hover;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.3s ease;
+
+    @include reduced-motion { transition: none; }
+  }
+
+  .progress-warn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+    color: #ef4444;
+
+    mat-icon { font-size: 15px; width: 15px; height: 15px; }
+  }
+}
+
+// ── Section tabs ────────────────────────────────────────────────────────────
+.section-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid $border-card;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: $text-secondary;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 10px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+    &:hover { color: $text-primary; }
+    &.active { color: $text-primary; border-bottom-color: $teal-primary; }
+
+    .count {
+      background: $bg-card-hover;
+      color: $text-secondary;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 1px 7px;
+    }
+  }
+}
+
+// ── Toolbar ─────────────────────────────────────────────────────────────────
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+
+  .toolbar-spacer { flex: 1; }
+
+  .section-title { font-size: 1rem; font-weight: 700; color: $text-primary; margin: 0; }
+
+  .hint { font-size: 0.78rem; color: $text-muted; }
+
+  select {
+    background: $bg-input;
+    border: 1px solid $border-input;
+    border-radius: $radius-input;
+    color: $text-primary;
+    font-size: 0.82rem;
+    padding: 8px 10px;
+    cursor: pointer;
+    outline: none;
+    max-width: 100%;
+
+    &:focus { border-color: $teal-primary; }
+  }
+
+  .add-member { border-style: dashed; }
+
+  @include below($bp-tablet-sm) {
+    .toolbar-spacer { display: none; }
+    .search-field { flex: 1 1 100%; }
+    select { flex: 1 1 auto; }
+  }
+}
+
+.view-switch {
+  display: inline-flex;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-btn;
+  padding: 3px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 0;
+    background: transparent;
+    color: $text-secondary;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+
+    mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+    &.active { background: $bg-card-hover; color: $text-active; }
+
+    @include below($bp-phone-lg) { span { display: none; } }
+  }
+}
+
+.search-field {
+  position: relative;
+  flex: 0 1 240px;
+  min-width: 0;
+
+  mat-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 17px; width: 17px; height: 17px;
+    color: $text-muted;
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    background: $bg-input;
+    border: 1px solid $border-input;
+    border-radius: $radius-input;
+    color: $text-primary;
+    font-size: 0.82rem;
+    padding: 8px 10px 8px 32px;
+    outline: none;
+
+    &:focus { border-color: $teal-primary; }
+    &::placeholder { color: $text-muted; }
+  }
+}
+
+// ── Database table ──────────────────────────────────────────────────────────
+.table-wrap { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.db-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+
+  h3 { font-size: 0.9rem; font-weight: 700; color: $text-primary; margin: 0; }
+
+  .group-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: $text-secondary;
+    background: $bg-card-hover;
+    border-radius: 20px;
+    padding: 1px 7px;
+  }
+}
+
+.group-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+.db-group-empty {
+  font-size: 0.8rem;
+  color: $text-muted;
+  padding: 0.75rem;
+  border: 1px dashed $border-card;
+  border-radius: $radius-btn;
+  margin: 0;
+}
+
+// The table scrolls inside its own box so a wide row never widens the page.
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  min-width: 940px;
+
+  thead th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid $border-card;
+    color: $text-secondary;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    background: $bg-card;
+    z-index: 1;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $border-subtle;
+    transition: background 0.12s ease;
+
+    &:last-child { border-bottom: 0; }
+    &:hover { background: $bg-card-hover; }
+    &.saving { opacity: 0.55; }
+  }
+
+  td {
+    padding: 0.5rem 0.75rem;
+    color: $text-primary;
+    vertical-align: middle;
+  }
+
+  .c-check { width: 40px; }
+  .c-name { min-width: 260px; }
+  .c-status, .c-priority { width: 130px; }
+  .c-assignee { width: 160px; }
+  .c-due { width: 110px; white-space: nowrap; }
+  .c-tags { width: 160px; }
+  .c-actions { width: 52px; text-align: right; }
+  .c-workload { width: 160px; }
+
+  .name-btn {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+
+    .name {
+      display: block;
+      font-weight: 600;
+      color: $text-primary;
+      overflow-wrap: anywhere;
+
+      &.done { text-decoration: line-through; color: $text-muted; }
+    }
+
+    .sub {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 0.75rem;
+      color: $text-secondary;
+      margin-top: 1px;
+    }
+
+    &:hover .name { color: $teal-primary; }
+  }
+
+  .check {
+    background: transparent;
+    border: 0;
+    color: $text-muted;
+    cursor: pointer;
+    display: inline-flex;
+    padding: 2px;
+
+    mat-icon { font-size: 19px; width: 19px; height: 19px; }
+
+    &.done { color: $teal-primary; }
+    &:hover { color: $teal-primary; }
+  }
+
+  .email { color: $text-secondary; }
+}
+
+// Cell editors read as chips until focused, the way a database cell does.
+.cell-select {
+  border: 1px solid transparent;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+  max-width: 100%;
+
+  &:focus { border-color: $teal-primary; }
+
+  // Options are painted by the OS, so they need their own readable background.
+  option { background: $bg-card; color: $text-primary; }
+
+  &.plain {
+    background: transparent;
+    color: $text-secondary;
+    font-weight: 600;
+    border-radius: 6px;
+
+    &:hover { background: $bg-input; }
+  }
+}
+
+.due {
+  font-size: 0.8rem;
+  color: $text-secondary;
+  white-space: nowrap;
+
+  &.overdue { color: #ef4444; font-weight: 700; }
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  color: $text-secondary;
+  background: $bg-card-hover;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 1px 2px 1px 0;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: $text-muted;
+  cursor: pointer;
+  padding: 5px;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+  &:hover { background: $bg-input; color: $text-primary; }
+  &.danger:hover { color: #ef4444; }
+
+  @include touch { padding: 10px; }
+}
+
+// ── Members table ───────────────────────────────────────────────────────────
+.members-table { min-width: 720px; }
+
+.member-cell {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  .member-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+
+    &.initials {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+  }
+
+  .name { font-weight: 600; }
+}
+
+.workload {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .mini-track {
+    flex: 1;
+    height: 5px;
+    border-radius: 20px;
+    background: $bg-card-hover;
+    overflow: hidden;
+    min-width: 60px;
+  }
+
+  .mini-fill { height: 100%; border-radius: 20px; }
+
+  .workload-text { font-size: 0.75rem; color: $text-secondary; white-space: nowrap; }
+}
+
+// ── Board ───────────────────────────────────────────────────────────────────
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: 0.85rem;
+  align-items: start;
+
+  @include below($bp-laptop) {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 0.5rem;
+
+    .board-col { flex: 0 0 260px; scroll-snap-align: start; }
+  }
+
+  @include below($bp-phone-lg) {
+    .board-col { flex: 0 0 85vw; }
+  }
+}
+
+.board-col {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+  min-width: 0;
+
+  .board-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.7rem 0.8rem;
+    border-bottom: 1px solid $border-subtle;
+
+    h3 { font-size: 0.82rem; font-weight: 700; color: $text-primary; margin: 0; flex: 1; }
+  }
+
+  .board-body {
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 80px;
+  }
+
+  .board-empty { text-align: center; color: $text-muted; font-size: 0.78rem; margin: 0.5rem 0; }
+}
+
+.board-card {
+  position: relative;
+  background: $bg-app;
+  border: 1px solid $border-card;
+  border-radius: $radius-btn;
+  padding: 0.6rem 0.65rem 0.6rem 0.8rem;
+  cursor: pointer;
+  transition: $transition-std;
+
+  &:hover { border-color: $teal-primary; }
+  &.saving { opacity: 0.55; }
+
+  .prio-bar {
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 3px;
+    border-radius: 3px;
+  }
+
+  h4 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 6px;
+
+    .assignee {
+      font-size: 0.7rem;
+      color: $text-secondary;
+      background: $bg-card-hover;
+      border-radius: 4px;
+      padding: 1px 6px;
+      max-width: 55%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+// ── Shared chrome ───────────────────────────────────────────────────────────
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  border-radius: $radius-card;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+
+  span { flex: 1; }
+  button { background: transparent; border: 0; color: inherit; cursor: pointer; display: inline-flex; }
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+.state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+
+  @include below($bp-tablet-sm) { padding: 2rem 1rem; }
+
+  .state-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: $bg-card-hover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+
+    mat-icon { font-size: 30px; width: 30px; height: 30px; color: $text-secondary; }
+  }
+
+  .state-title { font-size: 1.05rem; font-weight: 700; color: $text-primary; margin: 0 0 0.25rem; }
+  .state-sub   { font-size: 0.88rem; color: $text-secondary; margin: 0 0 1.15rem; }
+}
+
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: $btn-quick-add-bg;
+  color: $btn-quick-add-text;
+  border: 0;
+  border-radius: $radius-btn;
+  font-weight: 700;
+  font-size: 0.83rem;
+  padding: 9px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+  &:hover { background: $btn-quick-add-hover; }
+  &.sm { padding: 7px 13px; font-size: 0.8rem; }
+}
+
+.ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  color: $text-primary;
+  border-radius: $radius-btn;
+  font-weight: 600;
+  font-size: 0.83rem;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+  &:hover { background: $bg-card-hover; }
+  &.sm { padding: 7px 12px; font-size: 0.8rem; }
+  &.danger:hover { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
+}
+
+// ── Skeleton ────────────────────────────────────────────────────────────────
+.skeleton-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 2rem;
+
+  .sk-block {
+    height: 56px;
+    border-radius: $radius-card;
+    background: linear-gradient(90deg, $bg-card 25%, $bg-card-hover 37%, $bg-card 63%);
+    background-size: 400% 100%;
+    animation: project-shimmer 1.4s ease infinite;
+
+    &.tall { height: 140px; }
+
+    @include reduced-motion { animation: none; }
+  }
+}
+
+@keyframes project-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}

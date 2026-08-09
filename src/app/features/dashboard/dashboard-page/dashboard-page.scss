@@ -56,7 +56,7 @@
   flex-direction: column;
 }
 
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -67,12 +67,12 @@
   }
 }
 
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   .quick-actions-grid { grid-template-columns: 1fr; }
   .right-col { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 600px) {
+@include below($bp-tablet-sm) {
   .page-header {
     flex-direction: column;
     align-items: flex-start;

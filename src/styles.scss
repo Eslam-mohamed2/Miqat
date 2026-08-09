@@ -262,21 +262,21 @@ h4 { font-size: 1rem; }
 }
 
 // ========== Responsive: prevent horizontal overflow ==========
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   body, html {
     overflow-x: hidden;
     max-width: 100%;
   }
 }
 
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   body, html {
     overflow-x: hidden;
     max-width: 100%;
   }
 }
 
-@media (max-width: 576px) {
+@include below($bp-phone-lg) {
   body, html {
     overflow-x: hidden;
     max-width: 100%;
@@ -336,7 +336,37 @@ html, body {
 }
 
 /* Material dialog override for TaskWindow dialog panel */
-.cdk-overlay-pane.custom-dialog-container .mat-mdc-dialog-surface {
-  border-radius: 20px !important;
-  overflow: hidden;
+.cdk-overlay-pane.custom-dialog-container {
+  /* Callers pass width: '600px'. On a narrow viewport that panel is wider than
+     the screen, and the gutter below keeps it off both edges rather than letting
+     it run under them. */
+  width: min(600px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100dvh - 32px);
+
+  .mat-mdc-dialog-surface {
+    border-radius: 20px !important;
+    overflow: hidden;
+    /* The surface must not exceed the panel or the dialog's own scroll area
+       never engages and the footer buttons end up off-screen. */
+    max-height: inherit;
+  }
+}
+
+@supports not (max-height: 100dvh) {
+  .cdk-overlay-pane.custom-dialog-container { max-height: calc(100vh - 32px); }
+}
+
+/* ── Primary action button used across the auth flow ─────────────────────────
+   Global on purpose. This was defined only inside authentication.scss (scoped),
+   so on verify-otp, forgot-password and reset-password — components without
+   that stylesheet — `bg-image` resolved to nothing and `text-white` sat on the
+   white card: the Submit button was clickable but invisible. */
+.bg-image {
+  background-image: url('./assets/stacked-waves-haikei.png') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  border: 1px solid #2e6670 !important;
 }

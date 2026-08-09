@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { TaskService } from '../../../core/services/task.service';
 import { TaskDto } from '../../../models/api.models';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-upcoming-agenda',
@@ -18,7 +19,8 @@ export class UpcomingAgenda implements OnInit {
   dueSoon$!: Observable<TaskDto[]>;
 
   ngOnInit(): void {
-    this.dueSoon$ = this.taskService.getDueSoonTasks(7);
+    // Consumed with `| async`; without this an API error rethrows in the template.
+    this.dueSoon$ = this.taskService.getDueSoonTasks(7).pipe(catchError(() => of([])));
   }
   
   getPriorityColor(priority: string | undefined): string {

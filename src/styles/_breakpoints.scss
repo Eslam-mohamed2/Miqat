@@ -1,0 +1,63 @@
+// ============================================================================
+// Breakpoints
+//
+// The app had grown 25 different breakpoint values, many of them near-duplicate
+// (990 / 991 / 991.98 / 992 / 1024), which meant neighbouring components changed
+// layout at slightly different widths and fought each other in the overlap. This
+// is the single scale everything now uses.
+//
+// Named by device intent rather than t-shirt size, so call sites read clearly:
+//
+//   @include below($bp-tablet) { ... }   // phones and small tablets
+//   @include above($bp-laptop) { ... }   // laptops and up
+//
+// ============================================================================
+
+$bp-phone-sm:   380px;  // small phones (iPhone SE and narrower)
+$bp-phone-md:   420px;  // between the two — keeps the home hero's step ladder intact
+$bp-phone:      480px;  // phones, portrait
+$bp-phone-lg:   576px;  // large phones
+$bp-tablet-sm:  640px;  // phones landscape / small tablets
+$bp-tablet:     768px;  // tablets, portrait
+$bp-laptop:     1024px; // tablets landscape / small laptops
+$bp-desktop:    1280px; // desktops
+$bp-desktop-lg: 1440px; // large desktops
+$bp-wide:       1920px; // very wide displays
+
+/// Styles that apply at this width and below.
+/// The 0.02px shave keeps `below()` and `above()` from both matching on the
+/// boundary itself, which is what made the old 991.98px rules necessary.
+@mixin below($bp) {
+  @media (max-width: #{$bp - 0.02px}) {
+    @content;
+  }
+}
+
+/// Styles that apply above this width.
+@mixin above($bp) {
+  @media (min-width: $bp) {
+    @content;
+  }
+}
+
+/// Styles for a single band, inclusive of $min and exclusive of $max.
+@mixin between($min, $max) {
+  @media (min-width: $min) and (max-width: #{$max - 0.02px}) {
+    @content;
+  }
+}
+
+/// Coarse pointers (touch). Use for hit targets and hover-only affordances —
+/// a hover style that never un-hovers is a sticky-highlight bug on touch.
+@mixin touch {
+  @media (hover: none) and (pointer: coarse) {
+    @content;
+  }
+}
+
+/// Respects the user's reduced-motion setting.
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}

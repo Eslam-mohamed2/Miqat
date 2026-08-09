@@ -6,9 +6,12 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { GroupService } from '../../core/services/group.service';
+import { AuthService } from '../../core/services/auth.service';
 import { UiService } from '../../core/services/ui.service';
 import { CreateProjectDialog } from '../create-project-dialog/create-project-dialog';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
+import { GroupDto } from '../../models/api.models';
+import { apiErrorMessage } from '../../core/http/api-error';
 
 @Component({
   selector: 'app-projects-panel',
@@ -54,11 +57,13 @@ export class ProjectsPanel implements OnChanges {
   @Output() projectCreated = new EventEmitter<any>();
 
   private groupService = inject(GroupService);
+  private readonly myId = inject(AuthService).getCurrentUserId();
   private dialog = inject(MatDialog);
   public uiService = inject(UiService);
 
-  groups = signal<any[]>([]);
+  groups = signal<GroupDto[]>([]);
   loading = signal(true);
+  errorMessage = signal('');
   searchQuery = signal('');
 
   filteredGroups = () => {
@@ -77,13 +82,17 @@ export class ProjectsPanel implements OnChanges {
 
   loadGroups() {
     this.loading.set(true);
+    this.errorMessage.set('');
     this.groupService.getGroups().subscribe({
-      next: (data: any[]) => {
-        this.groups.set(data ?? []);
+      next: (data) => {
+        this.groups.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        this.groups.set(this.getMockGroups());
+      error: (err) => {
+        // Invented projects used to appear here on failure, which is worse than
+        // showing nothing — they look real and are not.
+        this.groups.set([]);
+        this.errorMessage.set(apiErrorMessage(err, 'Could not load projects.'));
         this.loading.set(false);
       }
     });
@@ -108,6 +117,20 @@ export class ProjectsPanel implements OnChanges {
     this.closed.emit();
   }
 
+  /** Completed count, tolerating an older API that does not send it. */
+  completed(group: GroupDto): number {
+    return group.completedTaskCount ?? 0;
+  }
+
+  percent(group: GroupDto): number {
+    if (!group.taskCount) return 0;
+    return Math.round((this.completed(group) / group.taskCount) * 100);
+  }
+
+  isMine(group: GroupDto): boolean {
+    return !!this.myId && group.ownerId === this.myId;
+  }
+
   getInitials(name: string): string {
     return (name ?? '').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
   }
@@ -126,12 +149,12 @@ export class ProjectsPanel implements OnChanges {
     return map[group.status ?? 'Active'] ?? '#2ec4a0';
   }
 
-  private getMockGroups(): any[] {
-    return [
-      { id: '1', name: 'Website Redesign', description: 'Full overhaul of the marketing site', color: '#2ec4a0', memberCount: 5, taskCount: 12, status: 'Active', createdAt: '2026-03-01' },
-      { id: '2', name: 'Mobile App v2', description: 'Next generation mobile experience', color: '#7c8ef5', memberCount: 4, taskCount: 8, status: 'Active', createdAt: '2026-03-15' },
-      { id: '3', name: 'API Integration', description: 'Backend connectivity and data sync', color: '#f4a835', memberCount: 3, taskCount: 5, status: 'Paused', createdAt: '2026-02-20' },
-      { id: '4', name: 'Brand Identity', description: 'Visual guidelines and assets', color: '#fb7185', memberCount: 2, taskCount: 6, status: 'Completed', createdAt: '2026-01-10' },
-    ];
+  /**
+   * A group's colour, or the shared default when the API sends none.
+   * The template appends opacity suffixes to this ('22', '33', '44'), so a null
+   * would render as the literal CSS value "null33" rather than falling back.
+   */
+  getColor(group: GroupDto): string {
+    return group.color || '#2ec4a0';
   }
 }

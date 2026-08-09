@@ -1,10 +1,12 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { finalize } from 'rxjs';
 import { FlipClock } from '../../flip-clock/flip-clock';
+import { OtpPurpose } from '../../models/api.models';
+import { apiErrorMessage } from '../../core/http/api-error';
 
 @Component({
   selector: 'app-verify-otp',
@@ -18,22 +20,41 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  email = '';
-  otpDigits = ['', '', '', '', '', ''];
-  get otpCode() { return this.otpDigits.join(''); }
+  email = signal('');
+  /**
+   * Which flow sent the user here. This used to be hardcoded to 'PasswordReset',
+   * so codes issued during registration were verified against the wrong purpose
+   * and email verification could never succeed.
+   */
+  purpose = signal<OtpPurpose>('PasswordReset');
+  otpDigits = signal<string[]>(['', '', '', '', '', '']);
 
-  isLoading = false;
-  isResending = false;
-  errorMessage = '';
-  successMessage = '';
+  readonly otpCode = computed(() => this.otpDigits().join(''));
+  readonly isEmailVerification = computed(() => this.purpose() === 'EmailVerification');
 
-  countdown = 60;
-  timerInterval: any;
+  // All of this state is written from async callbacks and a timer. The app runs
+  // zoneless (provideZonelessChangeDetection), so plain fields mutated outside a
+  // template event never trigger a re-render — the countdown sat frozen at 60 and
+  // no error, success or loading state ever appeared on screen.
+  isLoading = signal(false);
+  isResending = signal(false);
+  errorMessage = signal('');
+  successMessage = signal('');
+
+  countdown = signal(60);
+  private timerInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      this.email = params['email'] || '';
-      if (!this.email) {
+      this.email.set(params['email'] || '');
+      this.purpose.set(params['purpose'] === 'EmailVerification' ? 'EmailVerification' : 'PasswordReset');
+      // Registration succeeded but the email itself failed to send — say so up
+      // front instead of letting the user wait for a code that never left.
+      if (params['sendFailed'] === '1') {
+        this.errorMessage.set(
+          'Your account was created, but the code could not be emailed. Press "Resend code" to try again.');
+      }
+      if (!this.email()) {
         this.router.navigate(['/authentication/forgot-password']);
       }
     });
@@ -45,10 +66,11 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   }
 
   startTimer() {
-    this.countdown = 60;
+    this.countdown.set(60);
     this.clearTimer();
     this.timerInterval = setInterval(() => {
-      if (this.countdown > 0) this.countdown--;
+      const remaining = this.countdown();
+      if (remaining > 0) this.countdown.set(remaining - 1);
       else this.clearTimer();
     }, 1000);
   }
@@ -62,8 +84,12 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
     if (value && value.length > 1) {
       // Handle paste
       const digits = value.split('').slice(0, 6);
-      digits.forEach((d: string, i: number) => {
-        if (index + i < 6) this.otpDigits[index + i] = d;
+      this.otpDigits.update(current => {
+        const next = [...current];
+        digits.forEach((d: string, i: number) => {
+          if (index + i < 6) next[index + i] = d;
+        });
+        return next;
       });
       // focus the correct input
       setTimeout(() => {
@@ -72,7 +98,11 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
         (inputs[nextIndex] as HTMLInputElement)?.focus();
       });
     } else {
-      this.otpDigits[index] = value;
+      this.otpDigits.update(current => {
+        const next = [...current];
+        next[index] = value;
+        return next;
+      });
       if (value && index < 5) {
         setTimeout(() => {
           const inputs = document.querySelectorAll('.otp-input');
@@ -83,7 +113,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   }
 
   onKeyDown(index: number, event: KeyboardEvent): void {
-    if (event.key === 'Backspace' && !this.otpDigits[index] && index > 0) {
+    if (event.key === 'Backspace' && !this.otpDigits()[index] && index > 0) {
       setTimeout(() => {
         const inputs = document.querySelectorAll('.otp-input');
         (inputs[index - 1] as HTMLInputElement)?.focus();
@@ -92,49 +122,50 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   }
 
   onSubmit(): void {
-    if (this.otpCode.length < 6) return;
-    this.isLoading = true;
-    this.errorMessage = '';
+    if (this.otpCode().length < 6) return;
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
-    this.authService.verifyOtp({ email: this.email, code: this.otpCode, purpose: 'PasswordReset' }).pipe(
-      finalize(() => this.isLoading = false)
+    this.authService.verifyOtp({ email: this.email(), code: this.otpCode(), purpose: this.purpose() }).pipe(
+      finalize(() => this.isLoading.set(false))
     ).subscribe({
       next: (res) => {
-        let token = '';
-        if (typeof res === 'string') {
-          try {
-            const parsed = JSON.parse(res);
-            token = parsed.token || parsed.accessToken;
-          } catch {
-            token = res;
-          }
-        } else if (res) {
-          token = res.token || res.accessToken;
+        if (this.isEmailVerification()) {
+          // Registration is complete — there is no reset token to carry forward.
+          this.router.navigate(['/authentication'], {
+            queryParams: { form: 'login', verified: '1' }
+          });
+          return;
         }
-        
-        this.router.navigate(['/authentication/reset-password'], { queryParams: { email: this.email, token: token } });
+
+        // POST /api/Auth/reset-password matches its `token` against the OTP
+        // *code*, not against a JWT. Forwarding the access token from this
+        // response meant reset-password always answered "Invalid OTP".
+        this.router.navigate(['/authentication/reset-password'], {
+          queryParams: { email: this.email(), token: this.otpCode() }
+        });
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || err.message || 'Invalid code. Please try again.';
+        this.errorMessage.set(apiErrorMessage(err, 'Invalid code. Please try again.'));
       }
     });
   }
 
   resendOtp(): void {
-    if (this.countdown > 0 || this.isResending) return;
-    this.isResending = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-    
-    this.authService.resendOtp({ email: this.email, purpose: 'PasswordReset' }).pipe(
-      finalize(() => this.isResending = false)
+    if (this.countdown() > 0 || this.isResending()) return;
+    this.isResending.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    this.authService.resendOtp({ email: this.email(), purpose: this.purpose() }).pipe(
+      finalize(() => this.isResending.set(false))
     ).subscribe({
       next: () => {
-        this.successMessage = 'A new code has been sent to your email.';
+        this.successMessage.set('A new code has been sent to your email.');
         this.startTimer();
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Failed to resend OTP.';
+        this.errorMessage.set(apiErrorMessage(err, 'Failed to resend OTP.'));
       }
     });
   }

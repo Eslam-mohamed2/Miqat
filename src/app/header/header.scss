@@ -1,3 +1,5 @@
+@use '../../styles/tokens' as *;
+
 .navbar-primary {
   background-color: var(--color-light) !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -133,7 +135,7 @@ $primary-color: var(--color-primary, #065a57);
   }
 }
 
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
 
   .clock {
     display: none !important;
@@ -162,7 +164,7 @@ $primary-color: var(--color-primary, #065a57);
 
 //done 
 
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   .clock-falls {
     position: absolute;
     top: -5px;
@@ -253,7 +255,7 @@ $primary-color: var(--color-primary, #065a57);
 
 // Done
 
-@media (max-width: 576px) {
+@include below($bp-phone-lg) {
   .clock-falls {
     position: absolute;
     top: -5px;

@@ -1,0 +1,174 @@
+<div class="detail-page">
+
+  <div class="toast" *ngIf="toast()">{{ toast() }}</div>
+
+  <!-- ── Loading / error ─────────────────────────────────────────────────── -->
+  <div class="state-card" *ngIf="loading()">
+    <div class="skeleton title"></div>
+    <div class="skeleton line"></div>
+    <div class="skeleton line short"></div>
+  </div>
+
+  <div class="state-card error" *ngIf="!loading() && loadError()">
+    <mat-icon>lock</mat-icon>
+    <h2>{{ loadError() }}</h2>
+    <p>Ask the owner to add you to the project, or to mention you on the task.</p>
+    <a routerLink="/tasks" class="ghost-btn">Back to tasks</a>
+  </div>
+
+  <ng-container *ngIf="!loading() && task() as t">
+
+    <!-- ── Breadcrumb + actions ──────────────────────────────────────────── -->
+    <nav class="crumbs">
+      <a routerLink="/tasks">Tasks</a>
+      <mat-icon>chevron_right</mat-icon>
+      <a *ngIf="t.groupId; else noProjectCrumb" [routerLink]="['/projects', t.groupId]">
+        {{ t.groupName || 'Project' }}
+      </a>
+      <ng-template #noProjectCrumb><span>Personal</span></ng-template>
+      <mat-icon>chevron_right</mat-icon>
+      <span class="current">{{ t.title }}</span>
+    </nav>
+
+    <header class="detail-head">
+      <div class="head-text">
+        <span class="status-chip" [attr.data-status]="slug(t.status)">{{ label(t.status) }}</span>
+        <h1>{{ t.title }}</h1>
+        <p class="sub">
+          Created by <a [routerLink]="['/profile', t.userId]">{{ t.ownerName || 'Unknown' }}</a>
+          · {{ shortDate(t.createdAt) }}
+        </p>
+      </div>
+
+      <div class="head-actions">
+        <button type="button" class="ghost-btn" (click)="openEditor()">
+          <mat-icon>edit</mat-icon> Edit
+        </button>
+        <button type="button" class="danger-btn" *ngIf="isOwner()" (click)="remove()">
+          <mat-icon>delete_outline</mat-icon> Delete
+        </button>
+      </div>
+    </header>
+
+    <div class="detail-grid">
+
+      <!-- ── Main column ─────────────────────────────────────────────────── -->
+      <div class="col-main">
+
+        <section class="detail-card">
+          <h3 class="card-title">Description</h3>
+          <p class="description" *ngIf="t.description; else noDescription">{{ t.description }}</p>
+          <ng-template #noDescription>
+            <p class="empty">No description yet. Use <b>Edit</b> to add the context someone else would need.</p>
+          </ng-template>
+
+          <div class="tags" *ngIf="tagList().length">
+            <span class="tag" *ngFor="let tag of tagList()">#{{ tag }}</span>
+          </div>
+        </section>
+
+        <!-- Status as a real progress rail rather than a dropdown -->
+        <section class="detail-card">
+          <h3 class="card-title">Progress</h3>
+          <div class="status-rail">
+            <button type="button" *ngFor="let s of statuses"
+                    class="rail-step" [attr.data-status]="slug(s)"
+                    [class.active]="t.status === s"
+                    [disabled]="saving()"
+                    (click)="setStatus(s)">
+              {{ label(s) }}
+            </button>
+          </div>
+
+          <h3 class="card-title spaced">Priority</h3>
+          <div class="priority-row">
+            <button type="button" *ngFor="let p of priorities"
+                    class="prio-chip" [attr.data-priority]="slug(p)"
+                    [class.active]="t.priority === p"
+                    [disabled]="saving()"
+                    (click)="setPriority(p)">
+              {{ p }}
+            </button>
+          </div>
+        </section>
+
+        <section class="detail-card">
+          <app-comment-thread [taskId]="t.id" [focusCommentId]="focusCommentId()"></app-comment-thread>
+        </section>
+      </div>
+
+      <!-- ── Side column ─────────────────────────────────────────────────── -->
+      <aside class="col-side">
+
+        <section class="detail-card">
+          <h3 class="card-title">Details</h3>
+
+          <div class="field">
+            <span class="field-label"><mat-icon>schedule</mat-icon> Due</span>
+            <span class="field-value" [attr.data-due]="dueState()">{{ dateLabel(t.dueDate) }}</span>
+          </div>
+
+          <div class="field">
+            <span class="field-label"><mat-icon>folder_open</mat-icon> Project</span>
+            <a class="field-value link" *ngIf="t.groupId; else personal"
+               [routerLink]="['/projects', t.groupId]">{{ t.groupName || 'Project' }}</a>
+            <ng-template #personal><span class="field-value muted">Personal task</span></ng-template>
+          </div>
+
+          <div class="field">
+            <span class="field-label"><mat-icon>flag</mat-icon> Priority</span>
+            <span class="field-value">{{ t.priority }}</span>
+          </div>
+
+          <div class="field" *ngIf="t.recurrence">
+            <span class="field-label"><mat-icon>repeat</mat-icon> Repeats</span>
+            <span class="field-value">{{ label(t.recurrence) }}</span>
+          </div>
+        </section>
+
+        <section class="detail-card">
+          <h3 class="card-title">People</h3>
+
+          <a class="person" [routerLink]="['/profile', t.userId]">
+            <span class="person-avatar">{{ initials(t.ownerName) }}</span>
+            <span class="person-text">
+              <strong>{{ t.ownerName || 'Unknown' }}</strong>
+              <small>Owner</small>
+            </span>
+          </a>
+
+          <a class="person" *ngIf="t.assignedToUserId" [routerLink]="['/profile', t.assignedToUserId]">
+            <span class="person-avatar assignee">{{ initials(t.assignedToUserName) }}</span>
+            <span class="person-text">
+              <strong>{{ t.assignedToUserName || 'Unknown' }}</strong>
+              <small>Assignee</small>
+            </span>
+          </a>
+
+          <p class="empty" *ngIf="!t.assignedToUserId">Nobody is assigned yet.</p>
+
+          <ng-container *ngIf="otherMembers().length">
+            <h4 class="sub-title">Also has access</h4>
+            <a class="person" *ngFor="let m of otherMembers(); trackBy: trackByUserId"
+               [routerLink]="['/profile', m.userId]">
+              <img *ngIf="m.profilePictureUrl; else memberInitials"
+                   [src]="m.profilePictureUrl" [alt]="m.fullName" class="person-avatar img" />
+              <ng-template #memberInitials>
+                <span class="person-avatar">{{ initials(m.fullName) }}</span>
+              </ng-template>
+              <span class="person-text">
+                <strong>{{ m.fullName }}</strong>
+                <small>Project member</small>
+              </span>
+            </a>
+          </ng-container>
+
+          <p class="access-hint">
+            <mat-icon>group_add</mat-icon>
+            Need a hand? Mention a friend in the discussion — they get access to this task automatically.
+          </p>
+        </section>
+      </aside>
+    </div>
+  </ng-container>
+</div>

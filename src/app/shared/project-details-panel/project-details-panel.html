@@ -42,16 +42,41 @@
           <mat-icon>group</mat-icon> Members ({{ p.memberCount || members().length }})
         </div>
         <div class="meta-value">
-          <div class="avatar-group">
-            <img *ngFor="let member of members()" [src]="member.avatar || 'https://i.pravatar.cc/150?u=' + member.id" class="avatar" [title]="member.name || member.userName || 'Member'">
-            <div class="add-avatar-wrapper" *ngIf="isEditing()" style="display:inline-flex; align-items: center; margin-left: 8px;">
-              <select #memberSelect class="edit-select" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; border: 1px dashed var(--border-input);" (change)="addMember(memberSelect.value); memberSelect.value=''">
-                <option value="">+ Add Member</option>
-                <option *ngFor="let user of allUsers()" [value]="user.id">
-                  {{ user.name || user.userName }}
-                </option>
-              </select>
+          <!-- MemberDto fields are userId / fullName / profilePictureUrl. The
+               previous markup read .id / .name / .avatar, which are undefined,
+               so every member showed a placeholder image titled "Member". -->
+          <div class="member-list">
+            <div class="member-chip" *ngFor="let member of members()" [title]="member.fullName + ' · ' + member.email">
+              <img *ngIf="member.profilePictureUrl; else memberInitials"
+                   [src]="member.profilePictureUrl" [alt]="member.fullName" class="member-avatar" />
+              <ng-template #memberInitials>
+                <span class="member-avatar initials" [style.background]="memberColor(member.userId)">
+                  {{ memberInitial(member.fullName) }}
+                </span>
+              </ng-template>
+
+              <span class="member-name">{{ member.fullName }}</span>
+
+              <button type="button" class="member-remove" *ngIf="isEditing()"
+                      (click)="removeMember(member.userId)"
+                      [attr.aria-label]="'Remove ' + member.fullName">
+                <mat-icon>close</mat-icon>
+              </button>
             </div>
+
+            <p class="member-empty" *ngIf="!members().length">No members yet.</p>
+          </div>
+
+          <div class="add-member-row" *ngIf="isEditing()">
+            <select #memberSelect class="edit-select add-member-select"
+                    (change)="addMember(memberSelect.value); memberSelect.value=''"
+                    aria-label="Add a member">
+              <option value="">+ Add member</option>
+              <option *ngFor="let user of addableUsers()" [value]="user.id">
+                {{ user.fullName || user.email }}
+              </option>
+            </select>
+            <span class="add-member-hint">They'll get a notification.</span>
           </div>
         </div>
       </div>

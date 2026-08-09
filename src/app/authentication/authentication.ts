@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule, FormBuilder,
@@ -7,10 +7,12 @@ import {
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { FlipClock } from '../flip-clock/flip-clock';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { SocialAuthService, GoogleLoginProvider, SocialUser, GoogleSigninButtonDirective } from '@abacritt/angularx-social-login';
 import { isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
+import { passwordValidators } from '../core/validators/password.validators';
+import { apiErrorMessage } from '../core/http/api-error';
 
 @Component({
   selector: 'authentication',
@@ -19,7 +21,7 @@ import { PLATFORM_ID } from '@angular/core';
   templateUrl: './authentication.html',
   styleUrl: './authentication.scss'
 })
-export class Authentication implements OnInit {
+export class Authentication implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -30,9 +32,21 @@ export class Authentication implements OnInit {
 
   activeForm: 'login' | 'register' = 'login';
   isLoading = false;
+  /**
+   * Kept separate from `isLoading`. The email/password submit buttons bind to
+   * `isLoading`, and Google's library can emit a restored credential on page load
+   * with no user interaction - sharing one flag left both buttons permanently
+   * disabled before the user clicked anything.
+   */
+  isGoogleLoading = false;
   errorMessage = '';
   successMessage = '';
   showPassword = false;
+  /** Where authGuard bounced the user from, so login can send them back. */
+  private returnUrl = '/dashboard';
+  /** authState replays, so the same credential must not retrigger a sign-in. */
+  private handledGoogleToken: string | null = null;
+  private googleAuthSub?: Subscription;
 
   loginForm!: FormGroup;
   registerForm!: FormGroup;
@@ -51,6 +65,13 @@ export class Authentication implements OnInit {
       } else if (params['form'] === 'login') {
         this.activeForm = 'login';
       }
+      this.returnUrl = params['returnUrl'] || '/dashboard';
+
+      if (params['verified']) {
+        this.successMessage = 'Your email is verified. You can sign in now.';
+      } else if (params['reset']) {
+        this.successMessage = 'Your password has been reset. You can sign in now.';
+      }
     });
 
     this.loginForm = this.fb.group({
@@ -61,24 +82,23 @@ export class Authentication implements OnInit {
     this.registerForm = this.fb.group({
       fullName: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [
-        Validators.required,
-        Validators.minLength(8),
-        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
-      ]],
+      password: ['', passwordValidators],
       phoneNumber: ['', [Validators.required]],
       country: ['', [Validators.required]],
       timeZone: ['', [Validators.required]]
     });
 
-    // ✅ subscribe to authState directly
     if (isPlatformBrowser(this.platformId)) {
-      this.socialAuthService.authState.subscribe((user: SocialUser) => {
-        if (user && user.idToken) {
+      this.googleAuthSub = this.socialAuthService.authState.subscribe((user: SocialUser) => {
+        if (user?.idToken) {
           this.handleGoogleLogin(user.idToken);
         }
       });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.googleAuthSub?.unsubscribe();
   }
 
   switchForm(form: 'login' | 'register'): void {
@@ -107,7 +127,15 @@ export class Authentication implements OnInit {
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: () => {
+        // A 200 with no usable token would otherwise navigate to a dashboard that
+        // 401s on every request. Fail loudly here instead.
+        if (!this.authService.isLoggedIn()) {
+          this.errorMessage = 'Login succeeded but no session token was returned. Please try again.';
+          return;
+        }
+        this.router.navigateByUrl(this.returnUrl);
+      },
       error: (err) => {
         this.errorMessage = this.extractErrorMessage(err, 'Login failed. Please try again.');
       }
@@ -129,7 +157,9 @@ export class Authentication implements OnInit {
       })
     ).subscribe({
       next: () => {
-        this.router.navigate(['/verify-otp'], {
+        // Route is 'authentication/verify-otp' — '/verify-otp' matches nothing and
+        // used to drop registration into a router error.
+        this.router.navigate(['/authentication/verify-otp'], {
           queryParams: {
             email: this.registerForm.value.email,
             purpose: 'EmailVerification'
@@ -137,6 +167,20 @@ export class Authentication implements OnInit {
         });
       },
       error: (err) => {
+        // 502 means the account WAS created but the verification email did not
+        // go out. The only place the "Resend code" button exists is the OTP
+        // screen, so stranding the user here with a message telling them to use
+        // it would be a dead end — send them where the button is.
+        if (err?.status === 502) {
+          this.router.navigate(['/authentication/verify-otp'], {
+            queryParams: {
+              email: this.registerForm.value.email,
+              purpose: 'EmailVerification',
+              sendFailed: '1'
+            }
+          });
+          return;
+        }
         this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
         console.error('Registration error details:', err);
       }
@@ -145,6 +189,9 @@ export class Authentication implements OnInit {
 
   onGoogleLogin(): void {
     if (isPlatformBrowser(this.platformId)) {
+      // Explicit user action, so allow a retry of a token that already failed.
+      // Passive re-emissions still can't loop, because only this path clears it.
+      this.handledGoogleToken = null;
       this.socialAuthService.signIn(GoogleLoginProvider.PROVIDER_ID)
         .then((user: SocialUser) => {
           if (user && user.idToken) {
@@ -160,11 +207,24 @@ export class Authentication implements OnInit {
   }
 
   private handleGoogleLogin(token: string) {
-    this.isLoading = true;
+    // authState replays the last credential to every new subscriber and re-emits
+    // when Google restores a session, so the same token can arrive several times.
+    if (this.isGoogleLoading || this.handledGoogleToken === token) return;
+    this.handledGoogleToken = token;
+
+    this.isGoogleLoading = true;
+    this.errorMessage = '';
     this.authService.googleLogin({ token }).pipe(
-      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+      finalize(() => { this.isGoogleLoading = false; this.cdr.detectChanges(); })
     ).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: () => {
+        if (!this.authService.isLoggedIn()) {
+          this.errorMessage = 'Google login succeeded but no session token was returned.';
+          this.cdr.detectChanges();
+          return;
+        }
+        this.router.navigateByUrl(this.returnUrl);
+      },
       error: (err) => {
         this.errorMessage = this.extractErrorMessage(err, 'Google login failed.');
         this.cdr.detectChanges();
@@ -178,44 +238,6 @@ export class Authentication implements OnInit {
   }
 
   private extractErrorMessage(err: any, defaultMsg: string): string {
-    console.log('Raw error object received:', err);
-    if (typeof err === 'string') return err;
-
-    let message = '';
-
-    if (err.error?.message && typeof err.error.message === 'string') {
-      message = err.error.message;
-    }
-
-    if (!message && typeof err.error === 'string' && err.error.trim().startsWith('{')) {
-      try {
-        const parsed = JSON.parse(err.error);
-        message = parsed.message || parsed.title || '';
-      } catch (e) {
-        console.error('Failed to parse error JSON:', e);
-      }
-    }
-
-    if (!message && typeof err.error === 'string' && err.error.trim().length > 0 && !err.error.startsWith('<')) {
-      message = err.error;
-    }
-
-    if (!message && err.status === 409) {
-      message = 'Conflict: User might already exist or a policy was violated.';
-    }
-
-    if (!message && err.error?.errors) {
-      const errorEntries = Object.entries(err.error.errors);
-      if (errorEntries.length > 0) {
-        const [key, messages] = errorEntries[0];
-        if (Array.isArray(messages) && messages.length > 0) {
-          message = messages[0] as string;
-        }
-      }
-    }
-
-    const finalMsg = message || err.error?.message || err.error?.title || err.message || defaultMsg;
-    console.log('Extracted error message:', finalMsg);
-    return finalMsg;
+    return apiErrorMessage(err, defaultMsg);
   }
 }

@@ -59,6 +59,19 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard-page/dashboard-page').then(m => m.DashboardPage)
       },
       {
+        path: 'tasks',
+        loadComponent: () => import('./features/tasks/tasks-page').then(m => m.TasksPage)
+      },
+      {
+        path: 'tasks/:id',
+        loadComponent: () =>
+          import('./features/tasks/task-detail/task-detail-page').then(m => m.TaskDetailPage)
+      },
+      {
+        path: 'projects/:id',
+        loadComponent: () => import('./features/projects/project-page').then(m => m.ProjectPage)
+      },
+      {
         path: 'calendar',
         loadComponent: () => import('./features/calendar/calendar-page/calendar-page').then(m => m.CalendarPage)
       },
@@ -83,12 +96,22 @@ export const routes: Routes = [
         loadComponent: () => import('./features/profile/profile-page').then(m => m.ProfilePage)
       },
       {
+        // The bare route is the board. `/new` and `/:id` stay so existing links
+        // and bookmarks keep working.
+        path: 'whiteboard',
+        loadComponent: () => import('./features/whiteboard/whiteboard-page').then(m => m.WhiteboardPage)
+      },
+      {
         path: 'whiteboard/new',
         loadComponent: () => import('./features/whiteboard/whiteboard-page').then(m => m.WhiteboardPage)
       },
       {
         path: 'whiteboard/:id',
         loadComponent: () => import('./features/whiteboard/whiteboard-page').then(m => m.WhiteboardPage)
+      },
+      {
+        path: 'node-flow',
+        loadComponent: () => import('./features/node-flow/node-flow-page').then(m => m.NodeFlowPage)
       },
       {
         path: 'node-flow/new',
@@ -99,5 +122,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/node-flow/node-flow-page').then(m => m.NodeFlowPage)
       }
     ]
+  },
+  {
+    // Must stay last. Without it the router throws on any unmatched URL.
+    path: '**',
+    loadComponent: () => import('./shared/not-found/not-found').then(m => m.NotFound)
   }
 ];

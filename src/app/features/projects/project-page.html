@@ -1,0 +1,352 @@
+<div class="project-page">
+
+  <!-- Loading -->
+  <div class="skeleton-page" *ngIf="loading()">
+    <div class="sk-block tall"></div>
+    <div class="sk-block"></div>
+    <div class="sk-block"></div>
+    <div class="sk-block"></div>
+  </div>
+
+  <!-- Not found / hard error -->
+  <div class="state-card" *ngIf="!loading() && !project()">
+    <div class="state-icon"><mat-icon>folder_off</mat-icon></div>
+    <p class="state-title">Project unavailable</p>
+    <p class="state-sub">{{ errorMessage() || 'That project could not be found.' }}</p>
+    <a class="primary-btn" routerLink="/dashboard">Back to dashboard</a>
+  </div>
+
+  <ng-container *ngIf="!loading() && project() as p">
+
+    <!-- ── Cover + header ──────────────────────────────────────────────── -->
+    <div class="cover" [style.background]="'linear-gradient(120deg, ' + projectColor() + '33, transparent 70%)'"></div>
+
+    <header class="project-header">
+      <nav class="breadcrumbs">
+        <a routerLink="/dashboard">Dashboard</a>
+        <mat-icon>chevron_right</mat-icon>
+        <span>Projects</span>
+        <mat-icon>chevron_right</mat-icon>
+        <strong>{{ p.name }}</strong>
+      </nav>
+
+      <div class="title-row">
+        <span class="project-emblem" [style.background]="projectColor() + '22'"
+              [style.color]="projectColor()">{{ initials(p.name) }}</span>
+
+        <div class="title-text" *ngIf="!isEditingHeader()">
+          <h1 class="project-title">{{ p.name }}</h1>
+          <p class="project-desc">{{ p.description || 'No description yet.' }}</p>
+        </div>
+
+        <div class="title-edit" *ngIf="isEditingHeader()">
+          <input class="edit-input title" [(ngModel)]="headerDraft.name" placeholder="Project name" />
+          <textarea class="edit-input" rows="2" [(ngModel)]="headerDraft.description"
+                    placeholder="What is this project about?"></textarea>
+          <div class="edit-row">
+            <label>Colour <input type="color" [(ngModel)]="headerDraft.color" /></label>
+            <button type="button" class="primary-btn sm" (click)="saveHeader()">Save</button>
+            <button type="button" class="ghost-btn sm" (click)="toggleHeaderEdit()">Cancel</button>
+          </div>
+        </div>
+
+        <div class="header-actions" *ngIf="!isEditingHeader()">
+          <button type="button" class="ghost-btn sm" (click)="toggleHeaderEdit()">
+            <mat-icon>edit</mat-icon><span>Edit</span>
+          </button>
+          <button type="button" class="ghost-btn sm danger" (click)="deleteProject()">
+            <mat-icon>delete_outline</mat-icon><span>Delete</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Meta strip -->
+      <div class="meta-strip">
+        <div class="meta">
+          <mat-icon>person</mat-icon>
+          <span>{{ p.ownerName || 'Unknown owner' }}</span>
+        </div>
+        <div class="meta">
+          <mat-icon>calendar_today</mat-icon>
+          <span>Created {{ formatDate(p.createdAt) }}</span>
+        </div>
+        <div class="meta members-meta" (click)="activeSection.set('members')">
+          <div class="avatar-stack">
+            <span class="mini-avatar" *ngFor="let m of members().slice(0, 5)"
+                  [style.background]="avatarColor(m.userId)" [title]="m.fullName">
+              {{ initials(m.fullName) }}
+            </span>
+            <span class="mini-avatar more" *ngIf="members().length > 5">+{{ members().length - 5 }}</span>
+          </div>
+          <span>{{ members().length }} member{{ members().length === 1 ? '' : 's' }}</span>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-block">
+        <div class="progress-head">
+          <span class="progress-label">Progress</span>
+          <span class="progress-value">{{ stats().done }} / {{ stats().total }} done · {{ stats().percent }}%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="stats().percent" [style.background]="projectColor()"></div>
+        </div>
+        <p class="progress-warn" *ngIf="stats().overdue">
+          <mat-icon>error_outline</mat-icon> {{ stats().overdue }} task(s) overdue
+        </p>
+      </div>
+    </header>
+
+    <!-- Error banner (non-fatal) -->
+    <div class="error-banner" *ngIf="errorMessage() && project()" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage() }}</span>
+      <button type="button" (click)="errorMessage.set('')" aria-label="Dismiss"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <!-- ── Section tabs ────────────────────────────────────────────────── -->
+    <nav class="section-tabs" role="tablist">
+      <button type="button" role="tab" [class.active]="activeSection() === 'tasks'"
+              [attr.aria-selected]="activeSection() === 'tasks'" (click)="activeSection.set('tasks')">
+        <mat-icon>table_rows</mat-icon> Tasks
+        <span class="count">{{ tasks().length }}</span>
+      </button>
+      <button type="button" role="tab" [class.active]="activeSection() === 'members'"
+              [attr.aria-selected]="activeSection() === 'members'" (click)="activeSection.set('members')">
+        <mat-icon>group</mat-icon> Members
+        <span class="count">{{ members().length }}</span>
+      </button>
+    </nav>
+
+    <!-- ── TASKS ───────────────────────────────────────────────────────── -->
+    <section *ngIf="activeSection() === 'tasks'">
+
+      <div class="toolbar">
+        <div class="view-switch">
+          <button type="button" [class.active]="view() === 'table'" (click)="view.set('table')">
+            <mat-icon>table_rows</mat-icon><span>Table</span>
+          </button>
+          <button type="button" [class.active]="view() === 'board'" (click)="view.set('board')">
+            <mat-icon>view_kanban</mat-icon><span>Board</span>
+          </button>
+        </div>
+
+        <div class="toolbar-spacer"></div>
+
+        <div class="search-field">
+          <mat-icon>search</mat-icon>
+          <input type="search" placeholder="Search tasks…" aria-label="Search tasks"
+                 [ngModel]="search()" (ngModelChange)="search.set($event)" />
+        </div>
+
+        <select aria-label="Filter by status" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="All">All statuses</option>
+          <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+        </select>
+
+        <select *ngIf="view() === 'table'" aria-label="Group by"
+                [ngModel]="groupBy()" (ngModelChange)="groupBy.set($event)">
+          <option value="status">Group by status</option>
+          <option value="assignee">Group by assignee</option>
+          <option value="none">No grouping</option>
+        </select>
+
+        <button type="button" class="primary-btn" (click)="newTask()">
+          <mat-icon>add</mat-icon><span>New</span>
+        </button>
+      </div>
+
+      <!-- Empty -->
+      <div class="state-card" *ngIf="!filteredTasks().length">
+        <div class="state-icon"><mat-icon>checklist</mat-icon></div>
+        <p class="state-title">{{ tasks().length ? 'No tasks match those filters' : 'No tasks yet' }}</p>
+        <p class="state-sub">
+          {{ tasks().length ? 'Try clearing the search or status filter.'
+                            : 'Add the first task and the team can start tracking progress.' }}
+        </p>
+        <button type="button" class="primary-btn" (click)="newTask()">
+          <mat-icon>add</mat-icon> New task
+        </button>
+      </div>
+
+      <!-- Table view -->
+      <div class="table-wrap" *ngIf="view() === 'table' && filteredTasks().length">
+        <div class="db-group" *ngFor="let group of tableGroups()">
+          <header class="db-group-head" *ngIf="groupBy() !== 'none'">
+            <span class="group-dot" [style.background]="group.color"></span>
+            <h3>{{ group.title }}</h3>
+            <span class="group-count">{{ group.tasks.length }}</span>
+          </header>
+
+          <div class="table-scroll" *ngIf="group.tasks.length">
+            <table class="db-table">
+              <thead>
+                <tr>
+                  <th class="c-check"><span class="sr-only">Done</span></th>
+                  <th class="c-name">Name</th>
+                  <th class="c-status">Status</th>
+                  <th class="c-priority">Priority</th>
+                  <th class="c-assignee">Assignee</th>
+                  <th class="c-due">Due</th>
+                  <th class="c-tags">Tags</th>
+                  <th class="c-actions"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let task of group.tasks; trackBy: trackById" [class.saving]="isSaving(task.id)">
+                  <td class="c-check">
+                    <button type="button" class="check" [class.done]="task.status === 'Completed'"
+                            (click)="toggleDone(task)" [attr.aria-label]="'Toggle ' + task.title">
+                      <mat-icon>{{ task.status === 'Completed' ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                    </button>
+                  </td>
+
+                  <td class="c-name">
+                    <button type="button" class="name-btn" (click)="openTask(task)">
+                      <span class="name" [class.done]="task.status === 'Completed'">{{ task.title }}</span>
+                      <span class="sub" *ngIf="task.description">{{ task.description }}</span>
+                    </button>
+                  </td>
+
+                  <td class="c-status">
+                    <select class="cell-select status" [style.color]="statusColor(task.status)"
+                            [style.background]="statusColor(task.status) + '1f'"
+                            [ngModel]="task.status" (ngModelChange)="setStatus(task, $event)"
+                            aria-label="Status">
+                      <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+                    </select>
+                  </td>
+
+                  <td class="c-priority">
+                    <select class="cell-select priority" [style.color]="priorityColor(task.priority)"
+                            [style.background]="priorityColor(task.priority) + '1f'"
+                            [ngModel]="task.priority" (ngModelChange)="setPriority(task, $event)"
+                            aria-label="Priority">
+                      <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+                    </select>
+                  </td>
+
+                  <td class="c-assignee">
+                    <select class="cell-select plain" [ngModel]="task.assignedToUserId || ''"
+                            (ngModelChange)="setAssignee(task, $event)" aria-label="Assignee">
+                      <option value="">Unassigned</option>
+                      <option *ngFor="let u of assignableUsers()" [value]="u.id">{{ u.name }}</option>
+                    </select>
+                  </td>
+
+                  <td class="c-due">
+                    <span class="due" [class.overdue]="isOverdue(task)">{{ formatDue(task.dueDate) }}</span>
+                  </td>
+
+                  <td class="c-tags">
+                    <span class="tag" *ngFor="let tag of tagList(task.tags)">{{ tag }}</span>
+                    <span class="muted" *ngIf="!tagList(task.tags).length">—</span>
+                  </td>
+
+                  <td class="c-actions">
+                    <button type="button" class="icon-btn danger" (click)="deleteTask(task, $event)"
+                            [attr.aria-label]="'Delete ' + task.title">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="db-group-empty" *ngIf="!group.tasks.length && groupBy() !== 'none'">Nothing here yet</p>
+        </div>
+      </div>
+
+      <!-- Board view -->
+      <div class="board" *ngIf="view() === 'board' && filteredTasks().length">
+        <section class="board-col" *ngFor="let col of boardColumns()">
+          <header class="board-head">
+            <span class="group-dot" [style.background]="col.color"></span>
+            <h3>{{ col.label }}</h3>
+            <span class="group-count">{{ col.tasks.length }}</span>
+          </header>
+          <div class="board-body">
+            <article class="board-card" *ngFor="let task of col.tasks; trackBy: trackById"
+                     [class.saving]="isSaving(task.id)" (click)="openTask(task)">
+              <span class="prio-bar" [style.background]="priorityColor(task.priority)"></span>
+              <h4>{{ task.title }}</h4>
+              <div class="card-meta">
+                <span class="due" [class.overdue]="isOverdue(task)">{{ formatDue(task.dueDate) }}</span>
+                <span class="assignee" *ngIf="task.assignedToUserName">{{ task.assignedToUserName }}</span>
+              </div>
+            </article>
+            <p class="board-empty" *ngIf="!col.tasks.length">—</p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ── MEMBERS ─────────────────────────────────────────────────────── -->
+    <section *ngIf="activeSection() === 'members'">
+      <div class="toolbar">
+        <h3 class="section-title">Team</h3>
+        <div class="toolbar-spacer"></div>
+        <select class="add-member" #picker (change)="addMember(picker.value); picker.value=''"
+                aria-label="Add a member">
+          <option value="">+ Add member</option>
+          <option *ngFor="let u of addableUsers()" [value]="u.id">{{ u.name }}</option>
+        </select>
+        <span class="hint">They'll get a notification.</span>
+      </div>
+
+      <div class="state-card" *ngIf="!members().length">
+        <div class="state-icon"><mat-icon>group_add</mat-icon></div>
+        <p class="state-title">No members yet</p>
+        <p class="state-sub">Add teammates so they can pick up tasks in this project.</p>
+      </div>
+
+      <div class="table-scroll" *ngIf="members().length">
+        <table class="db-table members-table">
+          <thead>
+            <tr>
+              <th class="c-name">Member</th>
+              <th>Email</th>
+              <th class="c-workload">Workload</th>
+              <th class="c-due">Joined</th>
+              <th class="c-actions"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of memberStats(); trackBy: trackByMember">
+              <td class="c-name">
+                <div class="member-cell">
+                  <img *ngIf="row.member.profilePictureUrl; else initialsAvatar"
+                       [src]="row.member.profilePictureUrl" [alt]="row.member.fullName" class="member-avatar" />
+                  <ng-template #initialsAvatar>
+                    <span class="member-avatar initials" [style.background]="avatarColor(row.member.userId)">
+                      {{ initials(row.member.fullName) }}
+                    </span>
+                  </ng-template>
+                  <span class="name">{{ row.member.fullName }}</span>
+                </div>
+              </td>
+              <td class="email">{{ row.member.email }}</td>
+              <td class="c-workload">
+                <div class="workload">
+                  <div class="mini-track">
+                    <div class="mini-fill" [style.width.%]="row.percent" [style.background]="projectColor()"></div>
+                  </div>
+                  <span class="workload-text">{{ row.done }}/{{ row.total }}</span>
+                </div>
+              </td>
+              <td class="c-due">{{ formatDate(row.member.joinedAt) }}</td>
+              <td class="c-actions">
+                <button type="button" class="icon-btn danger" (click)="removeMember(row.member)"
+                        [attr.aria-label]="'Remove ' + row.member.fullName">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </ng-container>
+</div>

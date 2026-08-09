@@ -1,133 +1,300 @@
-<div class="settings-container profile-container">
-  <!-- Toast Notification -->
+<div class="profile-page">
+
+  <!-- Toast -->
   <div class="toast-notification" [class.show]="toastMessage()" [class.error]="toastType() === 'error'">
     <mat-icon>{{ toastType() === 'error' ? 'error_outline' : 'check_circle' }}</mat-icon>
     <span>{{ toastMessage() }}</span>
   </div>
 
-  <div class="settings-header d-flex justify-content-between align-items-center">
-    <h1>{{ isMe() ? 'My Profile' : (user()?.fullName || 'Profile') }}</h1>
+  <div class="loading-state" *ngIf="loading()">
+    <span class="spinner-border spinner-border-sm"></span> Loading profile…
   </div>
 
-  <div class="settings-content" *ngIf="!loading() && user()">
-    <div class="main-content w-100 mx-auto" style="max-width: 800px;">
-      <div class="scroll-area p-4">
-        
-        <!-- Profile Header / Image Section -->
-        <div class="settings-card profile-card text-center mb-4 p-4 d-flex flex-column align-items-center">
-          <div class="user-avatar-section position-relative">
-            <div class="avatar-large mb-3" style="width: 120px; height: 120px; border-radius: 50%; overflow: hidden; background: var(--surface-hover); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--text-secondary);">
-              <img *ngIf="user()?.profilePictureUrl" [src]="user()?.profilePictureUrl" alt="User Avatar" style="width: 100%; height: 100%; object-fit: cover;">
-              <span *ngIf="!user()?.profilePictureUrl">{{ user()?.fullName?.substring(0, 2) | uppercase }}</span>
-              
-              <div *ngIf="isUploading()" class="upload-overlay position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.5);">
-                <span class="spinner-border text-light"></span>
-              </div>
-            </div>
+  <ng-container *ngIf="!loading() && user() as u">
 
-            <div class="avatar-actions" *ngIf="isMe()">
-              <input type="file" #fileInput (change)="onFileSelected($event)" accept=".jpg,.jpeg,.png" style="display: none;">
-              <button class="btn btn-outline-primary btn-sm rounded-pill px-4" (click)="fileInput.click()">
-                Change Photo
-              </button>
-              <p class="text-muted small mt-2">JPG or PNG, Max 5MB</p>
-            </div>
-            
-            <div class="user-info mt-3" *ngIf="!isMe()">
-               <p class="text-muted mb-3"><mat-icon style="font-size: 16px; vertical-align: middle;">location_on</mat-icon> {{ user()?.country || 'Unknown Location' }}</p>
-               
-               <!-- Friendship Status Buttons -->
-               <div class="friendship-actions">
-                  <button *ngIf="friendshipStatus() === 'None'" class="btn btn-primary rounded-pill px-4" (click)="sendRequest()">
-                     <mat-icon>person_add</mat-icon> Add Friend
-                  </button>
-                  <button *ngIf="friendshipStatus() === 'Pending'" class="btn btn-success rounded-pill px-4" (click)="acceptRequest()">
-                     <mat-icon>check</mat-icon> Accept Request
-                  </button>
-                  <button *ngIf="friendshipStatus() === 'Sent'" class="btn btn-secondary rounded-pill px-4 disabled">
-                     <mat-icon>how_to_reg</mat-icon> Request Sent
-                  </button>
-                  <button *ngIf="friendshipStatus() === 'Friends'" class="btn btn-outline-danger rounded-pill px-4" (click)="unfriend()">
-                     <mat-icon>person_remove</mat-icon> Unfriend
-                  </button>
-               </div>
+    <!-- ── Cover + identity ────────────────────────────────────────────────── -->
+    <header class="profile-hero">
+      <div class="cover" [style.background]="coverStyle()">
+        <!-- Shown only when the colours actually came from the picture. -->
+        <div class="cover-swatches" *ngIf="swatches().length" title="Colours sampled from the profile picture">
+          <span class="swatch" *ngFor="let c of swatches()" [style.background]="c"></span>
+        </div>
+      </div>
+
+      <div class="hero-body">
+        <div class="avatar-wrap">
+          <div class="avatar">
+            <img *ngIf="u.profilePictureUrl; else avatarInitials" [src]="u.profilePictureUrl"
+                 [alt]="u.fullName" />
+            <ng-template #avatarInitials>
+              <span class="initials">{{ initials(u.fullName) }}</span>
+            </ng-template>
+
+            <div class="upload-overlay" *ngIf="isUploading()">
+              <span class="spinner-border spinner-border-sm text-light"></span>
             </div>
           </div>
+
+          <ng-container *ngIf="isMe()">
+            <input type="file" #fileInput (change)="onFileSelected($event)"
+                   accept=".jpg,.jpeg,.png" hidden />
+            <button type="button" class="camera-btn" (click)="fileInput.click()"
+                    aria-label="Change profile photo">
+              <mat-icon>photo_camera</mat-icon>
+            </button>
+          </ng-container>
         </div>
 
-        <!-- Editable Form (Only for Me) -->
-        <div *ngIf="isMe()">
-           <!-- Personal Info -->
-           <div class="settings-card mb-4 p-4">
-             <h3 class="mb-4">Personal Information</h3>
-             <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-               <div class="row g-3">
-                 <div class="col-md-6">
-                   <label class="form-label">Full Name</label>
-                   <input type="text" formControlName="fullName" class="form-control rounded-3" [class.is-invalid]="profileForm.get('fullName')?.invalid && profileForm.get('fullName')?.touched">
-                 </div>
-                 <div class="col-md-6">
-                   <label class="form-label">Phone Number</label>
-                   <input type="text" formControlName="phoneNumber" class="form-control rounded-3">
-                 </div>
-                 <div class="col-md-6">
-                   <label class="form-label">Country</label>
-                   <input type="text" formControlName="country" class="form-control rounded-3">
-                 </div>
-                 <div class="col-md-6">
-                   <label class="form-label">Time Zone</label>
-                   <input type="text" formControlName="timeZone" class="form-control rounded-3">
-                 </div>
-                 <div class="col-md-6">
-                   <label class="form-label">Gender</label>
-                   <select formControlName="gender" class="form-select rounded-3">
-                      <option value="">Select</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                   </select>
-                 </div>
-                 <div class="col-md-6">
-                   <label class="form-label">Date of Birth</label>
-                   <input type="date" formControlName="dateOfBirth" class="form-control rounded-3">
-                 </div>
-               </div>
-               <div class="mt-4 text-end">
-                  <button type="submit" class="btn btn-primary rounded-3 px-4" [disabled]="profileForm.invalid">Save Changes</button>
-               </div>
-             </form>
-           </div>
-
-           <!-- Change Password -->
-           <div class="settings-card p-4">
-             <h3 class="mb-4">Change Password</h3>
-             <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
-               <div class="row g-3">
-                 <div class="col-md-12">
-                   <label class="form-label">Current Password</label>
-                   <input type="password" formControlName="currentPassword" class="form-control rounded-3">
-                 </div>
-                 <div class="col-md-6">
-                   <label class="form-label">New Password</label>
-                   <input type="password" formControlName="newPassword" class="form-control rounded-3">
-                 </div>
-                 <div class="col-md-6">
-                   <label class="form-label">Confirm Password</label>
-                   <input type="password" formControlName="confirmPassword" class="form-control rounded-3">
-                 </div>
-               </div>
-               <div class="mt-4 text-end">
-                  <button type="submit" class="btn btn-danger rounded-3 px-4" [disabled]="passwordForm.invalid">Update Password</button>
-               </div>
-             </form>
-           </div>
+        <div class="identity">
+          <h1>{{ u.fullName }}</h1>
+          <p class="tagline">
+            <span *ngIf="isFriend()" class="friend-flag"><mat-icon>how_to_reg</mat-icon> Friends</span>
+            <span *ngIf="u.country">{{ u.country }}</span>
+            <span *ngIf="joinedLabel()">{{ joinedLabel() }}</span>
+          </p>
         </div>
 
+        <!-- Relationship actions -->
+        <div class="hero-actions" *ngIf="!isMe()">
+          <button *ngIf="friendshipStatus() === 'None'" class="btn-primary-action" (click)="sendRequest()">
+            <mat-icon>person_add</mat-icon> Add Friend
+          </button>
+          <button *ngIf="friendshipStatus() === 'Pending'" class="btn-primary-action" (click)="acceptRequest()">
+            <mat-icon>check</mat-icon> Accept Request
+          </button>
+          <button *ngIf="friendshipStatus() === 'Sent'" class="btn-ghost-action" disabled>
+            <mat-icon>how_to_reg</mat-icon> Request Sent
+          </button>
+          <button *ngIf="friendshipStatus() === 'Friends'" class="btn-ghost-action" (click)="unfriend()">
+            <mat-icon>person_remove</mat-icon> Unfriend
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Tabs (other people only; my own profile is a settings form) ───── -->
+      <nav class="profile-tabs" *ngIf="!isMe()">
+        <button type="button" [class.active]="tab() === 'about'" (click)="tab.set('about')">About</button>
+        <button type="button" [class.active]="tab() === 'projects'" (click)="tab.set('projects')">
+          Shared projects
+          <span class="tab-count" *ngIf="sharedProjects().length">{{ sharedProjects().length }}</span>
+        </button>
+        <button type="button" [class.active]="tab() === 'tasks'" (click)="tab.set('tasks')">
+          Their tasks
+          <span class="tab-count" *ngIf="sharedTasks().length">{{ sharedTasks().length }}</span>
+        </button>
+      </nav>
+    </header>
+
+    <!-- ══ Someone else's profile ═════════════════════════════════════════ -->
+    <div class="profile-grid" *ngIf="!isMe()">
+
+      <aside class="col-side">
+        <section class="panel">
+          <h3 class="panel-title">Intro</h3>
+          <ul class="intro-list">
+            <li><mat-icon>alternate_email</mat-icon><span>{{ u.email }}</span></li>
+            <li *ngIf="u.country"><mat-icon>location_on</mat-icon><span>Lives in {{ u.country }}</span></li>
+            <li *ngIf="localTimeLabel()">
+              <mat-icon>schedule</mat-icon>
+              <span>{{ localTimeLabel() }} local time <small>({{ u.timeZone }})</small></span>
+            </li>
+            <li *ngIf="birthdayLabel()"><mat-icon>cake</mat-icon><span>Born {{ birthdayLabel() }}</span></li>
+            <li *ngIf="u.gender"><mat-icon>person</mat-icon><span>{{ u.gender }}</span></li>
+            <li *ngIf="joinedLabel()"><mat-icon>event_available</mat-icon><span>{{ joinedLabel() }}</span></li>
+          </ul>
+        </section>
+
+        <section class="panel" *ngIf="mutualTeammates().length">
+          <h3 class="panel-title">
+            People you both work with
+            <span class="panel-count">{{ mutualTeammates().length }}</span>
+          </h3>
+          <div class="people-grid">
+            <a class="person-tile" *ngFor="let m of mutualTeammates(); trackBy: trackByUserId"
+               [routerLink]="['/profile', m.userId]">
+              <img *ngIf="m.profilePictureUrl; else tileInitials" [src]="m.profilePictureUrl"
+                   [alt]="m.fullName" />
+              <ng-template #tileInitials>
+                <span class="tile-initials">{{ initials(m.fullName) }}</span>
+              </ng-template>
+              <span class="tile-name">{{ m.fullName }}</span>
+            </a>
+          </div>
+        </section>
+      </aside>
+
+      <div class="col-main">
+
+        <!-- About -->
+        <section class="panel" *ngIf="tab() === 'about'">
+          <h3 class="panel-title">About {{ u.fullName.split(' ')[0] }}</h3>
+
+          <div class="about-grid">
+            <div class="about-item">
+              <span class="about-label">Email</span>
+              <span class="about-value">{{ u.email }}</span>
+            </div>
+            <div class="about-item">
+              <span class="about-label">Phone</span>
+              <span class="about-value" [class.muted]="!u.phoneNumber">{{ u.phoneNumber || 'Not shared' }}</span>
+            </div>
+            <div class="about-item">
+              <span class="about-label">Country</span>
+              <span class="about-value" [class.muted]="!u.country">{{ u.country || 'Not shared' }}</span>
+            </div>
+            <div class="about-item">
+              <span class="about-label">Time zone</span>
+              <span class="about-value" [class.muted]="!u.timeZone">{{ u.timeZone || 'Not shared' }}</span>
+            </div>
+            <div class="about-item">
+              <span class="about-label">Gender</span>
+              <span class="about-value" [class.muted]="!u.gender">{{ u.gender || 'Not shared' }}</span>
+            </div>
+            <div class="about-item">
+              <span class="about-label">Member since</span>
+              <span class="about-value">{{ joinedLabel() || '—' }}</span>
+            </div>
+          </div>
+
+          <!-- The three numbers that say what this relationship actually is -->
+          <div class="stat-row">
+            <div class="stat">
+              <strong>{{ sharedProjects().length }}</strong>
+              <span>Shared projects</span>
+            </div>
+            <div class="stat">
+              <strong>{{ sharedTasks().length }}</strong>
+              <span>Tasks together</span>
+            </div>
+            <div class="stat">
+              <strong>{{ mutualTeammates().length }}</strong>
+              <span>Mutual teammates</span>
+            </div>
+          </div>
+
+          <p class="panel-hint" *ngIf="!isFriend()">
+            <mat-icon>info</mat-icon>
+            Add {{ u.fullName.split(' ')[0] }} as a friend to assign them tasks and mention them in discussions.
+          </p>
+        </section>
+
+        <!-- Shared projects -->
+        <section class="panel" *ngIf="tab() === 'projects'">
+          <h3 class="panel-title">Projects you both work on</h3>
+
+          <p class="panel-hint plain" *ngIf="contextLoading()">Checking your projects…</p>
+          <p class="panel-hint plain" *ngIf="!contextLoading() && !sharedProjects().length">
+            You have no projects in common yet. Add them to one from the project page.
+          </p>
+
+          <a class="project-row" *ngFor="let item of sharedProjects(); trackBy: trackByGroupId"
+             [routerLink]="['/projects', item.group.id]">
+            <span class="project-swatch" [style.background]="item.group.color || '#2ec4a0'"></span>
+            <span class="project-text">
+              <strong>{{ item.group.name }}</strong>
+              <small>{{ item.group.description || 'No description' }}</small>
+            </span>
+            <span class="project-meta">
+              {{ item.group.memberCount }} members · {{ item.taskCount }} tasks
+            </span>
+            <mat-icon>chevron_right</mat-icon>
+          </a>
+        </section>
+
+        <!-- Their tasks -->
+        <section class="panel" *ngIf="tab() === 'tasks'">
+          <h3 class="panel-title">Tasks of theirs you can see</h3>
+
+          <p class="panel-hint plain" *ngIf="contextLoading()">Loading…</p>
+          <p class="panel-hint plain" *ngIf="!contextLoading() && !sharedTasks().length">
+            Nothing here yet — no tasks you can see are owned by or assigned to
+            {{ u.fullName.split(' ')[0] }}.
+          </p>
+
+          <a class="task-row" *ngFor="let t of sharedTasks(); trackBy: trackByTaskId"
+             [routerLink]="['/tasks', t.id]">
+            <span class="task-dot" [style.background]="statusColor(t.status)"></span>
+            <span class="task-text">
+              <strong>{{ t.title }}</strong>
+              <small>{{ t.groupName || 'Personal' }} · {{ label(t.status) }}</small>
+            </span>
+            <span class="task-role">
+              {{ t.assignedToUserId === u.id ? 'Assigned' : 'Owner' }}
+            </span>
+          </a>
+        </section>
       </div>
     </div>
-  </div>
 
-  <div class="loading-state text-center py-5" *ngIf="loading()">
-    <span class="spinner-border spinner-border-sm me-2"></span> Loading profile...
-  </div>
+    <!-- ══ My own profile ═════════════════════════════════════════════════ -->
+    <div class="profile-forms" *ngIf="isMe()">
+      <div class="panel">
+        <h3 class="panel-title">Personal information</h3>
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+          <div class="form-grid">
+            <div class="form-field">
+              <label class="form-label">Full name</label>
+              <input type="text" formControlName="fullName" class="field-input"
+                     [class.invalid]="profileForm.get('fullName')?.invalid && profileForm.get('fullName')?.touched">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Phone number</label>
+              <input type="text" formControlName="phoneNumber" class="field-input">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Country</label>
+              <input type="text" formControlName="country" class="field-input">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Time zone</label>
+              <input type="text" formControlName="timeZone" class="field-input">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Gender</label>
+              <select formControlName="gender" class="field-input">
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Date of birth</label>
+              <input type="date" formControlName="dateOfBirth" class="field-input">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary-action" [disabled]="profileForm.invalid">
+              Save changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h3 class="panel-title">Change password</h3>
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+          <div class="form-grid">
+            <div class="form-field full">
+              <label class="form-label">Current password</label>
+              <input type="password" formControlName="currentPassword" class="field-input">
+            </div>
+            <div class="form-field">
+              <label class="form-label">New password</label>
+              <input type="password" formControlName="newPassword" class="field-input">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Confirm password</label>
+              <input type="password" formControlName="confirmPassword" class="field-input">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-danger-action" [disabled]="passwordForm.invalid">
+              Update password
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </ng-container>
 </div>

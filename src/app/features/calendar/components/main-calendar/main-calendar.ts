@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { UserService } from '../../../../core/services/user.service';
 import { MatIconModule } from '@angular/material/icon';
 import { TaskService } from '../../../../core/services/task.service';
 import { TaskDto } from '../../../../models/api.models';
@@ -9,6 +10,8 @@ import { forkJoin } from 'rxjs';
 
 export interface CalendarEvent {
   id: string;
+  /** Empty for personal tasks, which have no project row to switch off. */
+  groupId: string;
   time: string;
   title: string;
   description?: string;
@@ -34,6 +37,28 @@ export interface CalendarDay {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MainCalendar implements OnInit {
+  private userService = inject(UserService);
+
+  /**
+   * The signed-in user's own zone with its current UTC offset — this chip was
+   * hardcoded to "PST (GMT-8)" regardless of who was looking at it. Reading the
+   * shared signal means it also updates when the zone is changed in Settings.
+   */
+  readonly timeZoneLabel = computed(() => {
+    const zone = this.userService.timeZone();
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: zone, timeZoneName: 'shortOffset'
+      }).formatToParts(new Date());
+      const offset = parts.find(part => part.type === 'timeZoneName')?.value ?? '';
+      // "Africa/Cairo" -> "Cairo (GMT+3)"
+      const city = zone.split('/').pop()?.replace(/_/g, ' ') ?? zone;
+      return offset ? `${city} (${offset})` : city;
+    } catch {
+      return zone;
+    }
+  });
+
   private taskService = inject(TaskService);
   private groupService = inject(GroupService);
   public calendarState = inject(CalendarStateService);
@@ -46,7 +71,16 @@ export class MainCalendar implements OnInit {
   // Compute what to render based on the current View selection
   filteredWeeks = computed(() => {
     const view = this.currentView();
-    const all = this.weeks();
+    // Reading the hidden set here is what makes the sidebar's checkboxes do
+    // something: this computed already feeds the template, so dropping the
+    // events of a switched-off project re-renders the grid immediately.
+    const hidden = this.calendarState.hiddenCalendarIds();
+    const all = this.weeks().map(week => week.map(day => ({
+      ...day,
+      events: hidden.size
+        ? day.events.filter(e => !e.groupId || !hidden.has(e.groupId))
+        : day.events
+    })));
     if (view === 'month') return all;
 
     // For Week or Day, find the row containing 'today', or just use the first row if none found
@@ -126,6 +160,7 @@ export class MainCalendar implements OnInit {
                     const group = groups.find(g => g.id === t.groupId);
                     return {
                         id: t.id || '',
+                        groupId: t.groupId || '',
                         time: this.formatTime(t.dueDate!),
                         title: t.title,
                         description: t.description,

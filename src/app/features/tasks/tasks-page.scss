@@ -1,0 +1,656 @@
+@use '../../../styles/tokens' as *;
+
+.tasks-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  @include below($bp-laptop) { padding: 1.5rem; }
+  @include below($bp-tablet) { padding: 1rem; }
+  @include below($bp-phone)  { padding: 0.75rem; }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+
+  .greeting {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0 0 0.25rem;
+
+    @include below($bp-tablet) { font-size: 1.5rem; }
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 0.9rem;
+    color: $text-secondary;
+
+    .sub-warn { color: #ef4444; }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    // Below tablet the actions take their own full-width row so neither the
+    // toggle nor the button gets squeezed to an unusable width.
+    @include below($bp-tablet) {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+}
+
+.view-toggle {
+  display: inline-flex;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-btn;
+  padding: 3px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    background: transparent;
+    color: $text-secondary;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: $transition-std;
+
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+    &.active {
+      background: $bg-card-hover;
+      color: $text-active;
+    }
+
+    &:hover:not(.active) { color: $text-primary; }
+
+    // Icon-only below large phones — the labels are what overflow first.
+    @include below($bp-phone-lg) {
+      padding: 7px 10px;
+      span { display: none; }
+    }
+  }
+}
+
+.btn-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: $btn-quick-add-bg;
+  color: $btn-quick-add-text;
+  border: 0;
+  border-radius: $radius-btn;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: $transition-std;
+  white-space: nowrap;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { background: $btn-quick-add-hover; }
+}
+
+// ── Filters ─────────────────────────────────────────────────────────────────
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+
+  .search-field {
+    position: relative;
+    flex: 1 1 260px;
+    min-width: 0;
+
+    mat-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px; width: 18px; height: 18px;
+      color: $text-muted;
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      background: $bg-input;
+      border: 1px solid $border-input;
+      border-radius: $radius-input;
+      color: $text-primary;
+      font-size: 13px;
+      padding: 10px 12px 10px 34px;
+      outline: none;
+
+      &:focus { border-color: $teal-primary; }
+      &::placeholder { color: $text-muted; }
+    }
+  }
+
+  select {
+    background: $bg-input;
+    border: 1px solid $border-input;
+    border-radius: $radius-input;
+    color: $text-primary;
+    font-size: 13px;
+    padding: 10px 12px;
+    cursor: pointer;
+    outline: none;
+    max-width: 100%;
+
+    &:focus { border-color: $teal-primary; }
+  }
+
+  .btn-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid $border-card;
+    color: $text-secondary;
+    border-radius: $radius-btn;
+    font-size: 13px;
+    padding: 9px 12px;
+    cursor: pointer;
+
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    &:hover { color: $text-primary; }
+  }
+
+  // Stack the controls once they can no longer sit side by side without
+  // each becoming too narrow to read.
+  @include below($bp-tablet-sm) {
+    .search-field { flex: 1 1 100%; }
+    select { flex: 1 1 calc(50% - 0.375rem); }
+  }
+}
+
+// ── Error + loading ─────────────────────────────────────────────────────────
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  border-radius: $radius-card;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+
+  span { flex: 1; }
+
+  button {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+  }
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+.skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  .skeleton-row {
+    height: 56px;
+    border-radius: $radius-card;
+    background: linear-gradient(90deg, $bg-card 25%, $bg-card-hover 37%, $bg-card 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+
+    @include reduced-motion { animation: none; }
+  }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+// ── Empty ───────────────────────────────────────────────────────────────────
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+
+  @include below($bp-tablet) { padding: 2.5rem 1rem; }
+
+  .empty-icon-wrap {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: $bg-card-hover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+
+    mat-icon { font-size: 32px; width: 32px; height: 32px; color: $text-secondary; }
+  }
+
+  .empty-title { font-size: 1.1rem; font-weight: 600; color: $text-primary; margin: 0 0 0.25rem; }
+  .empty-sub   { font-size: 0.9rem; color: $text-secondary; margin: 0 0 1.25rem; }
+}
+
+// ── Shared bits ─────────────────────────────────────────────────────────────
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+
+  .tag {
+    font-size: 11px;
+    color: $text-secondary;
+    background: $bg-card-hover;
+    border-radius: 4px;
+    padding: 2px 7px;
+  }
+}
+
+.priority-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.due {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: $text-secondary;
+  white-space: nowrap;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  &.overdue { color: #ef4444; font-weight: 600; }
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: $text-muted;
+  cursor: pointer;
+  padding: 5px;
+  transition: $transition-std;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+  &:hover { background: $bg-card-hover; color: $text-primary; }
+  &.danger:hover { color: #ef4444; }
+
+  // Touch devices get a full 44px target — a 28px icon button is a coin toss
+  // with a fingertip.
+  @include touch { padding: 11px; }
+}
+
+.muted { color: $text-muted; }
+
+// ── List view ───────────────────────────────────────────────────────────────
+.list-view {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+  overflow: hidden;
+}
+
+// Keeps the table itself scrollable rather than letting it widen the page.
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 720px;
+
+  thead th {
+    text-align: left;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid $border-card;
+    color: $text-secondary;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: transparent;
+      border: 0;
+      color: inherit;
+      font: inherit;
+      text-transform: inherit;
+      letter-spacing: inherit;
+      cursor: pointer;
+
+      mat-icon { font-size: 14px; width: 14px; height: 14px; }
+      &:hover { color: $text-primary; }
+    }
+  }
+
+  tbody tr {
+    cursor: pointer;
+    transition: $transition-std;
+    border-bottom: 1px solid $border-subtle;
+
+    &:last-child { border-bottom: 0; }
+    &:hover { background: $bg-card-hover; }
+    &.is-saving { opacity: 0.6; }
+  }
+
+  td {
+    padding: 0.85rem 1rem;
+    color: $text-primary;
+    vertical-align: middle;
+  }
+
+  .col-title {
+    .task-title { display: block; font-weight: 600; }
+    .task-desc {
+      display: block;
+      color: $text-secondary;
+      font-size: 12px;
+      margin-top: 2px;
+      // Long descriptions must not stretch the row.
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+
+  .status-select {
+    background: transparent;
+    border: 1px solid $border-input;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    cursor: pointer;
+    outline: none;
+
+    // The <option> list is painted by the OS, so it needs a readable
+    // background of its own rather than inheriting the transparent one.
+    option { background: $bg-card; color: $text-primary; }
+  }
+
+  .project-name {
+    display: inline-block;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    color: $text-secondary;
+  }
+
+  .col-actions { text-align: right; }
+
+  // Below tablet the secondary columns are dropped rather than crushed —
+  // project and due date stay reachable by opening the task.
+  @include below($bp-tablet) {
+    min-width: 0;
+
+    .col-project { display: none; }
+  }
+
+  @include below($bp-phone-lg) {
+    .col-due { display: none; }
+  }
+}
+
+// ── Kanban view ─────────────────────────────────────────────────────────────
+.unknown-note {
+  font-size: 12px;
+  color: $text-secondary;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-btn;
+  padding: 0.6rem 0.85rem;
+  margin: 0 0 0.85rem;
+}
+
+.kanban-view { width: 100%; }
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(260px, 1fr));
+  gap: 0.9rem;
+  align-items: start;
+
+  // Below laptop the five columns can no longer each hold a readable card, so
+  // the board becomes a horizontal scroller with snap points instead of
+  // shrinking every column past the point of usefulness.
+  @include below($bp-laptop) {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+
+    .kanban-col {
+      flex: 0 0 280px;
+      scroll-snap-align: start;
+    }
+  }
+
+  @include below($bp-phone-lg) {
+    .kanban-col { flex: 0 0 85vw; }
+  }
+}
+
+.kanban-col {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-top: 3px solid transparent;
+  border-radius: $radius-card;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .col-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.8rem 0.9rem;
+    border-bottom: 1px solid $border-subtle;
+
+    .col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .col-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-count {
+      font-size: 11px;
+      font-weight: 700;
+      color: $text-secondary;
+      background: $bg-card-hover;
+      border-radius: 20px;
+      padding: 2px 8px;
+    }
+  }
+
+  .col-body {
+    padding: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-height: 120px;
+  }
+
+  .col-empty {
+    text-align: center;
+    color: $text-muted;
+    font-size: 12px;
+    padding: 1.5rem 0.5rem;
+    border: 1px dashed $border-card;
+    border-radius: $radius-btn;
+    margin: 0;
+  }
+}
+
+.task-card {
+  position: relative;
+  background: $bg-app;
+  border: 1px solid $border-card;
+  border-radius: $radius-btn;
+  padding: 0.7rem 0.75rem;
+  cursor: pointer;
+  transition: $transition-std;
+
+  &:hover { border-color: $teal-primary; }
+  &.is-saving { opacity: 0.55; }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    .priority-bar {
+      width: 3px;
+      align-self: stretch;
+      min-height: 18px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .card-desc {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: $text-secondary;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 8px;
+
+    .project-chip {
+      font-size: 11px;
+      color: $text-secondary;
+      background: $bg-card-hover;
+      border-radius: 4px;
+      padding: 2px 7px;
+      max-width: 45%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .saving-dot {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: $teal-primary;
+    animation: pulse 1s ease-in-out infinite;
+
+    @include reduced-motion { animation: none; }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+// ── CDK drag-drop chrome ────────────────────────────────────────────────────
+.cdk-drag-preview {
+  border-radius: $radius-btn;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  opacity: 0.95;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+  border: 1px dashed $teal-primary;
+  border-radius: $radius-btn;
+  min-height: 56px;
+  background: $teal-glow;
+}
+
+.cdk-drag-animating,
+.cdk-drop-list-dragging .task-card:not(.cdk-drag-placeholder) {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drop-list-receiving {
+  background: $teal-glow;
+  border-radius: $radius-btn;
+}
