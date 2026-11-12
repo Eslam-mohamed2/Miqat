@@ -94,6 +94,19 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/change-password`, data, { responseType: 'text' });
   }
 
+  /**
+   * Step 1 of changing the sign-in address: a code is sent to the new address.
+   * Nothing changes until that code is confirmed.
+   */
+  requestEmailChange(newEmail: string, currentPassword: string): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(`${this.apiUrl}/change-email`, { newEmail, currentPassword });
+  }
+
+  /** Step 2: the code that arrived at the new address. Answers the new address. */
+  confirmEmailChange(code: string): Observable<{ message?: string; email?: string }> {
+    return this.http.post<{ message?: string; email?: string }>(`${this.apiUrl}/change-email/confirm`, { code });
+  }
+
   googleLogin(data: GoogleLoginDto): Observable<string> {
     return this.http.post(`${this.apiUrl}/google`, data, { responseType: 'text' }).pipe(
       tap(res => this.saveToken(res))

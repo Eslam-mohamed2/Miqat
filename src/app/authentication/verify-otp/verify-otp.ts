@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { finalize } from 'rxjs';
 import { FlipClock } from '../../flip-clock/flip-clock';
@@ -11,8 +11,9 @@ import { apiErrorMessage } from '../../core/http/api-error';
 @Component({
   selector: 'app-verify-otp',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FlipClock],
-  templateUrl: './verify-otp.html'
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FlipClock],
+  templateUrl: './verify-otp.html',
+  styleUrl: './verify-otp.scss'
 })
 export class VerifyOtpComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
@@ -43,6 +44,8 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
 
   countdown = signal(60);
   private timerInterval?: ReturnType<typeof setInterval>;
+  /** True when no code was sent on the way here (see ngOnInit). */
+  private arrivedWithoutCode = false;
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
@@ -52,13 +55,22 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
       // front instead of letting the user wait for a code that never left.
       if (params['sendFailed'] === '1') {
         this.errorMessage.set(
-          'Your account was created, but the code could not be emailed. Press "Resend code" to try again.');
+          'Your account was created, but the code could not be emailed. Press "Resend OTP" to try again.');
+      }
+      // Sent here from the sign-in form: no code was emailed just now, so there is
+      // nothing to wait for — offer "Resend OTP" straight away.
+      this.arrivedWithoutCode = params['resend'] === '1' || params['sendFailed'] === '1';
+      if (params['resend'] === '1') {
+        this.successMessage.set(
+          'Your email is not verified yet. Enter the code we emailed you when you signed up, or press "Resend OTP" for a new one.');
       }
       if (!this.email()) {
         this.router.navigate(['/authentication/forgot-password']);
       }
     });
-    this.startTimer();
+
+    if (this.arrivedWithoutCode) this.countdown.set(0);
+    else this.startTimer();
   }
 
   ngOnDestroy() {
@@ -80,7 +92,12 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   }
 
   onOtpDigitChange(index: number, event: any): void {
-    const value = event.target.value;
+    // Codes are digits only. Anything else is dropped, and the box is rewritten so
+    // a rejected letter does not stay on screen.
+    const value = String(event.target.value ?? '').replace(/\D/g, '');
+    if (event.target.value !== value.slice(0, 1) && value.length <= 1) {
+      event.target.value = value;
+    }
     if (value && value.length > 1) {
       // Handle paste
       const digits = value.split('').slice(0, 6);
@@ -91,6 +108,8 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
         });
         return next;
       });
+      // The box that received the paste still holds the whole string; show its own digit.
+      event.target.value = digits[0];
       // focus the correct input
       setTimeout(() => {
         const nextIndex = Math.min(index + digits.length, 5);
@@ -131,7 +150,13 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (res) => {
         if (this.isEmailVerification()) {
-          // Registration is complete — there is no reset token to carry forward.
+          // Registration is complete. The API signs the user in with this answer, so
+          // go straight to the app; asking them to type their password again right
+          // after they proved who they are was an unnecessary extra step.
+          if (this.authService.isLoggedIn()) {
+            this.router.navigate(['/dashboard']);
+            return;
+          }
           this.router.navigate(['/authentication'], {
             queryParams: { form: 'login', verified: '1' }
           });

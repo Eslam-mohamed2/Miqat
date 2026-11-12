@@ -9,7 +9,9 @@
  *   MIQAT_API=azure npm start
  */
 const AZURE = 'https://miqatsmartcalendar-b7e4anhxh8d5cmcx.israelcentral-01.azurewebsites.net';
-const LOCAL = 'http://localhost:10000';
+// The docker-compose API is published on host port 5000 (host port 10000 is Azurite's
+// blob storage). Override with MIQAT_API_URL, e.g. http://localhost:5001.
+const LOCAL = process.env['MIQAT_API_URL'] || 'http://localhost:5000';
 
 const useAzure = process.env['MIQAT_API'] === 'azure';
 const target = useAzure ? AZURE : LOCAL;

@@ -1,0 +1,83 @@
+<h3 class="item-title">
+  <mat-icon>account_tree</mat-icon> Dependencies
+  <span class="count blocked" *ngIf="links().isBlocked">Blocked</span>
+</h3>
+
+<!-- ── Waiting on ───────────────────────────────────────────────────────── -->
+<h4 class="group-title">Waiting on</h4>
+
+<ul class="link-list" *ngIf="links().blockedBy.length">
+  <li class="link-row" *ngFor="let link of links().blockedBy; trackBy: trackById" [class.done]="link.isDone">
+    <a class="link-open" [routerLink]="['/tasks', link.id]">
+      <mat-icon class="state" [attr.aria-label]="link.isDone ? 'Finished' : 'Not finished'">
+        {{ link.isDone ? 'check_circle' : 'hourglass_empty' }}
+      </mat-icon>
+      <span class="link-text">
+        <strong>{{ link.title }}</strong>
+        <small>{{ details(link) }}</small>
+      </span>
+    </a>
+    <button type="button" class="row-remove" [disabled]="busy()" (click)="removeBlockedBy(link)"
+            [attr.aria-label]="'Stop waiting on ' + link.title">
+      <mat-icon>close</mat-icon>
+    </button>
+  </li>
+</ul>
+
+<p class="item-empty" *ngIf="!loading() && !links().blockedBy.length">
+  Nothing. This task can start whenever you are ready.
+</p>
+
+<button type="button" class="add-link" *ngIf="!loading() && !pickerOpen()" (click)="openPicker()">
+  <mat-icon>add</mat-icon> Add a task this one waits for
+</button>
+
+<div class="picker" *ngIf="pickerOpen()">
+  <div class="picker-head">
+    <mat-icon>search</mat-icon>
+    <input type="text" class="picker-input" placeholder="Find one of your tasks"
+           aria-label="Find a task to wait for" [value]="query()" (input)="query.set(textOf($event))"
+           (keydown.escape)="closePicker()" />
+    <button type="button" class="row-remove" (click)="closePicker()" aria-label="Close the task list">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <p class="item-empty picker-note" *ngIf="pickerLoading()">Loading your tasks…</p>
+
+  <ul class="picker-list" *ngIf="!pickerLoading() && candidates().length">
+    <li *ngFor="let task of candidates(); trackBy: trackById">
+      <button type="button" class="picker-option" [disabled]="busy()" (click)="add(task)">
+        <strong>{{ task.title }}</strong>
+        <small>{{ details(task) }}</small>
+      </button>
+    </li>
+  </ul>
+
+  <p class="item-empty picker-note" *ngIf="!pickerLoading() && !candidates().length">
+    {{ query().trim() ? 'No task matches that.' : 'There is no other task to choose.' }}
+  </p>
+</div>
+
+<!-- ── Blocking ─────────────────────────────────────────────────────────── -->
+<ng-container *ngIf="links().blocks.length">
+  <h4 class="group-title spaced">Blocking</h4>
+
+  <ul class="link-list">
+    <li class="link-row" *ngFor="let link of links().blocks; trackBy: trackById" [class.done]="link.isDone">
+      <a class="link-open" [routerLink]="['/tasks', link.id]">
+        <mat-icon class="state">{{ link.isDone ? 'check_circle' : 'pending' }}</mat-icon>
+        <span class="link-text">
+          <strong>{{ link.title }}</strong>
+          <small>{{ details(link) }}</small>
+        </span>
+      </a>
+      <button type="button" class="row-remove" [disabled]="busy()" (click)="removeBlocks(link)"
+              [attr.aria-label]="link.title + ' no longer waits for this task'">
+        <mat-icon>close</mat-icon>
+      </button>
+    </li>
+  </ul>
+</ng-container>
+
+<p class="item-error" *ngIf="error()" role="alert">{{ error() }}</p>

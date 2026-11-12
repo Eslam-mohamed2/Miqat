@@ -1,0 +1,45 @@
+@use '../../../styles/tokens' as *;
+
+:host {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+
+:host(.empty) {
+  display: none;
+}
+
+// Not ".mark": Bootstrap styles that name globally (a yellow highlight).
+.task-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: $text-secondary;
+  background: $bg-card-hover;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  // Every line ticked.
+  &.complete {
+    color: $text-active;
+    background: $teal-glow;
+  }
+
+  &.blocked {
+    color: $text-danger;
+    background: color-mix(in srgb, var(--text-danger) 12%, transparent);
+  }
+}

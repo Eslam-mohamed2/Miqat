@@ -81,6 +81,11 @@ export class FriendService {
     );
   }
 
+  /** The people the signed-in user has blocked, so they can be unblocked again. */
+  getBlockedUsers(): Observable<UserDto[]> {
+    return this.http.get<unknown>(`${this.apiUrl}/blocked`).pipe(unwrapNamedList<UserDto>('blockedUsers'));
+  }
+
   getSuggestions(): Observable<UserDto[]> {
     return this.http.get<UserDto[] | ApiResponse<UserDto[]>>(`${this.apiUrl}/suggestions`).pipe(unwrapApiList<UserDto>());
   }

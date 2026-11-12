@@ -120,19 +120,19 @@
                 <div class="tag-row" *ngIf="tagList(task.tags).length">
                   <span class="tag" *ngFor="let tag of tagList(task.tags)">{{ tag }}</span>
                 </div>
+                <app-task-marks class="row-marks" [task]="task"></app-task-marks>
               </td>
               <td>
                 <!-- Doubles as the no-mouse way to change status, so the board is not
                      the only path to moving a task. -->
-                <select class="status-select" [style.color]="statusColor(task.status)"
+                <select class="status-select tone-text" [style.--tone]="statusColor(task.status)"
                         [ngModel]="task.status" (ngModelChange)="moveTo(task, $event)"
                         (click)="$event.stopPropagation()" aria-label="Change status">
                   <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
                 </select>
               </td>
               <td>
-                <span class="priority-pill" [style.color]="priorityColor(task.priority)"
-                      [style.background]="priorityColor(task.priority) + '1f'">{{ task.priority }}</span>
+                <span class="priority-pill tone-text tone-tint" [style.--tone]="priorityColor(task.priority)">{{ task.priority }}</span>
               </td>
               <td class="col-due">
                 <span class="due" [class.overdue]="isOverdue(task)">
@@ -197,6 +197,8 @@
               <div class="tag-row" *ngIf="tagList(task.tags).length">
                 <span class="tag" *ngFor="let tag of tagList(task.tags)">{{ tag }}</span>
               </div>
+
+              <app-task-marks class="card-marks" [task]="task"></app-task-marks>
 
               <footer class="card-foot">
                 <span class="due" [class.overdue]="isOverdue(task)">

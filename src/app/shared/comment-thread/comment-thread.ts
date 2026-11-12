@@ -290,7 +290,89 @@ export class CommentThread {
     });
   }
 
+  // ── Editing ───────────────────────────────────────────────────────────────
+
+  /** The comment being rewritten, if any. One at a time. */
+  editingId = signal<string | null>(null);
+  editDraft = signal('');
+  savingEdit = signal(false);
+
+  startEdit(comment: CommentDto) {
+    this.editingId.set(comment.id);
+    this.editDraft.set(comment.content ?? '');
+    this.error.set(null);
+    // The textarea only exists after the next render.
+    requestAnimationFrame(() => {
+      const box = document.getElementById(`comment-edit-${comment.id}`) as HTMLTextAreaElement | null;
+      if (!box) return;
+      box.focus();
+      box.setSelectionRange(box.value.length, box.value.length);
+    });
+  }
+
+  cancelEdit() {
+    if (this.savingEdit()) return;
+    this.editingId.set(null);
+    this.editDraft.set('');
+  }
+
+  onEditInput(event: Event) {
+    this.editDraft.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  /** Esc leaves the text as it was; Ctrl / Cmd + Enter saves. */
+  onEditKeydown(event: KeyboardEvent, comment: CommentDto) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.cancelEdit();
+    } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      this.saveEdit(comment);
+    }
+  }
+
+  /** True when saving would change something. */
+  canSaveEdit(comment: CommentDto): boolean {
+    const text = this.editDraft().trim();
+    return !!text && text !== (comment.content ?? '').trim() && !this.savingEdit();
+  }
+
+  saveEdit(comment: CommentDto) {
+    const content = this.editDraft().trim();
+    if (!content || this.savingEdit()) return;
+    if (content === (comment.content ?? '').trim()) { this.cancelEdit(); return; }
+
+    this.savingEdit.set(true);
+    this.error.set(null);
+    this.comments_.update(comment.id, content).subscribe({
+      next: saved => {
+        // Older answers may leave updatedAt out; the row still has to say "edited".
+        const updatedAt = saved?.updatedAt ?? new Date().toISOString();
+        this.comments.update(list => list.map(c =>
+          c.id === comment.id ? { ...c, ...(saved ?? {}), content: saved?.content ?? content, updatedAt } : c));
+        this.savingEdit.set(false);
+        this.editingId.set(null);
+        this.editDraft.set('');
+      },
+      error: err => {
+        this.savingEdit.set(false);
+        this.error.set(apiErrorMessage(err, 'Could not save that change.'));
+      }
+    });
+  }
+
+  /**
+   * A comment counts as edited when it was changed after it was written. The API
+   * leaves updatedAt empty until then; the stamps are also compared, in case a
+   * build fills it in on creation with the same moment.
+   */
+  isEdited(comment: CommentDto): boolean {
+    return !!comment.updatedAt && comment.updatedAt !== comment.createdAt;
+  }
+
   remove(comment: CommentDto) {
+    if (this.editingId() === comment.id) this.editingId.set(null);
     const snapshot = this.comments();
     this.comments.update(list => list.filter(c => c.id !== comment.id));
     this.comments_.delete(comment.id).subscribe({

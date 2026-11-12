@@ -2,15 +2,46 @@
 
   <div class="page-header">
     <div class="header-left">
-      <h1 class="greeting">Good Morning, {{ firstName(user$ | async) }}</h1>
+      <h1 class="greeting">{{ greeting() }}, {{ firstName() }}</h1>
       <p class="subtitle">Here's your productivity overview for today.</p>
     </div>
     <div class="header-right">
-      <button class="btn-ghost">
+      <button type="button" class="btn-ghost" (click)="exportCsv()" [disabled]="!tasksInRange().length"
+              title="Download these tasks as a CSV file">
         <mat-icon>download</mat-icon> Export
       </button>
-      <button class="btn-ghost">Last 7 Days</button>
+
+      <div class="range-wrap">
+        <button type="button" class="btn-ghost" (click)="toggleRangeMenu($event)"
+                aria-haspopup="listbox" [attr.aria-expanded]="rangeMenuOpen()">
+          {{ rangeOption().label }}
+          <mat-icon>expand_more</mat-icon>
+        </button>
+
+        <div class="range-menu" *ngIf="rangeMenuOpen()" role="listbox" (click)="$event.stopPropagation()">
+          <button type="button" class="range-option" *ngFor="let option of ranges"
+                  role="option" [attr.aria-selected]="option.key === range()"
+                  [class.active]="option.key === range()" (click)="chooseRange(option)">
+            {{ option.label }}
+            <mat-icon *ngIf="option.key === range()">check</mat-icon>
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- The day at a glance. Left out when the counts could not be loaded. -->
+  <div class="glance-row" *ngIf="glance().length" role="group" aria-label="Your tasks at a glance">
+    <button type="button" class="glance-tile" *ngFor="let tile of glance()"
+            [attr.data-tone]="tile.tone" [class.zero]="tile.value === 0"
+            [title]="tile.hint" [attr.aria-label]="tile.value + ' ' + tile.label + '. ' + tile.hint"
+            (click)="openGlance(tile)">
+      <span class="glance-icon"><mat-icon>{{ tile.icon }}</mat-icon></span>
+      <span class="glance-text">
+        <span class="glance-value">{{ tile.value }}</span>
+        <span class="glance-label">{{ tile.label }}</span>
+      </span>
+    </button>
   </div>
 
   <div class="quick-actions-grid" @staggerCards>
@@ -23,12 +54,12 @@
 
   <div class="dashboard-grid">
     <div class="left-col">
-      <app-productivity-chart [tasks]="(tasks$ | async) || []"></app-productivity-chart>
-      <app-recent-workspaces></app-recent-workspaces>
+      <app-productivity-chart [tasks]="tasksInRange()" [caption]="rangeCaption()"></app-productivity-chart>
+      <app-recent-workspaces [refresh]="refreshTick()"></app-recent-workspaces>
     </div>
     <div class="right-col">
-      <app-mini-calendar></app-mini-calendar>
-      <app-upcoming-agenda></app-upcoming-agenda>
+      <app-mini-calendar [tasks]="tasks()"></app-mini-calendar>
+      <app-upcoming-agenda [refresh]="refreshTick()" (addTask)="openTaskDialog()"></app-upcoming-agenda>
     </div>
   </div>
 </div>

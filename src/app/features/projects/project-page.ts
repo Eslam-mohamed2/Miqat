@@ -6,15 +6,17 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { GroupService } from '../../core/services/group.service';
 import { TaskService } from '../../core/services/task.service';
 import { RealtimeService } from '../../core/services/realtime.service';
 import { FriendService } from '../../core/services/friend.service';
+import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TaskWindowComponent } from '../dashboard/task-window/task-window';
 import { GroupDto, MemberDto, TaskDto } from '../../models/api.models';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { TaskMarks } from '../../shared/task-marks/task-marks';
 
 type ViewMode = 'table' | 'board';
 type GroupBy = 'none' | 'status' | 'assignee';
@@ -24,7 +26,7 @@ interface StatusMeta { value: string; label: string; color: string; }
 @Component({
   selector: 'app-project-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, RouterLink],
+  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, RouterLink, TaskMarks],
   templateUrl: './project-page.html',
   styleUrl: './project-page.scss'
 })
@@ -34,6 +36,7 @@ export class ProjectPage implements OnInit {
   private groupService = inject(GroupService);
   private taskService = inject(TaskService);
   private friendService = inject(FriendService);
+  private userService = inject(UserService);
   private authService = inject(AuthService);
   private dialog = inject(MatDialog);
   private realtime = inject(RealtimeService);
@@ -192,9 +195,14 @@ export class ProjectPage implements OnInit {
       project: this.groupService.getGroupById(id).pipe(catchError(() => of(null))),
       tasks: this.taskService.getTasksByGroup(id).pipe(catchError(() => of([] as TaskDto[]))),
       members: this.groupService.getMembers(id).pipe(catchError(() => of([] as MemberDto[]))),
-      // Friends rather than all users: GET /api/User is admin-only.
-      users: this.friendService.getFriendUsers(this.authService.getCurrentUserId())
-        .pipe(catchError(() => of([] as { id: string; name: string }[])))
+      // People who can be added: friends and teammates from other projects
+      // (GET /api/User/contacts). The full user list is admin-only. An API build
+      // without that endpoint falls back to friends alone.
+      users: this.userService.getContacts().pipe(
+        map(people => people.map(person => ({ id: person.id, name: person.fullName || person.email }))),
+        catchError(() => this.friendService.getFriendUsers(this.authService.getCurrentUserId())
+          .pipe(catchError(() => of([] as { id: string; name: string }[]))))
+      )
     }).subscribe({
       next: result => {
         if (!result.project) {

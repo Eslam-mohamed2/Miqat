@@ -13,6 +13,10 @@ import { FriendService } from '../../core/services/friend.service';
 import { ProjectsPanel } from '../../shared/projects-panel/projects-panel';
 import { GlobalSearch } from '../../shared/global-search/global-search';
 import { CreateProjectDialog } from '../../shared/create-project-dialog/create-project-dialog';
+import { EventEditor, EventEditorData } from '../../features/calendar/components/event-editor/event-editor';
+import { CalendarDataService } from '../../core/services/calendar-data.service';
+import { UserService } from '../../core/services/user.service';
+import { todayInZone } from '../../core/utils/time-zone';
 import { Observable, merge, of, timer } from 'rxjs';
 import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 
@@ -39,7 +43,14 @@ export class Topnav {
   private mentionService = inject(MentionService);
   private friendService = inject(FriendService);
   private realtime = inject(RealtimeService);
+  private userService = inject(UserService);
+  public calendarData = inject(CalendarDataService);
   quickAddMenuOpen = signal(false);
+
+  constructor() {
+    // So the menu below knows whether this server has events.
+    this.calendarData.probe();
+  }
 
   /**
    * Badge counts, polled every minute.
@@ -71,6 +82,11 @@ export class Topnav {
     );
   }
 
+  /**
+   * On a phone the button opens a menu (Task, Event, Project). On a wider screen
+   * it goes straight to a new task, as it always has; the arrow beside it opens
+   * the same menu.
+   */
   onQuickAdd(): void {
     if (this.isSmallScreen()) {
       this.quickAddMenuOpen.update(open => !open);
@@ -78,6 +94,10 @@ export class Topnav {
     }
 
     this.openTaskDialog();
+  }
+
+  toggleQuickAddMenu(): void {
+    this.quickAddMenuOpen.update(open => !open);
   }
 
   openTaskDialog(): void {
@@ -95,6 +115,18 @@ export class Topnav {
       if (result) {
       }
     });
+  }
+
+  /** A new event for today, in the time zone of the profile. */
+  openEventDialog(): void {
+    this.closeQuickAddMenu();
+
+    const zone = this.userService.timeZone();
+    const data: EventEditorData = { zone, date: todayInZone(zone) };
+    this.dialog
+      .open(EventEditor, { panelClass: 'custom-dialog-container', autoFocus: false, data })
+      .afterClosed()
+      .subscribe(saved => { if (saved) this.calendarData.reload(); });
   }
 
   openProjectDialog(): void {
@@ -121,12 +153,21 @@ export class Topnav {
 
   @HostListener('window:resize')
   onWindowResize(): void {
-    if (!this.isSmallScreen()) {
-      this.closeQuickAddMenu();
-    }
+    this.closeQuickAddMenu();
   }
 
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeQuickAddMenu();
+  }
+
+  /**
+   * Must be the same test the stylesheet uses to show the quick-add menu
+   * (`below($bp-laptop)`, i.e. narrower than 1024px). It was `max-width: 1024px`,
+   * so at exactly 1024px — an iPad held sideways — the code opened the menu while
+   * the stylesheet kept it hidden, and "+ Quick Add" appeared to do nothing.
+   */
   private isSmallScreen(): boolean {
-    return typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches;
+    return typeof window !== 'undefined' && window.matchMedia('(max-width: 1023.98px)').matches;
   }
 }

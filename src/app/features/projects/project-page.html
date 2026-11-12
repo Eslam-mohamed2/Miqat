@@ -206,11 +206,11 @@
                       <span class="name" [class.done]="task.status === 'Completed'">{{ task.title }}</span>
                       <span class="sub" *ngIf="task.description">{{ task.description }}</span>
                     </button>
+                    <app-task-marks class="row-marks" [task]="task"></app-task-marks>
                   </td>
 
                   <td class="c-status">
-                    <select class="cell-select status" [style.color]="statusColor(task.status)"
-                            [style.background]="statusColor(task.status) + '1f'"
+                    <select class="cell-select status tone-text tone-tint" [style.--tone]="statusColor(task.status)"
                             [ngModel]="task.status" (ngModelChange)="setStatus(task, $event)"
                             aria-label="Status">
                       <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
@@ -218,8 +218,7 @@
                   </td>
 
                   <td class="c-priority">
-                    <select class="cell-select priority" [style.color]="priorityColor(task.priority)"
-                            [style.background]="priorityColor(task.priority) + '1f'"
+                    <select class="cell-select priority tone-text tone-tint" [style.--tone]="priorityColor(task.priority)"
                             [ngModel]="task.priority" (ngModelChange)="setPriority(task, $event)"
                             aria-label="Priority">
                       <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
@@ -271,6 +270,7 @@
                      [class.saving]="isSaving(task.id)" (click)="openTask(task)">
               <span class="prio-bar" [style.background]="priorityColor(task.priority)"></span>
               <h4>{{ task.title }}</h4>
+              <app-task-marks class="card-marks" [task]="task"></app-task-marks>
               <div class="card-meta">
                 <span class="due" [class.overdue]="isOverdue(task)">{{ formatDue(task.dueDate) }}</span>
                 <span class="assignee" *ngIf="task.assignedToUserName">{{ task.assignedToUserName }}</span>

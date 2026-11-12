@@ -65,8 +65,23 @@
           <button *ngIf="friendshipStatus() === 'Sent'" class="btn-ghost-action" disabled>
             <mat-icon>how_to_reg</mat-icon> Request Sent
           </button>
+          <button *ngIf="friendshipStatus() === 'Friends' && chat.available()" type="button"
+                  class="btn-primary-action" (click)="message()">
+            <mat-icon>chat</mat-icon> Message
+          </button>
           <button *ngIf="friendshipStatus() === 'Friends'" class="btn-ghost-action" (click)="unfriend()">
             <mat-icon>person_remove</mat-icon> Unfriend
+          </button>
+
+          <!-- Blocking is one click away from the person it is about; the way back
+               is here too, and on Friends > Blocked. -->
+          <button *ngIf="friendshipStatus() === 'Blocked'" type="button" class="btn-ghost-action"
+                  [disabled]="blockBusy()" (click)="unblock()">
+            <mat-icon>lock_open</mat-icon> {{ blockBusy() ? 'Unblocking…' : 'Unblock' }}
+          </button>
+          <button *ngIf="friendshipStatus() !== 'Blocked'" type="button" class="btn-ghost-action block-action"
+                  [disabled]="blockBusy()" (click)="block()" [attr.aria-label]="'Block ' + u.fullName">
+            <mat-icon>block</mat-icon> Block
           </button>
         </div>
       </div>
@@ -172,7 +187,7 @@
             </div>
           </div>
 
-          <p class="panel-hint" *ngIf="!isFriend()">
+          <p class="panel-hint" *ngIf="!isFriend() && friendshipStatus() !== 'Blocked'">
             <mat-icon>info</mat-icon>
             Add {{ u.fullName.split(' ')[0] }} as a friend to assign them tasks and mention them in discussions.
           </p>

@@ -44,6 +44,11 @@ export class MentionService {
     return this.http.put<void | ApiResponse<void>>(`${this.apiUrl}/${mentionId}/read`, {}).pipe(unwrapApi<void>());
   }
 
+  /** PUT /api/Mentions/read-all - everything at once, instead of one request per mention. */
+  markAllAsRead(): Observable<void> {
+    return this.http.put<void | ApiResponse<void>>(`${this.apiUrl}/read-all`, {}).pipe(unwrapApi<void>());
+  }
+
   parseMentions(data: ParseMentionsRequest): Observable<UserDto[]> {
     return this.http.post<UserDto[] | ApiResponse<UserDto[]>>(`${this.apiUrl}/parse`, data).pipe(unwrapApiList<UserDto>());
   }

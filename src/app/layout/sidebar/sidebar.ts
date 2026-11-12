@@ -20,10 +20,12 @@ interface NavItem {
 
 const WIDTH_STORAGE_KEY = 'miqat.sidebar.width';
 
+import { ChatAvatar } from '../../shared/chat/chat-avatar';
+
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIconModule],
+  imports: [CommonModule, RouterModule, MatIconModule, ChatAvatar],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -57,8 +59,8 @@ export class Sidebar implements OnInit {
   private resizeEnd?: () => void;
 
   // `/whiteboard` and `/node-flow` are real routes now, so these link straight
-  // at the board instead of at `/new`. `/kanban` and `/help` have no component
-  // at all and are flagged `disabled` rather than linked into a router error.
+  // at the board instead of at `/new`. A destination that does not exist yet is
+  // flagged `disabled` (shown as "Soon") rather than linked into a router error.
   navItemsApp: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
     { label: 'Task List/Kanban', route: '/tasks', icon: 'view_kanban' },
@@ -69,7 +71,7 @@ export class Sidebar implements OnInit {
 
   navItemsOther: NavItem[] = [
     { label: 'Settings', route: '/settings', icon: 'settings' },
-    { label: 'Help Center', route: null, icon: 'help_outline', disabled: true },
+    { label: 'Help Center', route: '/help', icon: 'help_outline' },
   ];
 
   ngOnInit() {
@@ -177,6 +179,12 @@ export class Sidebar implements OnInit {
 
   closeMobileMenu() {
     this.isMobileMenuOpen.set(false);
+  }
+
+  /** The "Search" row of the phone menu: closes the menu and opens the palette. */
+  openSearch() {
+    this.closeMobileMenu();
+    this.uiService.openSearch();
   }
 
   onLogout() {

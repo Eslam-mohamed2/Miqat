@@ -1,12 +1,12 @@
-import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { TEST_PROVIDERS } from '../testing/test-providers';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideZonelessChangeDetection()]
+      providers: TEST_PROVIDERS
     }).compileComponents();
   });
 
@@ -16,10 +16,12 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', () => {
+  // The generated spec looked for the CLI starter's "Hello, Miqat" heading, which
+  // this app never had: the root component is only a frame around the router.
+  it('should render the router outlet', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, Miqat');
+    expect(compiled.querySelector('router-outlet')).not.toBeNull();
   });
 });

@@ -19,6 +19,12 @@ interface Note { id: string; x: number; y: number; text: string; color: string; 
 type HistoryEntry = { kind: 'stroke' } | { kind: 'note'; id: string };
 
 const ERASER_WIDTH = 20;
+/** Must match `.sticky-note { width / height }` in the stylesheet. */
+const NOTE_SIZE = 200;
+/** Empty room kept past the furthest ink or note, so there is always space to carry on. */
+const BOARD_MARGIN = 240;
+/** Upper bound for the canvas backing store, in device pixels (about 4000 x 3000). */
+const MAX_CANVAS_PIXELS = 12_000_000;
 
 @Component({
   selector: 'app-whiteboard-page',
@@ -30,6 +36,8 @@ const ERASER_WIDTH = 20;
 })
 export class WhiteboardPage implements AfterViewInit, OnDestroy {
   @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('scroller') scrollerRef!: ElementRef<HTMLElement>;
+  @ViewChild('surface') surfaceRef!: ElementRef<HTMLElement>;
 
   private boards = inject(BoardService);
   private route = inject(ActivatedRoute);
@@ -61,6 +69,32 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
 
   private isDrawing = false;
 
+  /**
+   * The board is as large as its content (never smaller than the visible area - the
+   * stylesheet sets min-width / min-height: 100%) and scrolls inside its frame. It
+   * used to be exactly the size of the screen it was opened on, so anything drawn
+   * on a large monitor was simply cut off on a phone, with no way to reach it.
+   */
+  readonly surfaceWidth = computed(() => {
+    let max = 0;
+    for (const stroke of this.strokes()) for (const p of stroke.points) if (p.x > max) max = p.x;
+    for (const note of this.notes()) if (note.x + NOTE_SIZE > max) max = note.x + NOTE_SIZE;
+    return max ? Math.ceil(max + BOARD_MARGIN) : 0;
+  });
+
+  readonly surfaceHeight = computed(() => {
+    let max = 0;
+    for (const stroke of this.strokes()) for (const p of stroke.points) if (p.y > max) max = p.y;
+    for (const note of this.notes()) if (note.y + NOTE_SIZE > max) max = note.y + NOTE_SIZE;
+    return max ? Math.ceil(max + BOARD_MARGIN) : 0;
+  });
+
+  /** True while part of the board is off screen (drives the "move around" hint). */
+  canScroll = signal(false);
+  /** Dragging the board itself with the mouse, in Select mode. */
+  isPanning = signal(false);
+  private panStart = { x: 0, y: 0, left: 0, top: 0 };
+
   constructor() {
     // 1.2s after the last change: long enough that a continuous scribble is one
     // request, short enough that closing the tab rarely loses anything.
@@ -76,8 +110,11 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
     // A window resize listener was not enough: collapsing the sidebar changes
     // the board's width without the window changing at all, which left the
     // backing store the wrong size and every later stroke landing off-cursor.
+    // Both are watched: the surface grows as things are drawn, and the frame
+    // changes when the window or the sidebar does.
     this.resizeObserver = new ResizeObserver(() => this.resize());
-    this.resizeObserver.observe(this.canvasRef.nativeElement.parentElement!);
+    this.resizeObserver.observe(this.surfaceRef.nativeElement);
+    this.resizeObserver.observe(this.scrollerRef.nativeElement);
   }
 
   ngOnDestroy() {
@@ -154,7 +191,13 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    // A large board on a HiDPI screen would need a canvas bigger than browsers
+    // allow, so the pixel ratio is lowered until it fits the budget.
+    const dpr = Math.min(
+      window.devicePixelRatio || 1,
+      Math.sqrt(MAX_CANVAS_PIXELS / (rect.width * rect.height))
+    );
+    this.dpr = dpr;
     canvas.width = Math.round(rect.width * dpr);
     canvas.height = Math.round(rect.height * dpr);
 
@@ -166,7 +209,14 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
     this.ctx.lineJoin = 'round';
 
     this.redraw();
+
+    const scroller = this.scrollerRef.nativeElement;
+    this.canScroll.set(
+      scroller.scrollWidth > scroller.clientWidth + 1 || scroller.scrollHeight > scroller.clientHeight + 1);
   }
+
+  /** The pixel ratio the canvas was last sized with (see resize()). */
+  private dpr = 1;
 
   /** Viewport coordinates → coordinates inside the canvas. */
   private toCanvas(e: PointerEvent | MouseEvent): Point {
@@ -187,6 +237,17 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
 
   onPointerDown(e: PointerEvent) {
     const point = this.toCanvas(e);
+
+    // Select mode on empty board: drag it to move around. Fingers already scroll
+    // the board natively in this mode, so this is for the mouse and the pen.
+    if (this.tool() === 'select') {
+      if (e.pointerType === 'touch' || e.button > 0) return;
+      const scroller = this.scrollerRef.nativeElement;
+      this.panStart = { x: e.clientX, y: e.clientY, left: scroller.scrollLeft, top: scroller.scrollTop };
+      this.isPanning.set(true);
+      this.canvasRef.nativeElement.setPointerCapture(e.pointerId);
+      return;
+    }
 
     if (this.tool() === 'note') {
       const note: Note = {
@@ -220,12 +281,24 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
   }
 
   onPointerMove(e: PointerEvent) {
+    if (this.isPanning()) {
+      const scroller = this.scrollerRef.nativeElement;
+      scroller.scrollLeft = this.panStart.left - (e.clientX - this.panStart.x);
+      scroller.scrollTop = this.panStart.top - (e.clientY - this.panStart.y);
+      return;
+    }
     if (!this.isDrawing || !this.currentStroke) return;
     this.currentStroke.points.push(this.toCanvas(e));
     this.redraw();
   }
 
   onPointerUp(e: PointerEvent) {
+    if (this.isPanning()) {
+      this.isPanning.set(false);
+      const el = this.canvasRef.nativeElement;
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+      return;
+    }
     if (!this.isDrawing || !this.currentStroke) return;
 
     const canvas = this.canvasRef.nativeElement;
@@ -242,7 +315,7 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
   private redraw() {
     if (!this.ctx) return;
     const canvas = this.canvasRef.nativeElement;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = this.dpr;
     this.ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
 
     const all = this.currentStroke ? [...this.strokes(), this.currentStroke] : this.strokes();
@@ -309,22 +382,25 @@ export class WhiteboardPage implements AfterViewInit, OnDestroy {
 
   // ── Sticky notes ──────────────────────────────────────────────────────────
 
-  startDragNote(e: MouseEvent, note: Note) {
+  // Pointer events, not mouse events, so a note can be moved with a finger too.
+  startDragNote(e: PointerEvent, note: Note) {
     if (this.tool() !== 'select') return;
+    if (e.button > 0 || !e.isPrimary) return;
     e.stopPropagation();
     const point = this.toCanvas(e);
     this.draggingNoteId = note.id;
     this.dragOffset = { x: point.x - note.x, y: point.y - note.y };
   }
 
-  dragNote(e: MouseEvent) {
+  dragNote(e: PointerEvent) {
     if (!this.draggingNoteId) return;
     const point = this.toCanvas(e);
     // Rebuilt immutably rather than mutating the note in place: the app is
     // zoneless, so a mutated object never notifies the template.
     this.notes.update(list => list.map(n =>
       n.id === this.draggingNoteId
-        ? { ...n, x: point.x - this.dragOffset.x, y: point.y - this.dragOffset.y }
+        // Never above or left of the board's origin: it could not be scrolled back to.
+        ? { ...n, x: Math.max(0, point.x - this.dragOffset.x), y: Math.max(0, point.y - this.dragOffset.y) }
         : n));
   }
 

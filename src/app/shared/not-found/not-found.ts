@@ -64,7 +64,9 @@ import { AuthService } from '../../core/services/auth.service';
       padding: 10px 20px;
       border-radius: 999px;
       background: #2ec4a0;
-      color: #06231d;
+      /* !important: the site-wide link colour is forced the same way, and its
+         dark teal on this teal button was barely readable. */
+      color: #06231d !important;
       font-weight: 600;
       text-decoration: none;
     }

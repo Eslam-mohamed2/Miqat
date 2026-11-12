@@ -23,6 +23,47 @@ export interface TaskChangedEvent {
   title?: string;
 }
 
+export interface EventChangedEvent {
+  eventId?: string;
+  action?: string;
+  title?: string;
+}
+
+/** A chat message as the server sends it: new ("chatMessage") or edited / deleted ("chatMessageChanged"). */
+export interface ChatMessageEvent {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+  editedAt?: string | null;
+  isDeleted?: boolean;
+  /** The id this app gave the message before it was saved; only on new messages. */
+  clientId?: string | null;
+  /** Set when the message is the record of a call; the sender is then the caller and there is no text. */
+  callOutcome?: 'Completed' | 'Missed' | 'Declined' | null;
+  callVideo?: boolean | null;
+  callSeconds?: number | null;
+}
+
+/** A friend is calling: it rings in every open tab until one answers. */
+export interface CallIncomingEvent {
+  callId: string;
+  conversationId: string;
+  video: boolean;
+  from: { id: string; fullName: string; profilePictureUrl?: string | null };
+}
+
+/** A set-up message from the other browser of a call (offer, answer or network candidate). */
+export interface CallSignalEvent { callId: string; data: any; }
+
+/** "ended", "declined", "cancelled" (the caller gave up) or "answeredElsewhere" (picked up in another tab). */
+export interface CallEndedEvent { callId: string; reason: string; }
+
+export interface ChatReadEvent { conversationId: string; userId: string; readAt: string; }
+export interface ChatTypingEvent { conversationId: string; userId: string; }
+export interface PresenceEvent { userId: string; isOnline: boolean; }
+
 /**
  * The app's live channel to the server.
  *
@@ -40,6 +81,22 @@ export class RealtimeService {
   readonly notification$ = new Subject<RealtimeNotification>();
   readonly taskChanged$ = new Subject<TaskChangedEvent>();
   readonly commentAdded$ = new Subject<{ taskId: string }>();
+  /** A calendar event the user can see was created, changed, answered or removed. */
+  readonly eventChanged$ = new Subject<EventChangedEvent>();
+
+  // Chat between friends.
+  readonly chatMessage$ = new Subject<ChatMessageEvent>();
+  readonly chatMessageChanged$ = new Subject<ChatMessageEvent>();
+  readonly chatRead$ = new Subject<ChatReadEvent>();
+  readonly chatTyping$ = new Subject<ChatTypingEvent>();
+  readonly presenceChanged$ = new Subject<PresenceEvent>();
+  // Voice and video calls.
+  readonly callIncoming$ = new Subject<CallIncomingEvent>();
+  readonly callAccepted$ = new Subject<{ callId: string }>();
+  readonly callSignal$ = new Subject<CallSignalEvent>();
+  readonly callEnded$ = new Subject<CallEndedEvent>();
+  /** The connection came back after a drop: whatever was pushed meanwhile was missed. */
+  readonly reconnected$ = new Subject<void>();
 
   /** Idempotent — the shell calls this on every entry to the signed-in layout. */
   async connect(): Promise<void> {
@@ -64,12 +121,54 @@ export class RealtimeService {
       this.taskChanged$.next(payload));
     this.connection.on('commentAdded', (payload: { taskId: string }) =>
       this.commentAdded$.next(payload));
+    this.connection.on('eventChanged', (payload: EventChangedEvent) =>
+      this.eventChanged$.next(payload ?? {}));
+
+    this.connection.on('chatMessage', (payload: ChatMessageEvent) => this.chatMessage$.next(payload));
+    this.connection.on('chatMessageChanged', (payload: ChatMessageEvent) => this.chatMessageChanged$.next(payload));
+    this.connection.on('chatRead', (payload: ChatReadEvent) => this.chatRead$.next(payload));
+    this.connection.on('chatTyping', (payload: ChatTypingEvent) => this.chatTyping$.next(payload));
+    this.connection.on('presenceChanged', (payload: PresenceEvent) => this.presenceChanged$.next(payload));
+    this.connection.on('callIncoming', (payload: CallIncomingEvent) => this.callIncoming$.next(payload));
+    this.connection.on('callAccepted', (payload: { callId: string }) => this.callAccepted$.next(payload));
+    this.connection.on('callSignal', (payload: CallSignalEvent) => this.callSignal$.next(payload));
+    this.connection.on('callEnded', (payload: CallEndedEvent) => this.callEnded$.next(payload));
+    this.connection.onreconnected(() => this.reconnected$.next());
 
     try {
       await this.connection.start();
     } catch {
       // Best-effort: the app is fully usable without the live channel — polling
       // and manual refresh still work. Reconnect handles later recovery.
+    }
+  }
+
+  /**
+   * Tells the others in a chat that the user is typing. Nothing is saved and a
+   * lost call costs nothing, so failures are ignored.
+   */
+  sendTyping(conversationId: string): void {
+    if (this.connection?.state !== HubConnectionState.Connected) return;
+    this.connection.invoke('Typing', conversationId).catch(() => { /* best effort */ });
+  }
+
+  /**
+   * Calls a method of the hub and answers what it returns. When the server
+   * refuses with a reason ("Sam is not online right now"), the promise rejects
+   * with an Error carrying exactly that sentence.
+   */
+  async invoke<T = void>(method: string, ...args: unknown[]): Promise<T> {
+    if (this.connection?.state !== HubConnectionState.Connected) {
+      throw new Error('You are offline. Check your connection and try again.');
+    }
+
+    try {
+      return await this.connection.invoke<T>(method, ...args);
+    } catch (err) {
+      // SignalR wraps the reason: "An unexpected error occurred invoking 'X' on the server. HubException: <reason>".
+      const text = err instanceof Error ? err.message : String(err);
+      const marker = 'HubException: ';
+      throw new Error(text.includes(marker) ? text.slice(text.indexOf(marker) + marker.length) : 'Something went wrong. Try again.');
     }
   }
 

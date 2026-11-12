@@ -1,0 +1,356 @@
+@use '../../../../../styles/tokens' as *;
+@use '../event-dialog' as dialog;
+
+:host {
+  display: block;
+}
+
+@include dialog.event-dialog;
+
+// ── Fields ──────────────────────────────────────────────────────────────────
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  > label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $text-secondary;
+  }
+
+  .optional { font-weight: 400; color: $text-muted; }
+}
+
+input[type='text'],
+input[type='date'],
+input[type='time'],
+input[type='number'],
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid $border-input;
+  background: $bg-input;
+  color: $text-primary;
+  font: inherit;
+  font-size: 14px;
+  // Native date and time pickers follow the theme instead of staying light.
+  color-scheme: light dark;
+
+  &::placeholder { color: $text-muted; }
+
+  &:focus {
+    outline: none;
+    border-color: $teal-primary;
+    box-shadow: 0 0 0 3px $teal-glow;
+  }
+
+  &.invalid { border-color: $text-danger; }
+
+  @include touch { min-height: 44px; font-size: 16px; }
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: -8px 0 0;
+  font-size: 12px;
+  color: $text-muted;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+
+.field .field-hint { margin: 0; }
+
+// Someone already has something at the chosen time. A hint, not an error: the
+// event can still be saved.
+.busy-note {
+  --tone: #f4a835;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: -6px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  font-size: 13px;
+  line-height: 1.45;
+  color: $text-primary;
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+    color: color-mix(in srgb, var(--tone) var(--tone-text-mix), #000);
+  }
+}
+
+// ── All day ─────────────────────────────────────────────────────────────────
+.switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-primary;
+  cursor: pointer;
+
+  // The real checkbox keeps the keyboard and the screen reader; the track next
+  // to it is what is seen.
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  .switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: 999px;
+    background: $border-input;
+    transition: background 0.15s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.15s ease;
+    }
+  }
+
+  input:checked + .switch { background: $teal-primary; }
+  input:checked + .switch::after { transform: translateX(18px); }
+  input:focus-visible + .switch { outline: 2px solid $teal-primary; outline-offset: 2px; }
+
+  @include touch { min-height: 44px; }
+}
+
+// ── When ────────────────────────────────────────────────────────────────────
+.when-grid,
+.repeat-grid,
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.date-time {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 8px;
+
+  .all-day & { grid-template-columns: minmax(0, 1fr); }
+}
+
+.with-unit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  input { width: 84px; flex-shrink: 0; }
+  span { font-size: 14px; color: $text-secondary; }
+}
+
+// ── Guests ──────────────────────────────────────────────────────────────────
+.guest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.guest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 4px 3px 3px;
+  border-radius: 999px;
+  background: $bg-input;
+  border: 1px solid $border-card;
+  font-size: 13px;
+  font-weight: 600;
+  color: $text-primary;
+
+  img,
+  .guest-initials { width: 24px; height: 24px; }
+
+  .guest-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  button {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: $text-muted;
+    cursor: pointer;
+
+    mat-icon { font-size: 15px; width: 15px; height: 15px; }
+
+    &:hover { background: $bg-card-hover; color: $text-danger; }
+
+    @include touch { width: 32px; height: 32px; }
+  }
+}
+
+img,
+.guest-initials {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.guest-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: $teal-glow;
+  color: $text-active;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.guest-picker {
+  position: relative;
+}
+
+.guest-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 240px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+  background: $bg-card;
+  border: 1px solid $border-input;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: $text-primary;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover { background: $bg-card-hover; }
+  }
+}
+
+.guest-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  strong { font-size: 13.5px; font-weight: 600; }
+  small { font-size: 12px; color: $text-muted; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+.guest-none {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: $text-muted;
+}
+
+// ── Find a time ─────────────────────────────────────────────────────────────
+.find-time {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: -6px;
+}
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $text-link;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+  &:hover:not(:disabled) { text-decoration: underline; }
+  &:disabled { opacity: 0.6; cursor: default; }
+
+  @include touch { min-height: 44px; }
+}
+
+.slot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .field-hint { margin: 0; }
+}
+
+.slot {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid $border-input;
+  background: transparent;
+  color: $text-primary;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { border-color: $teal-primary; background: $teal-glow; }
+
+  @include touch { min-height: 44px; }
+}
+
+@include below($bp-phone-lg) {
+  .when-grid,
+  .repeat-grid,
+  .two-col { grid-template-columns: minmax(0, 1fr); }
+}

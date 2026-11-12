@@ -1,0 +1,160 @@
+// Shared page layout for the sign-in / sign-up, forgot-password, verify-code and
+// reset-password pages. Each of those components pulls this in with @use.
+//
+//   >= 992px   form column (1/3 of the width) beside the clock panel (2/3)
+//   <  992px   clock panel hidden; the form card sits on the wave background
+//
+// 992px is Bootstrap's "lg" breakpoint, which the templates' col-lg-* / d-lg-*
+// classes use, so the styles here flip at exactly the same width as the grid.
+@use '../../styles/breakpoints' as *;
+
+.auth-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  // min-height, not a fixed height: a form taller than the screen makes the page
+  // scroll instead of being cut off above the top edge.
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 0;
+}
+
+// The white card around the form
+.mobile-container {
+  width: min(88%, 420px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 25px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  padding-top: 20px;
+}
+
+.form-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+// Clock panel: stays on screen while a long form scrolls.
+.auth-clock-col {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+}
+
+// "Back to home" button. Fixed, so it stays with the clock panel: centred in the
+// right two thirds of the page, below the clock.
+.custom-desgin {
+  position: fixed;
+  left: calc(100% * 2 / 3);
+  bottom: 10vh;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 52px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover {
+    transform: translateX(-50%) translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    background-color: #f8f9fa;
+  }
+
+  &:active {
+    transform: translateX(-50%);
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    text-decoration: none;
+  }
+
+  i {
+    font-size: 1.5rem;
+    color: #2e6670;
+  }
+}
+
+// One-time-code boxes: share the row equally and shrink on narrow screens.
+.otp-row {
+  display: flex;
+  justify-content: center;
+  gap: clamp(4px, 1.5vw, 8px);
+  width: 100%;
+}
+
+.otp-input {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 3.5rem;
+  min-height: 0;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  font-size: clamp(1.1rem, 5vw, 1.5rem);
+}
+
+@include below($bp-grid-lg) {
+  .auth-container {
+    // Top padding leaves room for the home button in the corner.
+    padding: 72px 0 32px;
+    background: url("../../assets/stacked-waves-haikei.png") center / cover;
+  }
+
+  .mobile-container {
+    width: min(92%, 440px);
+    border-radius: 28px;
+  }
+
+  // Small round button in the top-left corner; scrolls with the page.
+  .custom-desgin {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    bottom: auto;
+    transform: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+
+    &:hover {
+      transform: translateY(-3px);
+    }
+
+    &:active {
+      transform: none;
+    }
+
+    i {
+      font-size: 1.15rem;
+    }
+  }
+}
+
+@include below($bp-phone) {
+  // The form (and alerts) use the global .w-80 helper; give them more of a narrow card.
+  .w-80 {
+    width: 88% !important;
+  }
+}

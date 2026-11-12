@@ -158,7 +158,7 @@
   align-items: center;
   gap: 12px;
   margin: 4px 0 0 12px;
-  font-size: 11.5px;
+  font-size: 12px;
   color: $text-muted;
 }
 
@@ -252,7 +252,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: $teal-primary;
     border: 1px solid $border-card;
@@ -275,7 +275,7 @@
   }
 
   small {
-    font-size: 11px;
+    font-size: 12px;
     color: $text-muted;
   }
 }
@@ -284,7 +284,7 @@
   flex: 0 0 auto;
   padding: 2px 7px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--orange-accent);
   background: rgba(244, 132, 95, 0.14);
@@ -323,7 +323,7 @@
 }
 
 .shortcut {
-  font-size: 11.5px;
+  font-size: 12px;
   color: $text-muted;
 }
 
@@ -361,4 +361,94 @@
   .shortcut { text-align: center; }
   .send { width: 100%; }
   .list { max-height: 320px; }
+}
+
+// ── Editing a comment in place ──────────────────────────────────────────────
+
+// While its text is being edited the bubble takes the full width, so the box is
+// as roomy as the composer instead of as narrow as the old sentence.
+.bubble:has(.edit-box) {
+  display: block;
+}
+
+.edit-box {
+  margin-top: 6px;
+
+  textarea {
+    display: block;
+    width: 100%;
+    min-height: 62px;
+    resize: vertical;
+    padding: 8px 10px;
+    border-radius: $radius-input;
+    border: 1px solid $border-input;
+    background: $bg-card;
+    color: $text-primary;
+    font: inherit;
+    font-size: 13.5px;
+    line-height: 1.5;
+
+    &:focus {
+      outline: none;
+      border-color: $teal-primary;
+      box-shadow: 0 0 0 3px var(--teal-glow);
+    }
+  }
+}
+
+.edit-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: $text-muted;
+}
+
+.edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+
+  .shortcut { margin-right: auto; }
+  .send { padding: 6px 18px; }
+}
+
+.edit-cancel {
+  padding: 6px 14px;
+  border: 1px solid $border-card;
+  border-radius: 999px;
+  background: transparent;
+  color: $text-secondary;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: $bg-card-hover; color: $text-primary; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.edited {
+  font-style: italic;
+}
+
+// "Edit" is not a destructive action, so it does not turn red like "Delete".
+.link-btn.plain:hover {
+  color: $text-primary;
+}
+
+@include touch {
+  .link-btn { min-height: 32px; padding: 0 4px; }
+  .edit-cancel,
+  .edit-actions .send { min-height: 40px; }
+}
+
+@include below($bp-phone-lg) {
+  .edit-actions {
+    flex-wrap: wrap;
+
+    .shortcut { flex: 1 1 100%; text-align: left; }
+    .send { width: auto; flex: 1; }
+    .edit-cancel { flex: 1; }
+  }
 }

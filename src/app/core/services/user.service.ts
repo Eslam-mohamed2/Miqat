@@ -2,8 +2,11 @@ import { Injectable, computed, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, UpdateProfileDto, UserDto } from '../../models/api.models';
+import {
+  ApiResponse, ContactDto, UpdateProfileDto, UserDto, UserPreferencesDto, UserProfileDto, UserSummaryDto
+} from '../../models/api.models';
 import { unwrapApi, unwrapApiList } from '../http/api-response';
+import { safeTimeZone } from '../utils/time-zone';
 
 @Injectable({
   providedIn: 'root'
@@ -22,11 +25,10 @@ export class UserService {
 
   /**
    * The zone to format dates in: the user's own, falling back to the browser's.
-   * Never empty, so callers can pass it straight to Intl.
+   * Always a name Intl accepts, so callers can pass it straight to Intl - a profile
+   * can hold free text such as "UTC+2", which made Intl throw.
    */
-  readonly timeZone = computed(() =>
-    this.currentUser()?.timeZone?.trim() || this.browserTimeZone()
-  );
+  readonly timeZone = computed(() => safeTimeZone(this.currentUser()?.timeZone));
 
   constructor(private http: HttpClient) { }
 
@@ -49,16 +51,15 @@ export class UserService {
     );
   }
 
-  private browserTimeZone(): string {
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    } catch {
-      return 'UTC';
-    }
-  }
-
   getUserById(id: string): Observable<UserDto> {
     return this.http.get<UserDto | ApiResponse<UserDto>>(`${this.apiUrl}/${id}`).pipe(unwrapApi<UserDto>());
+  }
+
+  /** A user together with how they relate to the signed-in user (mutual friends, friendship). */
+  getProfile(id: string): Observable<UserProfileDto> {
+    return this.http
+      .get<UserProfileDto | ApiResponse<UserProfileDto>>(`${this.apiUrl}/${id}/profile`)
+      .pipe(unwrapApi<UserProfileDto>());
   }
 
   updateUser(id: string, data: UpdateProfileDto): Observable<UserDto> {
@@ -69,6 +70,47 @@ export class UserService {
     return this.http.delete<void | ApiResponse<void>>(`${this.apiUrl}/${id}`).pipe(unwrapApi<void>());
   }
 
+  /**
+   * The people this user can pick: friends and project teammates. Use this for
+   * pickers - GET /api/User (getAllUsers) is admin-only and answers 403 for
+   * everyone else, which left the picker empty.
+   */
+  getContacts(): Observable<ContactDto[]> {
+    return this.http
+      .get<ContactDto[] | ApiResponse<ContactDto[]>>(`${this.apiUrl}/contacts`)
+      .pipe(unwrapApiList<ContactDto>());
+  }
+
+  /** Counts for the signed-in user in one call: tasks by state, projects, friends, unread items. */
+  getSummary(): Observable<UserSummaryDto> {
+    return this.http.get<UserSummaryDto>(`${this.apiUrl}/me/summary`).pipe(unwrapApi<UserSummaryDto>());
+  }
+
+  /** Which notifications the user wants (stored on the server, per account). */
+  getPreferences(): Observable<UserPreferencesDto> {
+    return this.http
+      .get<UserPreferencesDto | ApiResponse<UserPreferencesDto>>(`${this.apiUrl}/me/preferences`)
+      .pipe(unwrapApi<UserPreferencesDto>());
+  }
+
+  updatePreferences(preferences: UserPreferencesDto): Observable<UserPreferencesDto> {
+    return this.http
+      .put<UserPreferencesDto | ApiResponse<UserPreferencesDto>>(`${this.apiUrl}/me/preferences`, preferences)
+      .pipe(unwrapApi<UserPreferencesDto>());
+  }
+
+  /** Removes the profile picture and publishes the change to the whole app. */
+  removeProfileImage(): Observable<void> {
+    return this.http
+      .delete<void | ApiResponse<void>>(`${this.apiUrl}/profile-image`)
+      .pipe(
+        unwrapApi<void>(),
+        tap(() => this.currentUser.update(current =>
+          current ? { ...current, profilePictureUrl: '' } : current))
+      );
+  }
+
+  /** Admin only. Everyone else gets 403 - pickers should call getContacts(). */
   getAllUsers(): Observable<UserDto[]> {
     return this.http.get<UserDto[] | ApiResponse<UserDto[]>>(this.apiUrl).pipe(unwrapApiList<UserDto>());
   }

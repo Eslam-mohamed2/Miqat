@@ -8,7 +8,7 @@ import { GroupService } from '../../core/services/group.service';
 import { TaskService } from '../../core/services/task.service';
 import { UserService } from '../../core/services/user.service';
 import { TaskWindowComponent } from '../../features/dashboard/task-window/task-window';
-import { MemberDto, TaskDto, UserDto } from '../../models/api.models';
+import { ContactDto, MemberDto, TaskDto } from '../../models/api.models';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { finalize } from 'rxjs/operators';
 
@@ -49,7 +49,7 @@ export class ProjectDetailsPanel {
 
   project = signal<any>(null);
   members = signal<MemberDto[]>([]);
-  allUsers = signal<UserDto[]>([]);
+  allUsers = signal<ContactDto[]>([]);
   tasks = signal<TaskDto[]>([]);
   isLoading = signal(false);
   tasksLoading = signal(false);
@@ -82,10 +82,12 @@ export class ProjectDetailsPanel {
     this.members.set([]);
     this.tasks.set([]);
     
-    // Load all users
-    this.userService.getAllUsers().subscribe({
-      next: (users) => this.allUsers.set(users),
-      error: () => console.error('Failed to load users')
+    // People who can be added: the user's friends and teammates. This used to ask
+    // for every user (GET /api/User), which only an admin may do, so for everyone
+    // else the request failed and the "add member" list stayed empty.
+    this.userService.getContacts().subscribe({
+      next: (people) => this.allUsers.set(people),
+      error: () => this.allUsers.set([])
     });
     
     // Load Group properties

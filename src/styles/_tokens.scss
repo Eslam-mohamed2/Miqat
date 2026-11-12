@@ -21,10 +21,14 @@
 
   // === TEXT ===
   --text-primary:   #f0f0f0;
-  --text-secondary: #888888;
-  --text-muted:     #555555;
+  // Readable on the dark surfaces: #888 / #555 measured 2.3-5:1 against the cards,
+  // so hints, timestamps and labels were close to invisible.
+  --text-secondary: #a3a3a3;
+  --text-muted:     #8a8a8a;
   --text-active:    #2ec4a0;
   --text-link:      #2ec4a0;
+  // Red as text ("Logout"): Bootstrap's #dc3545 is 4.2:1 on the dark sidebar.
+  --text-danger:    #f0626f;
 
   // === ICON BACKGROUNDS ===
   --icon-bg-event:  #1b3a35;
@@ -45,6 +49,11 @@
   --teal-glow:      rgba(46, 196, 160, 0.15);
   --orange-accent:  #f4845f;
   --btn-quick-add-text: #0d0d0d;
+
+  // How much of a status / priority / project colour survives when it is used as
+  // *text* (the rest is mixed with black). 100% on the dark theme, where those
+  // mid-tones read well; the light theme lowers it - see below.
+  --tone-text-mix: 100%;
   
   // Static shadows
   --shadow-card:    0 2px 12px rgba(0,0,0,0.4);
@@ -60,11 +69,14 @@
   // when it is used, not when it is declared.
   --surface:        var(--bg-card);
   --surface-card:   var(--bg-card);
+  --surface-alt:    var(--bg-agenda-item);
+  --surface-2:      var(--bg-active-nav);
   --surface-hover:  var(--bg-card-hover);
   --bg-hover:       var(--bg-card-hover);
   --border:         var(--border-card);
   --border-color:   var(--border-card);
   --primary:        var(--teal-primary);
+  --primary-light:  var(--teal-glow);
 }
 
 html[data-theme='light'], 
@@ -88,8 +100,25 @@ body.light-mode {
   // === TEXT ===
   --text-primary:   #111827;
   --text-secondary: #4b5563;
-  --text-muted:     #6b7280;
-  --text-active:    #2ec4a0;
+  // #6b7280 was 4.4:1 on the grey page background; this is 4.9:1 there.
+  --text-muted:     #636a76;
+  --text-danger:    #d12c3c;
+
+  // === BRAND TEAL (light theme) ===
+  // The dark theme's #2ec4a0 is a mid-tone: on white it measures 2.2:1 as text, and
+  // white text on it measures the same. This deeper teal reaches 4.5:1 both ways -
+  // white on it, and it on white or on the grey page background - so links, active
+  // items and "+ Quick Add" are readable on the light theme.
+  --teal-primary:   #0b7a60;
+  --teal-dark:      #09634e;
+  --teal-glow:      rgba(11, 122, 96, 0.12);
+  // A selected item sits on a teal tint, which eats contrast: one step darker.
+  --text-active:    #09634e;
+  --text-link:      #0b7a60;
+
+  // Amber, orange and the other label colours get the same treatment when they
+  // are used as text: 55% of the colour, 45% black (4.5:1 or better on its own tint).
+  --tone-text-mix:  55%;
 
   // === ICON BACKGROUNDS (Light mode variants) ===
   --icon-bg-event:  #e6f7f3;
@@ -127,6 +156,7 @@ $text-primary: var(--text-primary);
 $text-secondary: var(--text-secondary);
 $text-muted: var(--text-muted);
 $text-active: var(--text-active);
+$text-danger: var(--text-danger);
 $text-link: var(--text-link);
 
 $teal-primary: var(--teal-primary);

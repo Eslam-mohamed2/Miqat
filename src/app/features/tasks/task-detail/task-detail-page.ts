@@ -16,6 +16,11 @@ import { MemberDto, TaskDto } from '../../../models/api.models';
 import { apiErrorMessage } from '../../../core/http/api-error';
 import { CommentThread } from '../../../shared/comment-thread/comment-thread';
 import { TaskWindowComponent } from '../../dashboard/task-window/task-window';
+import { ChecklistProgress, TaskChecklist } from '../../../shared/task-checklist/task-checklist';
+import { TaskDependencies } from '../../../shared/task-dependencies/task-dependencies';
+import { ItemReminders } from '../../../shared/item-reminders/item-reminders';
+import { ItemAttachments } from '../../../shared/item-attachments/item-attachments';
+import { TaskMarks } from '../../../shared/task-marks/task-marks';
 
 /** Backend TaskStatus values. "InProgress" is not one of them. */
 const STATUSES = ['Pending', 'In_progress', 'Completed', 'On_hold', 'Cancelled'] as const;
@@ -32,7 +37,10 @@ const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'] as const;
 @Component({
   selector: 'app-task-detail-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, MatDialogModule, CommentThread],
+  imports: [
+    CommonModule, RouterLink, MatIconModule, MatDialogModule, CommentThread,
+    TaskChecklist, TaskDependencies, ItemReminders, ItemAttachments, TaskMarks
+  ],
   templateUrl: './task-detail-page.html',
   styleUrl: './task-detail-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -184,6 +192,23 @@ export class TaskDetailPage {
   setPriority(priority: string) {
     if (this.task()?.priority === priority) return;
     this.patch({ priority }, `Priority set to ${priority}`);
+  }
+
+  // ── Checklist and dependencies ────────────────────────────────────────────
+
+  /**
+   * The checklist and the dependencies save by themselves; these keep the copy of
+   * the task on this page in step, so the header never shows a stale count or a
+   * "Blocked" mark that no longer holds.
+   */
+  onChecklistChanged(progress: ChecklistProgress) {
+    this.task.update(task => task && {
+      ...task, subtaskCount: progress.total, completedSubtaskCount: progress.done
+    });
+  }
+
+  onBlockedChanged(isBlocked: boolean) {
+    this.task.update(task => task && { ...task, isBlocked });
   }
 
   openEditor() {

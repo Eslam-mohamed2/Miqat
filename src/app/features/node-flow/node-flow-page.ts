@@ -1,6 +1,6 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, ViewChild,
-  inject, signal
+  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, OnInit, ViewChild,
+  computed, inject, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -32,8 +32,10 @@ export interface FlowEdge {
 /** Must match `.flow-node { width }` in the stylesheet — edges anchor to it. */
 const NODE_WIDTH = 200;
 const NODE_MID_Y = 40;
-/** Pointer travel above which a mouseup is a drag, not a click. */
-const CLICK_SLOP = 4;
+/** Pointer travel above which a release is a drag, not a click (a finger wobbles more than a mouse). */
+const CLICK_SLOP = 6;
+/** Room kept free past the last node, so it can be dragged further out. */
+const BOARD_MARGIN = 160;
 
 @Component({
   selector: 'app-node-flow-page',
@@ -69,8 +71,19 @@ export class NodeFlowPage implements OnInit {
   private dragMoved = false;
 
   linkingFromNodeId = signal<string | null>(null);
-  /** Only meaningful while linking — see onMouseMove. */
+  /** Only meaningful while linking — see onPointerMove. */
   pointer = signal({ x: 0, y: 0 });
+
+  /**
+   * The board is as large as its nodes need (never smaller than the visible area —
+   * the stylesheet sets min-width/min-height: 100%), and scrolls. On a phone the
+   * status columns run well past the screen edge; without this they were cut off
+   * with no way to reach them.
+   */
+  readonly surfaceWidth = computed(() =>
+    Math.max(0, ...this.nodes().map(node => node.x + NODE_WIDTH + BOARD_MARGIN)));
+  readonly surfaceHeight = computed(() =>
+    Math.max(0, ...this.nodes().map(node => node.y + NODE_MID_Y * 2 + BOARD_MARGIN)));
 
   constructor() {
     this.changed$
@@ -168,17 +181,22 @@ export class NodeFlowPage implements OnInit {
     });
   }
 
-  /** Viewport coordinates → coordinates inside the board. */
+  /**
+   * Viewport coordinates → coordinates inside the board. Measured against the
+   * scrolling surface, so the result is right wherever the board is scrolled to.
+   */
   private toBoard(e: MouseEvent): { x: number; y: number } {
     const rect = this.boardRef.nativeElement.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
   // ── Pointer ───────────────────────────────────────────────────────────────
+  // Pointer events, not mouse events: one code path for mouse, pen and finger.
+  // With mouse events only, a node could not be moved on a touch screen at all.
 
-  onMouseMove(e: MouseEvent) {
+  onPointerMove(e: PointerEvent) {
     const linking = !!this.linkingFromNodeId();
-    // Writing a signal on every single mousemove re-ran change detection across
+    // Writing a signal on every single move re-ran change detection across
     // the whole board even when nothing was being dragged or linked.
     if (!linking && !this.draggingNodeId) return;
 
@@ -193,13 +211,22 @@ export class NodeFlowPage implements OnInit {
       this.dragMoved = true;
     }
 
+    // Never above or left of the board's origin: a node there could not be
+    // scrolled back into view.
     this.nodes.update(list => list.map(n =>
       n.id === id
-        ? { ...n, x: point.x - this.dragOffset.x, y: point.y - this.dragOffset.y }
+        ? {
+            ...n,
+            x: Math.max(0, point.x - this.dragOffset.x),
+            y: Math.max(0, point.y - this.dragOffset.y)
+          }
         : n));
   }
 
-  onMouseUp() {
+  /** On the document, so a drag also ends when the pointer is released outside the board. */
+  @HostListener('document:pointerup')
+  @HostListener('document:pointercancel')
+  onPointerUp() {
     if (this.draggingNodeId && this.dragMoved) this.touch();
     this.draggingNodeId = null;
   }
@@ -219,8 +246,8 @@ export class NodeFlowPage implements OnInit {
 
       this.nodes.update(list => [...list, {
         id: `n_${Date.now()}`,
-        x: point.x - NODE_WIDTH / 2,
-        y: point.y - NODE_MID_Y,
+        x: Math.max(0, point.x - NODE_WIDTH / 2),
+        y: Math.max(0, point.y - NODE_MID_Y),
         title: isTask ? 'New Task' : 'New Event',
         type: isTask ? 'task' : 'event',
         status: 'Pending'
@@ -231,8 +258,10 @@ export class NodeFlowPage implements OnInit {
     this.linkingFromNodeId.set(null);
   }
 
-  onNodeMouseDown(e: MouseEvent, node: FlowNode) {
+  onNodePointerDown(e: PointerEvent, node: FlowNode) {
     if (this.tool() !== 'select') return;
+    // Primary button / first finger only.
+    if (e.button > 0 || !e.isPrimary) return;
     e.stopPropagation();
     const point = this.toBoard(e);
     this.draggingNodeId = node.id;

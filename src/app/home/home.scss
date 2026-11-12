@@ -1,5 +1,5 @@
 @use "sass:math";
-@use '../../styles/tokens' as *;
+@use '../../styles/breakpoints' as *;
 
 // Hero section entrance animations (CSS, no deprecated @angular/animations)
 @keyframes heroFadeIn {
@@ -67,16 +67,19 @@
 }
 
 .content-Info {
-  font-size: 90px !important;
+  // Scales with the window up to the full 90px. A fixed 90px overflowed the hero's
+  // half-width column on small laptops and tablets held sideways (1024px), cutting
+  // "Welcome to" off behind the calendar.
+  font-size: clamp(3rem, 6.2vw, 90px) !important;
   margin-bottom: 25px !important;
 }
 
+// The falling-clocks layer fills the calendar column, which is its positioning
+// context (position-relative in the template). That holds whether the column sits
+// beside the hero or below it, so no per-screen-size offsets are needed.
 .clock-rain {
   position: absolute;
-  top: -40px;
-  left: 50%;
-  width: 50%;
-  height: 104% !important;
+  inset: 0;
   pointer-events: none;
   overflow: hidden;
 }
@@ -144,7 +147,8 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   max-width: 780px;
   width: 65%;
-  min-width: 520px;
+  // 520px where there is room for it, never wider than the column it sits in.
+  min-width: min(520px, 100%);
   z-index: 100 !important;
   overflow: hidden;
 
@@ -651,11 +655,6 @@
   transform: translateX(0);
 }
 
-
-
-
-
-
 @include below($bp-laptop) {
   main .container-fluid {
     max-width: 100%;
@@ -769,7 +768,7 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.8);
     max-width: 780px;
     width: 88%;
-    min-width: 520px;
+    min-width: min(520px, 100%);
     z-index: 100 !important;
     overflow: hidden;
   }
@@ -850,17 +849,7 @@
   }
 }
 
-@include below($bp-laptop) {
-  .clock-rain {
-    position: absolute;
-    top: 50%;
-    left: 0%;
-    width: 100%;
-    height: 104% !important;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
+@include below($bp-grid-lg) {
   .calendar-container {
     min-width: 0 !important;
     width: 60% !important;
@@ -876,7 +865,6 @@
     padding: 20px !important;
   }
 }
-
 
 @include below($bp-tablet) {
   main .container-fluid {
@@ -958,16 +946,6 @@
     padding-bottom: 1rem !important;
   }
 
-  .clock-rain {
-    position: absolute;
-    top: 62%;
-    left: 0%;
-    width: 100%;
-    height: 100% !important;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
   .Service-Card {
     width: 30% !important;
   }
@@ -1030,12 +1008,12 @@
     font-size: 14px !important;
   }
 
-  .about-sizef {
-    width: 455px !important;
-  }
-
+  // Up to 455px wide, but never wider than the screen: a fixed 455px pushed this
+  // text past both edges on phones.
+  .about-sizef,
   .about-sizes {
-    width: 455px !important;
+    width: 100% !important;
+    max-width: 455px;
   }
 
   .Service-Card {
@@ -1109,22 +1087,13 @@
 
 // done
 
-@include below($bp-tablet) {
+@include below($bp-phone-lg) {
   .bg-Custom {
     height: 90vh !important;
     padding-top: 5rem !important;
     padding-bottom: 1rem !important;
   }
 
-  .clock-rain {
-    position: absolute;
-    top: 58%;
-    left: 0%;
-    width: 100%;
-    height: 100% !important;
-    pointer-events: none;
-    overflow: hidden;
-  }
   .calendar-container {
     min-width: 0 !important;
     width: 70% !important;
@@ -1158,20 +1127,6 @@
     text-align: center !important;
   }
 }
-
-@include below($bp-tablet-sm) {
-  .clock-rain {
-    position: absolute;
-    top: 65%;
-    left: 0%;
-    width: 100%;
-    height: 100% !important;
-    pointer-events: none;
-    overflow: hidden;
-  }
-}
-
-
 
 @include below($bp-phone-lg) {
   .container-fluid {
@@ -1249,16 +1204,6 @@
     width: 100% !important;
     padding: 0px 20px !important;
     height: 77vh !important;
-  }
-
-  .clock-rain {
-    position: absolute;
-    top: 650px;
-    left: 0%;
-    width: 100%;
-    height: 57% !important;
-    pointer-events: none;
-    overflow: hidden;
   }
 
   .hero-lead-in {
@@ -1374,39 +1319,13 @@
   }
 }
 
-
-@include below($bp-phone) {
-  .clock-rain {
-    position: absolute;
-    top: 59%;
-    left: 0%;
-    width: 100%;
-    height: 100% !important;
-    pointer-events: none;
-    overflow: hidden;
-  }
-}
-
-@include below($bp-phone-md) {
-  .clock-rain {
-    position: absolute;
-    top: 55%;
-    left: 0%;
-    width: 100%;
-    height: 100% !important;
-    pointer-events: none;
-    overflow: hidden;
-  }
-}
-
-@include below($bp-phone-sm) {
-  .clock-rain {
-    position: absolute;
-    top: 51%;
-    left: 0%;
-    width: 100%;
-    height: 100% !important;
-    pointer-events: none;
-    overflow: hidden;
+// Short screens (e.g. a phone held sideways): let the hero and calendar sections grow
+// with their content instead of clipping it at a fixed share of the viewport height.
+@include short-screen {
+  .vh-100 {
+    height: auto !important;
+    min-height: 91.5vh;
+    padding-top: 24px;
+    padding-bottom: 24px;
   }
 }

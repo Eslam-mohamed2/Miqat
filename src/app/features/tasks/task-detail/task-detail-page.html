@@ -33,6 +33,7 @@
     <header class="detail-head">
       <div class="head-text">
         <span class="status-chip" [attr.data-status]="slug(t.status)">{{ label(t.status) }}</span>
+        <app-task-marks class="head-marks" [task]="t"></app-task-marks>
         <h1>{{ t.title }}</h1>
         <p class="sub">
           Created by <a [routerLink]="['/profile', t.userId]">{{ t.ownerName || 'Unknown' }}</a>
@@ -67,6 +68,9 @@
           </div>
         </section>
 
+        <app-task-checklist class="detail-card" [taskId]="t.id"
+                            (changed)="onChecklistChanged($event)"></app-task-checklist>
+
         <!-- Status as a real progress rail rather than a dropdown -->
         <section class="detail-card">
           <h3 class="card-title">Progress</h3>
@@ -91,6 +95,12 @@
             </button>
           </div>
         </section>
+
+        <app-task-dependencies class="detail-card" [taskId]="t.id"
+                               (changed)="onBlockedChanged($event)"></app-task-dependencies>
+
+        <app-item-attachments class="detail-card" kind="Task" [itemId]="t.id"
+                              [canManage]="isOwner()"></app-item-attachments>
 
         <section class="detail-card">
           <app-comment-thread [taskId]="t.id" [focusCommentId]="focusCommentId()"></app-comment-thread>
@@ -125,6 +135,8 @@
             <span class="field-value">{{ label(t.recurrence) }}</span>
           </div>
         </section>
+
+        <app-item-reminders class="detail-card" kind="Task" [itemId]="t.id"></app-item-reminders>
 
         <section class="detail-card">
           <h3 class="card-title">People</h3>

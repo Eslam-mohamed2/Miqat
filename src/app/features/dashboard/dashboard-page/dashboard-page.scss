@@ -29,6 +29,132 @@
       width: 16px;
       height: 16px;
     }
+
+    .btn-ghost:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// The range button's menu.
+.range-wrap {
+  position: relative;
+}
+
+.range-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 180px;
+  padding: 6px;
+  background: $bg-card;
+  border: 1px solid $border-input;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.range-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: left;
+  color: $text-primary;
+  cursor: pointer;
+
+  mat-icon {
+    color: $teal-primary;
+  }
+
+  &:hover,
+  &.active {
+    background: $bg-card-hover;
+  }
+}
+
+// ── At a glance ─────────────────────────────────────────────────────────────
+.glance-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.glance-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+  background: $bg-card;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: $bg-card-hover;
+    border-color: $border-input;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $teal-primary;
+    outline-offset: 2px;
+  }
+}
+
+.glance-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: $teal-glow;
+  color: $text-active;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+}
+
+.glance-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.glance-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: $text-primary;
+  font-variant-numeric: tabular-nums;
+}
+
+.glance-label {
+  font-size: 12.5px;
+  color: $text-secondary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Overdue is the one number that asks for action, so it is the one that is red -
+// and only while there is something overdue.
+.glance-tile[data-tone='warn']:not(.zero) {
+  .glance-value { color: $text-danger; }
+  .glance-icon {
+    background: color-mix(in srgb, var(--text-danger) 14%, transparent);
+    color: $text-danger;
   }
 }
 
@@ -49,11 +175,15 @@
 .left-col {
   display: flex;
   flex-direction: column;
+  // Grid items default to min-width: auto, so the chart's fixed-size SVG pushed the
+  // whole page wider than a small phone.
+  min-width: 0;
 }
 
 .right-col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 @include below($bp-laptop) {
@@ -68,6 +198,7 @@
 }
 
 @include below($bp-tablet) {
+  .glance-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .quick-actions-grid { grid-template-columns: 1fr; }
   .right-col { grid-template-columns: 1fr; }
 }
@@ -77,5 +208,11 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+
+  // The header stacks, so the menu opens from the button's left edge instead.
+  .range-menu {
+    right: auto;
+    left: 0;
   }
 }

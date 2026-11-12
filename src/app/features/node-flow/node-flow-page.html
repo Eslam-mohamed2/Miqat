@@ -1,5 +1,9 @@
-<div #board class="node-flow-container" (click)="onBackgroundClick($event)"
-     (mousemove)="onMouseMove($event)" (mouseup)="onMouseUp()" (mouseleave)="onMouseUp()">
+<div class="node-flow-container" (pointermove)="onPointerMove($event)">
+
+  <!-- The board scrolls: the diagram is as large as its nodes need, which on a
+       phone is far wider than the screen. The toolbar below stays put. -->
+  <div class="board-scroll" (click)="onBackgroundClick($event)">
+  <div #board class="board-surface" [style.width.px]="surfaceWidth()" [style.height.px]="surfaceHeight()">
 
   <!-- SVG Layer for Links -->
   <svg class="edges-layer">
@@ -37,7 +41,7 @@
          [style.left.px]="node.x"
          [style.top.px]="node.y"
          [style.borderLeftColor]="statusColor(node.status)"
-         (mousedown)="onNodeMouseDown($event, node)"
+         (pointerdown)="onNodePointerDown($event, node)"
          (click)="onNodeClick($event, node)">
 
       <div class="node-header">
@@ -55,12 +59,15 @@
         <input type="text" class="node-title-input"
                [value]="node.title"
                (input)="updateNodeTitle(node.id, $any($event.target).value)"
-               (mousedown)="$event.stopPropagation()"
+               (pointerdown)="$event.stopPropagation()"
                (click)="$event.stopPropagation()" />
       </div>
 
       <span class="open-hint" *ngIf="node.taskId && tool() === 'select'">Open task →</span>
     </div>
+  </div>
+
+  </div>
   </div>
 
   <p class="board-empty" *ngIf="!loading() && !nodes().length">

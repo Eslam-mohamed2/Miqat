@@ -7,6 +7,7 @@ import { catchError, map } from 'rxjs/operators';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { FriendService } from '../../core/services/friend.service';
+import { ChatService } from '../../core/services/chat.service';
 import { GroupService } from '../../core/services/group.service';
 import { TaskService } from '../../core/services/task.service';
 import { ImagePaletteService } from '../../core/services/image-palette.service';
@@ -35,6 +36,7 @@ export class ProfilePage implements OnInit {
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private friendService = inject(FriendService);
+  protected chat = inject(ChatService);
   private groupService = inject(GroupService);
   private taskService = inject(TaskService);
   private palette = inject(ImagePaletteService);
@@ -328,6 +330,16 @@ export class ProfilePage implements OnInit {
     });
   }
 
+  /** Opens the pop-up chat with this friend. */
+  message() {
+    const id = this.user()?.id;
+    if (!id) return;
+
+    this.chat.openWith(id).subscribe({
+      error: err => this.showToast(err?.error?.message || 'Could not open the chat.')
+    });
+  }
+
   unfriend() {
     const fId = this.friendshipId();
     const id = this.user()?.id;
@@ -337,6 +349,46 @@ export class ProfilePage implements OnInit {
           this.loadFriendshipStatus(id);
        });
     }
+  }
+
+  /** True while a block or unblock is on its way, so it cannot be sent twice. */
+  blockBusy = signal(false);
+
+  block() {
+    const person = this.user();
+    if (!person?.id || this.blockBusy()) return;
+    if (!confirm(`Block ${person.fullName}? They will no longer be able to reach you, and a friendship between you ends.`)) return;
+
+    this.blockBusy.set(true);
+    this.friendService.blockUser(person.id).subscribe({
+      next: () => {
+        this.blockBusy.set(false);
+        this.showToast(`${person.fullName} is blocked`);
+        this.loadFriendshipStatus(person.id);
+      },
+      error: err => {
+        this.blockBusy.set(false);
+        this.showToast(err?.error?.message || 'Could not block that person.', 'error');
+      }
+    });
+  }
+
+  unblock() {
+    const person = this.user();
+    if (!person?.id || this.blockBusy()) return;
+
+    this.blockBusy.set(true);
+    this.friendService.unblockUser(person.id).subscribe({
+      next: () => {
+        this.blockBusy.set(false);
+        this.showToast(`${person.fullName} is unblocked`);
+        this.loadFriendshipStatus(person.id);
+      },
+      error: err => {
+        this.blockBusy.set(false);
+        this.showToast(err?.error?.message || 'Could not unblock that person.', 'error');
+      }
+    });
   }
 
   // ── Display helpers ───────────────────────────────────────────────────────

@@ -64,7 +64,8 @@
       </div>
 
       <!-- Content -->
-      <div class="notif-content" (click)="markAsRead(n.id)">
+      <div class="notif-content" (click)="open(n)" (keydown.enter)="open(n)" tabindex="0" role="link"
+           [attr.aria-label]="(n.message || n.title) + '. Open'">
         <div class="notif-top">
           <span class="notif-title">{{ n.title }}</span>
           <span class="notif-time">{{ formatTime(n.createdAt) }}</span>
@@ -89,7 +90,7 @@
 
   <!-- Footer -->
   <div class="panel-footer" *ngIf="!loading()">
-    <button class="btn-view-all">
+    <button type="button" class="btn-view-all" (click)="viewAll()">
       <mat-icon>open_in_new</mat-icon>
       View all activity
     </button>

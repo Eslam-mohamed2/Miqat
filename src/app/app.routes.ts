@@ -44,8 +44,15 @@ export const routes: Routes = [
     redirectTo: 'home',
     pathMatch: 'full'
   },
-  { 
-    path: 'main', 
+  {
+    // The task list / board used to be linked as /kanban. Old links and bookmarks
+    // land on the page that replaced it instead of on "page not found".
+    path: 'kanban',
+    redirectTo: 'tasks',
+    pathMatch: 'full'
+  },
+  {
+    path: 'main',
     component: Main,
     canActivate: [authGuard]
   },
@@ -90,6 +97,10 @@ export const routes: Routes = [
       {
         path: 'mentions',
         loadComponent: () => import('./features/mentions/mentions-page').then(m => m.MentionsPage)
+      },
+      {
+        path: 'help',
+        loadComponent: () => import('./features/help/help-page').then(m => m.HelpPage)
       },
       {
         path: 'profile/:id',

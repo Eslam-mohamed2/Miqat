@@ -137,7 +137,23 @@ export class Authentication implements OnInit, OnDestroy {
         this.router.navigateByUrl(this.returnUrl);
       },
       error: (err) => {
-        this.errorMessage = this.extractErrorMessage(err, 'Login failed. Please try again.');
+        const message = this.extractErrorMessage(err, 'Login failed. Please try again.');
+
+        // The account exists but its email was never confirmed. The code can only
+        // be entered (or asked for again) on the OTP screen, so an error message
+        // here was a dead end: the user could neither sign in nor verify.
+        if (err?.status === 401 && /not verified/i.test(message)) {
+          this.router.navigate(['/authentication/verify-otp'], {
+            queryParams: {
+              email: this.loginForm.value.email,
+              purpose: 'EmailVerification',
+              resend: '1'
+            }
+          });
+          return;
+        }
+
+        this.errorMessage = message;
       }
     });
   }

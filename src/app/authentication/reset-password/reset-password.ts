@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { finalize } from 'rxjs';
 import { FlipClock } from '../../flip-clock/flip-clock';
@@ -11,8 +11,9 @@ import { apiErrorMessage } from '../../core/http/api-error';
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FlipClock],
-  templateUrl: './reset-password.html'
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FlipClock],
+  templateUrl: './reset-password.html',
+  styleUrl: './reset-password.scss'
 })
 export class ResetPasswordComponent implements OnInit {
   private fb = inject(FormBuilder);

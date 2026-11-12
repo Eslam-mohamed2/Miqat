@@ -21,6 +21,12 @@
     </button>
   </div>
 
+  <!-- Phones only: the top bar has no room for the search box there. -->
+  <button type="button" class="mobile-search" (click)="openSearch()">
+    <mat-icon>search</mat-icon>
+    <span>Search tasks, projects, events or people</span>
+  </button>
+
   <!-- Desktop close. Collapse gives the icon rail; this hides it outright. -->
   <button class="sidebar-close" type="button" (click)="hideSidebar()" aria-label="Close navigation">
     <mat-icon>close</mat-icon>
@@ -108,9 +114,9 @@
     </div>
 
     <div class="user-profile" *ngIf="currentUser() as user" [routerLink]="['/settings']" (click)="closeMobileMenu()">
+      <!-- The picture, or the user's initials when there is none (it used to be an empty circle). -->
       <div class="avatar-placeholder">
-        <img *ngIf="user.profilePictureUrl" [src]="user.profilePictureUrl" width="100%" height="100%"
-             referrerpolicy="no-referrer" [style.borderRadius]="'50%'">
+        <app-chat-avatar [name]="displayName(user)" [url]="user.profilePictureUrl" [size]="36" />
       </div>
       <div class="user-info">
         <div class="user-name">{{ displayName(user) }}</div>

@@ -6,13 +6,11 @@
 // squashed layout there on narrow screens.
 .settings-container {
   position: relative;
-  padding: 2rem;
+  // No outer padding here: the app shell's .page-content is the one place that sets
+  // the page gutter, so every page starts at the same distance from the sidebar.
   max-width: 1100px;
   margin: 0 auto;
-
-  @include below($bp-laptop)    { padding: 1.5rem; }
-  @include below($bp-tablet-sm) { padding: 1rem; }
-  @include below($bp-phone)     { padding: 0.75rem; }
+  padding-bottom: 2rem;
 }
 
 // ── Header ──────────────────────────────────────────────────────────────────
@@ -236,7 +234,8 @@
   }
 
   input,
-  select {
+  select,
+  textarea {
     width: 100%;
     background: $bg-input;
     border: 1px solid $border-input;
@@ -261,7 +260,14 @@
   // background, so they need their own or they render unreadable in dark mode.
   select option { background: $bg-card; color: $text-primary; }
 
+  textarea {
+    resize: vertical;
+    min-height: 84px;
+    line-height: 1.5;
+  }
+
   .field-hint  { font-size: 0.75rem; color: $text-muted; margin: 5px 0 0; }
+  .field-hint.counter { text-align: right; }
   .field-error { font-size: 0.75rem; color: #ef4444; margin: 5px 0 0; }
 }
 
@@ -343,6 +349,103 @@
   color: $text-primary;
 
   &:hover:not(:disabled) { background: $bg-card-hover; }
+}
+
+// Destructive secondary action ("Remove" picture).
+.btn-ghost.danger {
+  color: $text-danger;
+
+  &:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+  }
+}
+
+// ── Notifications ───────────────────────────────────────────────────────────
+.pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid $border-subtle;
+}
+
+.pref-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pref-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.pref-desc {
+  font-size: 0.8rem;
+  color: $text-secondary;
+}
+
+.pref-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid $border-card;
+  border-left: 4px solid #ef4444;
+  border-radius: $radius-btn;
+  font-size: 0.85rem;
+  color: $text-primary;
+}
+
+// On/off switch. A real button with role="switch", so it works from the keyboard.
+.toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 46px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid $border-input;
+  border-radius: 999px;
+  background: $bg-input;
+  cursor: pointer;
+  transition: $transition-std;
+
+  .switch-handle {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: $text-secondary;
+    transition: $transition-std;
+  }
+
+  &.on {
+    background: $teal-primary;
+    border-color: $teal-primary;
+
+    .switch-handle {
+      left: 22px;
+      background: #ffffff;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid $teal-primary;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.7;
+  }
 }
 
 // ── Theme picker ────────────────────────────────────────────────────────────
@@ -518,4 +621,312 @@
 @keyframes settings-shimmer {
   0%   { background-position: 100% 50%; }
   100% { background-position: 0 50%; }
+}
+
+// ── Shared small pieces of the newer sections ───────────────────────────────
+// A text button that reads as a link, for "change it over there" pointers.
+.link-btn {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $text-link;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { text-decoration: underline; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  &:focus-visible {
+    outline: 2px solid $teal-primary;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  // Inline links sit inside sentences, so the hit area grows without moving the text.
+  @include touch {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -12px -6px;
+    }
+  }
+}
+
+.sub-heading {
+  margin: 1.5rem 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: $text-muted;
+}
+
+.sub-desc {
+  margin: 0 0 0.9rem;
+  font-size: 0.8rem;
+  color: $text-secondary;
+}
+
+.sub-heading + .form-grid,
+.sub-heading + .device-list { margin-top: 0.75rem; }
+
+.field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $text-secondary;
+  margin-bottom: 6px;
+}
+
+.inline-error {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $text-danger;
+}
+
+.resolved-note.flush { margin-top: 0; }
+
+// A statement about the server or the browser, not an error of the user's.
+.note-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid $border-card;
+  border-radius: $radius-btn;
+  background: $bg-input;
+
+  > mat-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: $text-secondary;
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  strong { font-size: 0.9rem; font-weight: 600; color: $text-primary; }
+  span   { font-size: 0.82rem; color: $text-secondary; }
+}
+
+// ── This device (push) ──────────────────────────────────────────────────────
+.on-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: $teal-glow;
+  color: $text-active;
+  font-size: 0.8rem;
+  font-weight: 700;
+
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+}
+
+.device-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.device-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid $border-subtle;
+
+  &:last-child { border-bottom: 0; padding-bottom: 0; }
+
+  .device-icon { flex-shrink: 0; color: $text-secondary; }
+
+  .device-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: $text-primary;
+      overflow-wrap: anywhere;
+    }
+
+    small { font-size: 0.8rem; color: $text-secondary; }
+  }
+
+  .here-tag {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: $teal-glow;
+    color: $text-active;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .btn-ghost { padding: 7px 14px; }
+
+  @include touch {
+    .btn-ghost { min-height: 40px; }
+  }
+}
+
+// A switch row with a wide button beside it: stack them on phones.
+@include below($bp-phone-lg) {
+  .pref-row:has(.btn-save) {
+    flex-direction: column;
+    align-items: stretch;
+
+    .btn-save { justify-content: center; }
+  }
+}
+
+// ── Calendar preferences ────────────────────────────────────────────────────
+.settings-card form > .pref-row { margin-top: 0.5rem; }
+
+.days-field { margin-top: 1rem; }
+
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.day-chip {
+  min-width: 52px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid $border-card;
+  background: transparent;
+  color: $text-secondary;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition-std;
+
+  &:hover { border-color: $teal-primary; color: $text-primary; }
+
+  &.on {
+    border-color: transparent;
+    background: $teal-glow;
+    color: $text-active;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $teal-primary;
+    outline-offset: 2px;
+  }
+
+  @include touch { min-height: 42px; }
+
+  // Seven chips fit one row on a phone when they share it evenly.
+  @include below($bp-phone) {
+    flex: 1 1 calc(25% - 8px);
+    min-width: 0;
+  }
+}
+
+.readonly-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed $border-card;
+  border-radius: $radius-input;
+  font-size: 0.9rem;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; color: $text-secondary; }
+
+  .readonly-value {
+    flex: 1;
+    min-width: 0;
+    color: $text-primary;
+    overflow-wrap: anywhere;
+  }
+}
+
+// ── Email address ───────────────────────────────────────────────────────────
+.email-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.email-current-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+
+  mat-icon { flex-shrink: 0; color: $text-secondary; }
+
+  .email-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $text-primary;
+    overflow-wrap: anywhere;
+  }
+}
+
+.step-label {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: $text-muted;
+  overflow-wrap: anywhere;
+}
+
+.code-intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: $text-secondary;
+
+  strong { color: $text-primary; overflow-wrap: anywhere; }
+}
+
+.code-field { max-width: 220px; }
+
+.form-field .code-input {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+
+  &::placeholder { letter-spacing: 0.35em; font-weight: 500; }
+}
+
+.code-help {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  color: $text-secondary;
 }

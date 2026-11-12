@@ -1,0 +1,350 @@
+@use '../../../styles/tokens' as *;
+
+// Unread counts use one red everywhere, readable on both themes.
+$badge-bg: #e5484d;
+
+// The corner of the screen the chat lives in. Above page content and the
+// context notice (880), below menus, side panels (900+) and dialogs (1000).
+.dock {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 885;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  // Only the bubbles, windows and list take clicks; the gaps between them
+  // belong to the page underneath.
+  pointer-events: none;
+}
+
+.windows {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+// ── Bubbles ───────────────────────────────────────────────────────────────────
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.head {
+  position: relative;
+  display: flex;
+  animation: head-in 0.22s ease-out;
+
+  @include reduced-motion { animation: none; }
+}
+
+@keyframes head-in {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: none; }
+}
+
+.head-btn,
+.launcher {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+
+  &:hover { transform: scale(1.07); }
+  &:focus-visible { outline: 2px solid $teal-primary; outline-offset: 3px; }
+
+  @include reduced-motion { transition: none; }
+}
+
+.head-btn {
+  display: flex;
+  background: $bg-card;
+
+  // The chat whose window is open wears a ring.
+  .head.active & { box-shadow: 0 0 0 3px $teal-primary, 0 6px 18px rgba(0, 0, 0, 0.32); }
+}
+
+.launcher {
+  width: 56px;
+  height: 56px;
+  background: $teal-primary;
+  color: $btn-quick-add-text;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  mat-icon { font-size: 26px; width: 26px; height: 26px; }
+}
+
+.badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: $badge-bg;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  box-shadow: 0 0 0 2px $bg-app;
+
+  &.inline {
+    position: static;
+    box-shadow: none;
+  }
+}
+
+// Takes the bubble off the screen. Shown on hover and keyboard focus; always on touch.
+.head-close {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid $border-input;
+  border-radius: 50%;
+  background: $bg-card;
+  color: $text-secondary;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+  &:hover { color: $text-primary; background: $bg-card-hover; }
+
+  .head:hover &,
+  &:focus-visible { opacity: 1; }
+
+  @include touch { opacity: 1; }
+}
+
+// The newest unread message, shown beside its bubble.
+.peek {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: min(230px, calc(100vw - 110px));
+  padding: 7px 12px;
+  border: 1px solid $border-input;
+  border-radius: 16px 16px 4px 16px;
+  background: $bg-card;
+  color: $text-primary;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+
+// ── Chat list ─────────────────────────────────────────────────────────────────
+
+.panel {
+  position: absolute;
+  right: 70px;
+  bottom: 0;
+  z-index: 1;
+  width: 340px;
+  max-height: min(560px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  padding: 16px 8px 8px;
+  background: $bg-card;
+  border: 1px solid $border-input;
+  border-radius: $radius-card;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
+  pointer-events: auto;
+  animation: panel-in 0.16s ease-out;
+
+  @include reduced-motion { animation: none; }
+
+  h3 {
+    margin: 0 8px 12px;
+    font-size: 20px;
+    font-weight: 800;
+    color: $text-primary;
+  }
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 8px 8px;
+  padding: 0 12px;
+  height: 38px;
+  border-radius: 999px;
+  background: $bg-input;
+  border: 1px solid $border-input;
+  color: $text-muted;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $text-primary;
+    font-family: inherit;
+    font-size: 14px;
+
+    &::placeholder { color: $text-muted; }
+  }
+
+  &:focus-within { border-color: $teal-primary; }
+}
+
+.error {
+  margin: 0 8px 8px;
+  font-size: 12.5px;
+  color: $text-danger;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: $radius-btn;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible { background: $bg-card-hover; outline: none; }
+
+  &.unread {
+    .item-name { font-weight: 800; }
+    .item-last { color: $text-primary; font-weight: 600; }
+  }
+}
+
+.item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-name,
+.item-last {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.item-last {
+  font-size: 13px;
+  color: $text-secondary;
+}
+
+.item-side {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.item-time {
+  font-size: 12px;
+  color: $text-muted;
+}
+
+.group-title {
+  margin: 10px 8px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: $text-muted;
+}
+
+.empty {
+  margin: 24px 16px;
+  font-size: 13px;
+  color: $text-muted;
+  text-align: center;
+}
+
+// ── Smaller screens ───────────────────────────────────────────────────────────
+
+// Clear of the floating "Menu" button at the bottom centre (see sidebar.scss).
+@include below($bp-laptop) {
+  .dock {
+    right: 16px;
+    bottom: 76px;
+  }
+
+  .panel { max-height: min(560px, calc(100vh - 100px)); }
+}
+
+// A phone shows one chat at a time, across the screen; the bubbles step aside
+// while it is open (the window has its own minimise and close).
+@include below($bp-tablet) {
+  .windows {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 72px;
+
+    app-chat-window {
+      width: 100%;
+      height: min(540px, calc(100dvh - 96px));
+    }
+  }
+
+  .dock.has-window .rail { display: none; }
+
+  .panel {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 144px;
+    width: auto;
+    max-height: calc(100dvh - 168px);
+  }
+}

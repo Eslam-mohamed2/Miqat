@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FlipClock } from './flip-clock';
+import { TEST_PROVIDERS } from '../../testing/test-providers';
 
 describe('FlipClock', () => {
   let component: FlipClock;
@@ -8,7 +9,8 @@ describe('FlipClock', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FlipClock]
+      imports: [FlipClock],
+      providers: TEST_PROVIDERS
     })
     .compileComponents();
 

@@ -1,9 +1,9 @@
 <!-- The topbar's search box. Read-only: clicking it opens the palette, which is
      where the real input lives, so focus and results share one element. -->
 <button type="button" class="search-trigger" (click)="openPalette()"
-        aria-label="Search tasks, projects and people">
+        aria-label="Search tasks, projects, events and people">
   <mat-icon class="search-icon">search</mat-icon>
-  <span class="trigger-text">Search tasks, projects, or people</span>
+  <span class="trigger-text">Search tasks, projects, events or people</span>
   <span class="trigger-kbd">Ctrl K</span>
 </button>
 
@@ -15,9 +15,9 @@
       <mat-icon>search</mat-icon>
       <input #input type="text" [value]="query()"
              (input)="onInput($event)" (keydown)="onKeydown($event)"
-             placeholder="Search tasks, projects, or people…"
+             placeholder="Search tasks, projects, events or people…"
              autocomplete="off" spellcheck="false" />
-      <span class="spinner" *ngIf="loadingPeople()"></span>
+      <span class="spinner" *ngIf="searching()" role="status" aria-label="Searching"></span>
       <button type="button" class="esc" (click)="close()">esc</button>
     </div>
 
@@ -39,10 +39,15 @@
     </div>
 
     <ng-template #noResults>
-      <p class="palette-empty">
-        Nothing matches “{{ query() }}”.
-        <span>Tasks and projects search your own; people search everyone.</span>
+      <p class="palette-empty" *ngIf="searching(); else nothingFound">
+        Searching for “{{ query() }}”…
       </p>
+      <ng-template #nothingFound>
+        <p class="palette-empty">
+          Nothing matches “{{ query() }}”.
+          <span>Tasks, projects and events search what you can see; people search everyone.</span>
+        </p>
+      </ng-template>
     </ng-template>
 
     <div class="palette-foot">

@@ -6,10 +6,9 @@
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
-  padding: 0 2rem 3rem;
-
-  @include below($bp-laptop)    { padding: 0 1.25rem 2rem; }
-  @include below($bp-tablet-sm) { padding: 0 0.85rem 1.5rem; }
+  // No outer padding here: the app shell's .page-content is the one place that sets
+  // the page gutter, so every page starts at the same distance from the sidebar.
+  padding: 0 0 3rem;
 }
 
 .sr-only {
@@ -201,9 +200,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
-    color: #fff;
+    // Dark, not white: the avatar colours are mid-tones and white on them was
+    // only 2-3:1.
+    color: #111827;
     border: 2px solid var(--bg-app);
     margin-right: -8px;
 
@@ -287,7 +288,7 @@
     .count {
       background: $bg-card-hover;
       color: $text-secondary;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       border-radius: 20px;
       padding: 1px 7px;
@@ -402,7 +403,7 @@
   h3 { font-size: 0.9rem; font-weight: 700; color: $text-primary; margin: 0; }
 
   .group-count {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: $text-secondary;
     background: $bg-card-hover;
@@ -426,6 +427,11 @@
 .table-scroll {
   width: 100%;
   overflow-x: auto;
+  // Makes this box the reference for absolutely-positioned children (the
+  // screen-reader-only column labels). Without it they were placed against the
+  // page instead, escaped this box's clipping and made the whole page scroll
+  // sideways on phones.
+  position: relative;
   -webkit-overflow-scrolling: touch;
   background: $bg-card;
   border: 1px solid $border-card;
@@ -444,7 +450,7 @@
     border-bottom: 1px solid $border-card;
     color: $text-secondary;
     font-weight: 600;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     white-space: nowrap;
@@ -529,7 +535,7 @@
 .cell-select {
   border: 1px solid transparent;
   border-radius: 20px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 4px 8px;
   cursor: pointer;
@@ -556,12 +562,12 @@
   color: $text-secondary;
   white-space: nowrap;
 
-  &.overdue { color: #ef4444; font-weight: 700; }
+  &.overdue { color: $text-danger; font-weight: 700; }
 }
 
 .tag {
   display: inline-block;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: $text-secondary;
   background: $bg-card-hover;
   border-radius: 4px;
@@ -607,8 +613,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
-      font-size: 11px;
+      // Dark, not white: the avatar colours are mid-tones and white on them was
+      // only 2-3:1.
+      color: #111827;
+      font-size: 12px;
       font-weight: 800;
     }
   }
@@ -719,7 +727,7 @@
     margin-top: 6px;
 
     .assignee {
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       color: $text-secondary;
       background: $bg-card-hover;
       border-radius: 4px;
@@ -843,3 +851,17 @@
   0%   { background-position: 100% 50%; }
   100% { background-position: 0 50%; }
 }
+
+// Project colours are chosen by the user, so one used as a *text* colour can be
+// near-black on the dark theme or near-white on the light one (the seeded
+// "Leadership" navy measured 1.6:1). The colour stays on the tinted background
+// and border; the letters use the theme's text colour. !important because the
+// template sets the colour inline.
+.project-emblem {
+  color: $text-primary !important;
+}
+
+// Checklist progress and "Blocked" on a task (app-task-marks). Only the spacing is
+// set here; the marks bring their own look and take no room when there are none.
+.row-marks { margin-top: 6px; }
+.card-marks { margin-top: 8px; }

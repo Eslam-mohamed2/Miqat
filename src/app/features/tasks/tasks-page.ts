@@ -14,6 +14,7 @@ import { GroupService } from '../../core/services/group.service';
 import { GroupDto, TaskDto } from '../../models/api.models';
 import { TaskWindowComponent } from '../dashboard/task-window/task-window';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { TaskMarks } from '../../shared/task-marks/task-marks';
 
 export type ViewMode = 'list' | 'kanban';
 type SortKey = 'title' | 'status' | 'priority' | 'dueDate';
@@ -32,7 +33,7 @@ const VIEW_STORAGE_KEY = 'miqat.tasks.view';
   standalone: true,
   imports: [
     CommonModule, FormsModule, MatIconModule, MatDialogModule,
-    CdkDropListGroup, CdkDropList, CdkDrag, CdkDragPlaceholder
+    CdkDropListGroup, CdkDropList, CdkDrag, CdkDragPlaceholder, TaskMarks
   ],
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.scss'

@@ -11,7 +11,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 
   .title {
     font-size: 15px;
@@ -20,6 +20,9 @@
   }
 
   .view-all {
+    background: none;
+    border: 0;
+    padding: 0;
     font-size: 13px;
     color: $teal-primary;
     cursor: pointer;
@@ -31,9 +34,129 @@
   }
 }
 
+.workspace-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  margin: 0 -8px;
+  border-radius: 8px;
+  color: $text-primary;
+  transition: $transition-std;
+
+  &:hover {
+    background: $bg-card-hover;
+
+    .workspace-arrow {
+      color: $teal-primary;
+    }
+  }
+
+  & + & {
+    border-top: 1px solid $border-subtle;
+  }
+}
+
+.workspace-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.workspace-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-meta {
+  font-size: 12px;
+  color: $text-secondary;
+}
+
+.workspace-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+
+  .progress-track {
+    width: 90px;
+    height: 6px;
+    border-radius: 999px;
+    background: $bg-input;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .progress-value {
+    width: 34px;
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-secondary;
+    text-align: right;
+  }
+}
+
+.workspace-arrow {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: $text-muted;
+  flex-shrink: 0;
+}
+
 .placeholder-content {
   color: $text-secondary;
   font-size: 13px;
   padding: 20px 0;
   text-align: center;
+
+  p {
+    margin: 0 0 12px;
+  }
+
+  .create-first {
+    background: none;
+    border: 1px solid $border-input;
+    border-radius: $radius-btn;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-primary;
+    cursor: pointer;
+    transition: $transition-std;
+
+    &:hover {
+      border-color: $teal-primary;
+      color: $teal-primary;
+    }
+  }
+}
+
+@include below($bp-phone) {
+  .workspace-progress .progress-track {
+    display: none;
+  }
 }

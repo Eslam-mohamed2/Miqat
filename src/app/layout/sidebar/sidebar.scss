@@ -137,7 +137,8 @@
 
 .mobile-sidebar-trigger,
 .mobile-sidebar-backdrop,
-.mobile-sheet-header {
+.mobile-sheet-header,
+.mobile-search {
   display: none;
 }
 
@@ -329,7 +330,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #333;
+    flex-shrink: 0;
   }
 
   .user-info {
@@ -343,7 +344,7 @@
     }
 
     .user-email {
-      font-size: 11px;
+      font-size: 12px;
       color: $text-secondary;
     }
   }
@@ -495,20 +496,17 @@
 }
 
 .logout-btn {
-  color: #dc3545 !important;
+  // A red that is readable on this theme's sidebar; the hover state is carried
+  // by the background, since a darker red would fade into the dark theme.
+  color: $text-danger !important;
   margin-bottom: 8px;
 
   &:hover {
-    background-color: rgba(220, 53, 69, 0.1) !important;
-    color: #c82333 !important;
-
-    mat-icon {
-      color: #c82333 !important;
-    }
+    background-color: rgba(220, 53, 69, 0.12) !important;
   }
 
   mat-icon {
-    color: #dc3545 !important;
+    color: $text-danger !important;
   }
 }
 
@@ -517,7 +515,9 @@
     position: fixed;
     left: 50%;
     bottom: 16px;
-    z-index: 1002;
+    // Below every overlay (quick-add menu and side panels 900+, dialogs 1000), so the
+    // button never sits on top of an open dialog or panel.
+    z-index: 890;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -566,6 +566,43 @@
     &.visible {
       opacity: 1;
       pointer-events: auto;
+    }
+  }
+
+  // Looks like the search box it stands in for.
+  .mobile-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: calc(100% - 36px);
+    min-height: 44px;
+    margin: 0 18px 10px;
+    padding: 0 14px;
+    border: 1px solid $border-subtle;
+    border-radius: 12px;
+    background: $bg-card;
+    color: $text-secondary;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+
+    mat-icon {
+      flex-shrink: 0;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $teal-primary;
+      outline-offset: 2px;
     }
   }
 
@@ -697,14 +734,15 @@
 /* Nav entries whose destination does not exist yet: visible, but not clickable. */
 .nav-item.disabled {
   cursor: default;
-  opacity: 0.45;
+  // Dimmed, but still legible (0.45 measured 2.3:1).
+  opacity: 0.65;
   pointer-events: none;
 
   .nav-badge-soon {
     margin-left: auto;
     padding: 2px 8px;
     border-radius: 999px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;

@@ -1,4 +1,4 @@
-@use '../../styles/tokens' as *;
+@use '../../styles/breakpoints' as *;
 
 // Footer logo - responsive sizing
 .footer-logo {
@@ -11,24 +11,6 @@
 footer {
   .w-85 {
     max-width: 100%;
-  }
-}
-
-// Tablet
-@include below($bp-laptop) {
-  .footer-logo {
-    height: 48px;
-    max-width: 150px;
-  }
-
-  .text-secondary {
-    --bs-text-opacity: 1;
-    color: rgba(var(--bs-secondary-rgb), var(--bs-text-opacity)) !important;
-    font-size: 14px !important;
-  }
-
-  footer .row {
-    gap: 0.5rem;
   }
 }
 

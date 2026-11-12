@@ -9,9 +9,49 @@
   height: 100%;
   min-height: 480px;
   background-color: var(--bg-calendar);
-  background-image: radial-gradient(rgba(127, 127, 127, 0.22) 1px, transparent 1px);
-  background-size: 20px 20px;
   overflow: hidden;
+
+  // The scrolling frame of the board.
+  .board-scroll {
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    // Scrolling stays inside the board instead of dragging the page with it.
+    overscroll-behavior: contain;
+  }
+
+  // The board itself: at least as large as the frame, larger when the drawing
+  // needs it (the component sets width / height). The dots are drawn here so they
+  // move with the ink.
+  .board-surface {
+    position: relative;
+    min-width: 100%;
+    min-height: 100%;
+    background-image: radial-gradient(rgba(127, 127, 127, 0.22) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  // "Drag to move around the board"
+  .pan-hint {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 11;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 12px;
+    border: 1px solid var(--border-card);
+    border-radius: 999px;
+    background: var(--bg-topbar);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    pointer-events: none;
+
+    mat-icon { font-size: 15px; width: 15px; height: 15px; color: var(--teal-primary); }
+  }
 
 
   canvas {
@@ -24,8 +64,14 @@
     touch-action: none; // Prevent scrolling on touch devices
     cursor: crosshair;
 
-    // Crosshair implies "you can draw here", which is wrong while selecting.
-    &.select-mode { cursor: default; }
+    // In Select mode the board is moved, not drawn on: a finger scrolls it (so the
+    // browser's own touch scrolling is allowed again) and the mouse drags it.
+    &.select-mode {
+      cursor: grab;
+      touch-action: auto;
+    }
+
+    &.panning { cursor: grabbing; }
   }
 
   .notes-layer {
@@ -49,6 +95,8 @@
       display: flex;
       flex-direction: column;
       cursor: grab;
+      // A finger on a note drags the note instead of scrolling the page.
+      touch-action: none;
       transition: transform 0.1s ease;
 
       &:active {
@@ -92,6 +140,11 @@
         color: rgba(0, 0, 0, 0.8);
         font-size: 16px;
         line-height: 1.4;
+
+        // The browser's default grey is close to invisible on a coloured note.
+        &::placeholder {
+          color: rgba(0, 0, 0, 0.6);
+        }
       }
     }
   }
@@ -158,7 +211,7 @@
       &:hover {
         background: rgba(127, 127, 127, 0.22);
         color: var(--text-primary);
-        
+
         .tooltip {
           opacity: 1;
           transform: translateY(0) translateX(-50%);

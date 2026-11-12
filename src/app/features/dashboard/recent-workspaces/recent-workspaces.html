@@ -1,9 +1,38 @@
 <div class="workspaces-card mt-20">
   <div class="card-header">
     <div class="title">Recent Workspaces</div>
-    <div class="view-all">View All</div>
+    <button type="button" class="view-all" (click)="viewAll()">
+      View All<span *ngIf="total() > recent().length"> ({{ total() }})</span>
+    </button>
   </div>
-  <div class="placeholder-content">
-    <p>No recent workspaces available.</p>
+
+  <div class="workspace-list" *ngIf="recent().length">
+    <a class="workspace-row" *ngFor="let group of recent(); trackBy: trackById"
+       [routerLink]="['/projects', group.id]">
+      <span class="workspace-dot" [style.backgroundColor]="group.color || '#2ec4a0'"></span>
+
+      <span class="workspace-text">
+        <span class="workspace-name">{{ group.name }}</span>
+        <span class="workspace-meta">
+          {{ group.taskCount }} {{ group.taskCount === 1 ? 'task' : 'tasks' }}
+          · {{ group.memberCount }} {{ group.memberCount === 1 ? 'member' : 'members' }}
+        </span>
+      </span>
+
+      <span class="workspace-progress" *ngIf="group.taskCount" [attr.aria-label]="progress(group) + '% done'">
+        <span class="progress-track">
+          <span class="progress-fill" [style.width.%]="progress(group)"
+                [style.backgroundColor]="group.color || '#2ec4a0'"></span>
+        </span>
+        <span class="progress-value">{{ progress(group) }}%</span>
+      </span>
+
+      <mat-icon class="workspace-arrow">chevron_right</mat-icon>
+    </a>
+  </div>
+
+  <div class="placeholder-content" *ngIf="!loading() && !recent().length">
+    <p>No projects yet.</p>
+    <button type="button" class="create-first" (click)="viewAll()">Create your first project</button>
   </div>
 </div>

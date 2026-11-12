@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ProductivityChart } from './productivity-chart';
+import { TEST_PROVIDERS } from '../../../../testing/test-providers';
 
 describe('ProductivityChart', () => {
   let component: ProductivityChart;
@@ -8,7 +9,8 @@ describe('ProductivityChart', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProductivityChart]
+      imports: [ProductivityChart],
+      providers: TEST_PROVIDERS
     })
     .compileComponents();
 

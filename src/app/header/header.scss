@@ -1,4 +1,4 @@
-@use '../../styles/tokens' as *;
+@use '../../styles/breakpoints' as *;
 
 .navbar-primary {
   background-color: var(--color-light) !important;
@@ -170,7 +170,8 @@ $primary-color: var(--color-primary, #065a57);
     top: -5px;
     left: 82%;
     height: 100%;
-    width: 160px;
+    // Ends at the screen edge (82% + 18%); a fixed 160px ran past it.
+    width: 18%;
     pointer-events: none;
     z-index: 0;
     overflow: hidden;
@@ -270,4 +271,10 @@ $primary-color: var(--color-primary, #065a57);
   .LOGO {
     width: 40% !important;
   }
+}
+
+// The falling-clocks decoration is positioned by percentage and can extend past the
+// right edge on narrow screens. Clip it at the navbar so it cannot widen the page.
+.navbar {
+  overflow-x: clip;
 }

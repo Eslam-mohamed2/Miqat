@@ -1,0 +1,102 @@
+@if (chat.available()) {
+  <div class="dock" [class.has-window]="chat.openIds().length > 0">
+    <!-- Open chats, as pop-up windows beside the bubbles. -->
+    <div class="windows">
+      @for (c of chat.openConversations(); track c.id) {
+        <app-chat-window [conversationId]="c.id" />
+      }
+    </div>
+
+    <div class="rail">
+      <!-- Docked chats: one round bubble each. -->
+      @for (c of chat.headConversations(); track c.id) {
+        <div class="head" [class.active]="chat.isOpen(c.id)">
+          @if (chat.isPeeking(c.id) && c.lastMessage && !c.lastMessage.isDeleted) {
+            <button type="button" class="peek" (click)="chat.open(c.id)" tabindex="-1" aria-hidden="true">
+              {{ preview(c) }}
+            </button>
+          }
+
+          <button type="button" class="head-btn" (click)="chat.toggle(c.id)" [title]="c.friend.fullName"
+                  [attr.aria-label]="'Chat with ' + c.friend.fullName + (c.unreadCount ? ', ' + c.unreadCount + ' unread' : '')"
+                  [attr.aria-expanded]="chat.isOpen(c.id)">
+            <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl"
+                             [online]="chat.isOnline(c.friend.id)" [size]="52" />
+            @if (c.unreadCount) {
+              <span class="badge">{{ badge(c.unreadCount) }}</span>
+            }
+          </button>
+
+          <button type="button" class="head-close" (click)="chat.close(c.id)"
+                  [attr.aria-label]="'Close chat with ' + c.friend.fullName" title="Close">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+
+      <button type="button" class="launcher" (click)="togglePanel()" title="Chats"
+              [attr.aria-label]="'Chats' + (chat.unreadTotal() ? ', ' + chat.unreadTotal() + ' unread' : '')"
+              [attr.aria-expanded]="panelOpen()">
+        <mat-icon>{{ panelOpen() ? 'close' : 'chat' }}</mat-icon>
+        @if (chat.unreadTotal() && !panelOpen()) {
+          <span class="badge">{{ badge(chat.unreadTotal()) }}</span>
+        }
+      </button>
+    </div>
+
+    @if (panelOpen()) {
+      <section class="panel" role="dialog" aria-label="Chats">
+        <h3>Chats</h3>
+
+        <label class="search">
+          <mat-icon>search</mat-icon>
+          <input type="search" placeholder="Search friends" aria-label="Search friends"
+                 [value]="search()" (input)="search.set($any($event.target).value)" />
+        </label>
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+
+        <div class="list">
+          @for (c of matchingChats(); track c.id) {
+            <button type="button" class="item" [class.unread]="c.unreadCount > 0" (click)="openChat(c)">
+              <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl"
+                               [online]="chat.isOnline(c.friend.id)" [size]="44" />
+              <span class="item-text">
+                <span class="item-name">{{ c.friend.fullName }}</span>
+                <span class="item-last">{{ chat.isTyping(c.id) ? 'typing…' : preview(c) }}</span>
+              </span>
+              <span class="item-side">
+                <span class="item-time">{{ when(c.lastMessageAt) }}</span>
+                @if (c.unreadCount) {
+                  <span class="badge inline">{{ badge(c.unreadCount) }}</span>
+                }
+              </span>
+            </button>
+          }
+
+          @if (matchingFriends().length) {
+            <p class="group-title">Start a chat</p>
+            @for (f of matchingFriends(); track f.id) {
+              <button type="button" class="item" (click)="startChat(f)">
+                <app-chat-avatar [name]="f.fullName" [url]="f.profilePictureUrl"
+                                 [online]="chat.isOnline(f.id)" [size]="44" />
+                <span class="item-text">
+                  <span class="item-name">{{ f.fullName }}</span>
+                  <span class="item-last">{{ chat.isOnline(f.id) ? 'Active now' : 'Say hello' }}</span>
+                </span>
+              </button>
+            }
+          }
+
+          @if (!matchingChats().length && !matchingFriends().length) {
+            <p class="empty">
+              {{ search().trim() ? 'No friend matches that name.' : 'Add friends to start chatting with them.' }}
+            </p>
+          }
+        </div>
+      </section>
+    }
+  </div>
+}

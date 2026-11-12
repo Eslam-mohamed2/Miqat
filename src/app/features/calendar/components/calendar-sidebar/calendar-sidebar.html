@@ -4,93 +4,204 @@
     <div class="mini-calendar-header">
       <h4>{{ calendarState.currentMonth() | date:'MMMM yyyy' }}</h4>
       <div class="nav-arrows">
-        <mat-icon class="icon-btn" (click)="calendarState.prevMonth()">chevron_left</mat-icon>
-        <mat-icon class="icon-btn" (click)="calendarState.nextMonth()">chevron_right</mat-icon>
+        <button type="button" class="icon-btn" (click)="calendarState.prevMonth()" aria-label="Previous month">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button type="button" class="icon-btn" (click)="calendarState.nextMonth()" aria-label="Next month">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
       </div>
     </div>
 
     <div class="mini-calendar-grid">
-      <div class="day-name">S</div>
-      <div class="day-name">M</div>
-      <div class="day-name">T</div>
-      <div class="day-name">W</div>
-      <div class="day-name">T</div>
-      <div class="day-name">F</div>
-      <div class="day-name">S</div>
+      <div class="day-name" *ngFor="let initial of dayInitials()">{{ initial }}</div>
 
       <ng-container *ngFor="let week of miniCalendarWeeks()">
         <div class="day-cell" *ngFor="let day of week; trackBy: trackByDay"
              [class.outside]="!day.inMonth">
-          <div class="day-circle" [class.today]="day.isToday">{{ day.day }}</div>
+          <button type="button" class="day-circle" [class.today]="day.isToday"
+                  [class.selected]="day.isSelected" (click)="selectDay(day)"
+                  [attr.aria-label]="day.date | date:'fullDate'"
+                  [attr.aria-pressed]="day.isSelected">{{ day.day }}</button>
         </div>
       </ng-container>
     </div>
   </div>
 
+  <p class="side-error" *ngIf="error()" role="alert">{{ error() }}</p>
+
+  <!-- ── Invitations waiting for an answer ─────────────────────────────────── -->
+  <ng-container *ngIf="data.pendingInvitations().length">
+    <div class="divider"></div>
+
+    <div class="invitations-section">
+      <div class="section-header">
+        <h4>Invitations</h4>
+        <span class="count-badge">{{ data.pendingInvitations().length }}</span>
+      </div>
+
+      <div class="invitation" *ngFor="let event of data.pendingInvitations(); trackBy: trackById">
+        <button type="button" class="invitation-open" (click)="openEvent(event.id)">
+          <span class="invitation-title">{{ event.title }}</span>
+          <span class="invitation-meta">{{ invitationWhen(event) }}</span>
+          <span class="invitation-meta">From {{ event.ownerName || 'someone' }}</span>
+        </button>
+        <div class="invitation-actions" role="group" [attr.aria-label]="'Answer ' + event.title">
+          <button type="button" class="answer-btn yes" (click)="answer(event, 'Accepted')" [disabled]="answering() !== null">Going</button>
+          <button type="button" class="answer-btn" (click)="answer(event, 'Tentative')" [disabled]="answering() !== null">Maybe</button>
+          <button type="button" class="answer-btn" (click)="answer(event, 'Declined')" [disabled]="answering() !== null">Can’t go</button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── My calendars (events) ─────────────────────────────────────────────── -->
+  <ng-container *ngIf="data.eventsAvailable()">
+    <div class="divider"></div>
+
+    <div class="calendars-section">
+      <div class="section-header">
+        <h4>My Calendars</h4>
+        <button type="button" class="header-btn" *ngIf="!draft()" (click)="startAdding()">
+          <mat-icon>add</mat-icon> New
+        </button>
+      </div>
+
+      <div class="calendar-list">
+        <div class="calendar-row" *ngFor="let cal of data.calendars(); trackBy: trackById">
+          <button type="button" class="calendar-item" [class.off]="!cal.isVisible" (click)="toggleCalendar(cal)"
+                  role="switch" [attr.aria-checked]="cal.isVisible" [attr.aria-label]="cal.name">
+            <span class="cal-box" [style.--cal-color]="cal.color">
+              <mat-icon *ngIf="cal.isVisible">check</mat-icon>
+            </span>
+            <span class="cal-name">{{ cal.name }}</span>
+            <span class="cal-count" *ngIf="cal.eventCount"
+                  [title]="cal.eventCount + (cal.eventCount === 1 ? ' event' : ' events') + ' in this calendar'">{{ cal.eventCount }}</span>
+          </button>
+          <button type="button" class="row-edit" (click)="startEditing($event, cal)"
+                  [attr.aria-label]="'Rename or recolour ' + cal.name">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add or change a calendar -->
+      <form class="calendar-form" *ngIf="draft() as d" (submit)="saveDraft($event)">
+        <label class="visually-hidden" for="calendar-name">Calendar name</label>
+        <input id="calendar-name" type="text" maxlength="80" autocomplete="off"
+               placeholder="Calendar name" [value]="d.name" (input)="setDraftName($event)" />
+
+        <div class="swatches" role="radiogroup" aria-label="Colour">
+          <button type="button" class="swatch" *ngFor="let color of calendarColors"
+                  role="radio" [attr.aria-checked]="d.color.toUpperCase() === color.toUpperCase()"
+                  [class.selected]="d.color.toUpperCase() === color.toUpperCase()"
+                  [style.--swatch]="color" (click)="setDraftColor(color)"
+                  [attr.aria-label]="'Colour ' + color">
+            <mat-icon *ngIf="d.color.toUpperCase() === color.toUpperCase()">check</mat-icon>
+          </button>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="form-delete" *ngIf="d.id && !isDraftDefault()"
+                  (click)="deleteCalendar()" [disabled]="savingCalendar()">Delete</button>
+          <button type="button" class="form-cancel" (click)="cancelDraft()" [disabled]="savingCalendar()">Cancel</button>
+          <button type="submit" class="form-save" [disabled]="savingCalendar()">{{ d.id ? 'Save' : 'Add' }}</button>
+        </div>
+      </form>
+    </div>
+  </ng-container>
+
   <div class="divider"></div>
 
+  <!-- ── Tasks, by project ─────────────────────────────────────────────────── -->
   <div class="calendars-section">
     <div class="section-header">
-      <h4>My Calendars</h4>
-      <!-- Replaces a bare "+" icon that toggled nothing; this is the control the
-           list actually needs once more than a couple of projects exist. -->
-      <button type="button" class="header-btn" *ngIf="calendars().length"
-              (click)="setAll(!allShown())">
-        {{ allShown() ? 'Hide all' : 'Show all' }}
+      <h4>{{ data.eventsAvailable() ? 'Tasks' : 'My Calendars' }}</h4>
+      <button type="button" class="header-btn" *ngIf="projects().length"
+              (click)="setAllProjects(!allProjectsShown())">
+        {{ allProjectsShown() ? 'Hide all' : 'Show all' }}
       </button>
     </div>
 
     <div class="calendar-list">
-      <!-- A plain button rather than <mat-checkbox>: the whole row is the hit
-           target, and the project colour comes straight from the group instead
-           of being forced through the MDC checkbox's internals with ::ng-deep. -->
-      <button type="button" class="calendar-item" *ngFor="let cal of calendars(); trackBy: trackByCalendarId"
-              [class.off]="!isVisible(cal.id)" (click)="toggleCalendar(cal.id)"
-              role="switch" [attr.aria-checked]="isVisible(cal.id)"
-              [attr.aria-label]="cal.name">
-        <span class="cal-box" [style.--cal-color]="cal.color">
-          <mat-icon *ngIf="isVisible(cal.id)">check</mat-icon>
+      <button type="button" class="calendar-item" *ngFor="let project of projects(); trackBy: trackById"
+              [class.off]="!isProjectVisible(project.id)" (click)="toggleProject(project.id)"
+              role="switch" [attr.aria-checked]="isProjectVisible(project.id)"
+              [attr.aria-label]="project.name">
+        <span class="cal-box" [style.--cal-color]="project.color">
+          <mat-icon *ngIf="isProjectVisible(project.id)">check</mat-icon>
         </span>
-        <span class="cal-name">{{ cal.name }}</span>
-        <span class="cal-count" *ngIf="cal.taskCount">{{ cal.taskCount }}</span>
+        <span class="cal-name">{{ project.name }}</span>
+        <span class="cal-count" *ngIf="project.taskCount"
+              [title]="project.taskCount + (project.taskCount === 1 ? ' task' : ' tasks') + ' due this month'">{{ project.taskCount }}</span>
       </button>
 
-      <p class="empty-hint" *ngIf="!loading() && !calendars().length">
+      <p class="empty-hint" *ngIf="!data.loading() && !projects().length">
         No projects yet.
+      </p>
+      <p class="empty-hint" *ngIf="projects().length">
+        The numbers are tasks due in the month shown.
       </p>
     </div>
   </div>
 
   <div class="divider"></div>
 
+  <!-- ── What is next ──────────────────────────────────────────────────────── -->
   <div class="schedule-section">
     <h4>Upcoming Schedule</h4>
 
-    <!-- Real date, in the user's own time zone. This used to read a hardcoded
-         "TODAY, OCT 19". -->
     <div class="schedule-date">
       <div class="date-dot"></div>
       <span>{{ todayLabel() }}</span>
     </div>
 
-    <div class="schedule-list" *ngIf="upcomingEvents().length">
-      <div class="schedule-card" *ngFor="let event of upcomingEvents()"
-           [style.borderLeftColor]="event.color">
-        <div class="event-day">{{ event.dayLabel }}</div>
-        <div class="event-time">{{ event.time }}</div>
-        <div class="event-title">{{ event.title }}</div>
-        <div class="event-subtitle" *ngIf="event.subtitle">
-          <mat-icon class="subtitle-icon">{{ event.icon }}</mat-icon>
-          {{ event.subtitle }}
+    <div class="schedule-list" *ngIf="upcomingRows().length">
+      <button type="button" class="schedule-card" *ngFor="let row of upcomingRows(); trackBy: trackByUpcoming"
+              [style.borderLeftColor]="row.color" (click)="openUpcoming(row)">
+        <span class="event-day">{{ row.dayLabel }}</span>
+        <span class="event-time">{{ row.time }}</span>
+        <span class="event-title">{{ row.title }}</span>
+        <span class="event-subtitle">
+          <mat-icon class="subtitle-icon">{{ row.icon }}</mat-icon>
+          {{ row.subtitle }}
+        </span>
+      </button>
+    </div>
+
+    <p class="empty-hint" *ngIf="!data.loading() && !upcomingRows().length">
+      Nothing scheduled in the next two weeks.
+    </p>
+  </div>
+
+  <!-- ── Reminders that will ring next ─────────────────────────────────────── -->
+  <ng-container *ngIf="reminders().length">
+    <div class="divider"></div>
+
+    <div class="reminders-section">
+      <h4>Next Reminders</h4>
+
+      <div class="reminder" *ngFor="let reminder of reminders(); trackBy: trackById">
+        <button type="button" class="reminder-open" (click)="openReminder(reminder)">
+          <mat-icon>{{ reminder.itemKind === 'Task' ? 'task_alt' : 'event' }}</mat-icon>
+          <span class="reminder-text">
+            <span class="reminder-title">{{ reminder.itemTitle || 'Untitled' }}</span>
+            <span class="reminder-when">Rings {{ ringsAt(reminder) }}</span>
+          </span>
+        </button>
+        <button type="button" class="row-edit shown" (click)="toggleSnooze(reminder)"
+                [attr.aria-expanded]="snoozeOpenFor() === reminder.id"
+                [attr.aria-label]="'Snooze or remove the reminder for ' + (reminder.itemTitle || 'this item')">
+          <mat-icon>snooze</mat-icon>
+        </button>
+
+        <div class="snooze-row" *ngIf="snoozeOpenFor() === reminder.id">
+          <span>Ring again in</span>
+          <button type="button" *ngFor="let choice of snoozes" (click)="snooze(reminder, choice.minutes)">{{ choice.label }}</button>
+          <button type="button" class="remove" (click)="removeReminder(reminder)">Remove</button>
         </div>
       </div>
     </div>
-
-    <!-- Previously an empty list that still reserved its full height, which is
-         the large blank area under the date. -->
-    <p class="empty-hint" *ngIf="!loading() && !upcomingEvents().length">
-      Nothing scheduled ahead.
-    </p>
-  </div>
+  </ng-container>
 
 </div>

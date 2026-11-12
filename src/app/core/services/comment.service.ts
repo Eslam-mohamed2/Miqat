@@ -45,6 +45,13 @@ export class CommentService {
       .pipe(unwrapApiList<MentionableUserDto>());
   }
 
+  /** Rewrites a comment. Only its author may. */
+  update(commentId: string, content: string): Observable<CommentDto> {
+    return this.http
+      .put<CommentDto | ApiResponse<CommentDto>>(`${this.apiUrl}/comments/${commentId}`, { content })
+      .pipe(unwrapApi<CommentDto>());
+  }
+
   delete(commentId: string): Observable<void> {
     return this.http
       .delete<void | ApiResponse<void>>(`${this.apiUrl}/comments/${commentId}`)

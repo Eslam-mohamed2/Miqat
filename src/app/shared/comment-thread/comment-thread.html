@@ -27,13 +27,35 @@
       <div class="bubble-wrap">
         <div class="bubble">
           <a class="author" [routerLink]="['/profile', c.authorId]">{{ c.authorName || 'Unknown' }}</a>
+          <!-- Editing rewrites the text only: the API takes no mention list on an edit,
+               so nobody new is notified or given access from here. -->
+          <div class="edit-box" *ngIf="editingId() === c.id; else shownText">
+            <textarea [id]="'comment-edit-' + c.id" rows="2" maxlength="2000" aria-label="Edit your comment"
+                      [value]="editDraft()" [disabled]="savingEdit()"
+                      (input)="onEditInput($event)" (keydown)="onEditKeydown($event, c)"></textarea>
+            <p class="edit-note" *ngIf="editDraft().includes('@')">
+              Editing changes the text only. To notify someone new, mention them in a new comment.
+            </p>
+            <div class="edit-actions">
+              <span class="shortcut">Esc to cancel · Ctrl + Enter to save</span>
+              <button type="button" class="edit-cancel" [disabled]="savingEdit()" (click)="cancelEdit()">Cancel</button>
+              <button type="button" class="send" [disabled]="!canSaveEdit(c)" (click)="saveEdit(c)">
+                {{ savingEdit() ? 'Saving…' : 'Save' }}
+              </button>
+            </div>
+          </div>
+          <ng-template #shownText>
           <p class="text"><ng-container
               *ngFor="let part of parts(c)"><a *ngIf="part.mentionOf; else plain"
                 class="mention" [routerLink]="['/profile', part.mentionOf.userId]"
                 >{{ part.text }}</a><ng-template #plain>{{ part.text }}</ng-template></ng-container></p>
+          </ng-template>
         </div>
         <div class="meta">
           <span>{{ when(c.createdAt) }}</span>
+          <span class="edited" *ngIf="isEdited(c)" [title]="'Edited ' + when(c.updatedAt!)">edited</span>
+          <button type="button" class="link-btn plain" *ngIf="isMine(c) && editingId() !== c.id"
+                  (click)="startEdit(c)">Edit</button>
           <button type="button" class="link-btn" *ngIf="isMine(c)" (click)="remove(c)">Delete</button>
         </div>
       </div>

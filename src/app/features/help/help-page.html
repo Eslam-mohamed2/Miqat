@@ -1,0 +1,78 @@
+<div class="help-page">
+
+  <header class="help-header">
+    <div class="header-text">
+      <h1 class="greeting">Help Center</h1>
+      <p class="page-sub">Answers to common questions, with a link to the right screen.</p>
+    </div>
+
+    <div class="search-field">
+      <mat-icon>search</mat-icon>
+      <input type="search" placeholder="Search help…" aria-label="Search help"
+             [ngModel]="searchText()" (ngModelChange)="searchText.set($event)" />
+      <button type="button" class="search-clear" *ngIf="searchText()" (click)="clearSearch()" aria-label="Clear search">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </header>
+
+  <div class="help-body">
+
+    <!-- Topics -->
+    <nav class="topic-list" aria-label="Help topics">
+      <button type="button" class="topic-row" *ngFor="let topic of topics; trackBy: trackTopic"
+              [class.active]="!searching() && activeTopicId() === topic.id"
+              (click)="selectTopic(topic)">
+        <span class="topic-icon"><mat-icon>{{ topic.icon }}</mat-icon></span>
+        <span class="topic-text">
+          <span class="topic-title">{{ topic.title }}</span>
+          <span class="topic-summary">{{ topic.summary }}</span>
+        </span>
+      </button>
+    </nav>
+
+    <!-- Answers -->
+    <section class="answers">
+
+      <p class="result-line" *ngIf="searching()" role="status">
+        {{ resultCount() }} {{ resultCount() === 1 ? 'answer' : 'answers' }} for “{{ searchText().trim() }}”
+      </p>
+
+      <div class="state-card" *ngIf="searching() && !resultCount()">
+        <div class="state-icon"><mat-icon>search_off</mat-icon></div>
+        <p class="state-title">Nothing matches that</p>
+        <p class="state-sub">Try a shorter word, such as “calendar”, “friend” or “password”.</p>
+        <button type="button" class="ghost-btn" (click)="clearSearch()">Show all topics</button>
+      </div>
+
+      <article class="topic-card" *ngFor="let topic of visibleTopics(); trackBy: trackTopic">
+        <header class="topic-head">
+          <span class="topic-icon"><mat-icon>{{ topic.icon }}</mat-icon></span>
+          <div>
+            <h2>{{ topic.title }}</h2>
+            <p>{{ topic.summary }}</p>
+          </div>
+        </header>
+
+        <div class="answer" *ngFor="let answer of topic.answers; trackBy: trackAnswer"
+             [class.open]="isOpen(topic, answer)">
+          <button type="button" class="question" (click)="toggle(topic, answer)"
+                  [attr.aria-expanded]="isOpen(topic, answer)">
+            <span>{{ answer.question }}</span>
+            <mat-icon>expand_more</mat-icon>
+          </button>
+
+          <div class="answer-body" *ngIf="isOpen(topic, answer)">
+            <ol>
+              <li *ngFor="let step of answer.steps">{{ step }}</li>
+            </ol>
+            <a class="answer-link" *ngIf="answer.link as link" [routerLink]="link.route" [queryParams]="link.query">
+              {{ link.label }}
+              <mat-icon>arrow_forward</mat-icon>
+            </a>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
+</div>

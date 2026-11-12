@@ -5,6 +5,7 @@ import { MentionService } from '../../core/services/mention.service';
 import { TaskService } from '../../core/services/task.service';
 import { GroupService } from '../../core/services/group.service';
 import { UiService } from '../../core/services/ui.service';
+import { NoticeService } from '../../core/services/notice.service';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -37,6 +38,10 @@ export class MentionsPage implements OnInit {
   private groupService = inject(GroupService);
   private router = inject(Router);
   private uiService = inject(UiService);
+  private notices = inject(NoticeService);
+
+  /** Ids known to be projects, whatever a mention's own type field says. */
+  private projectIds = new Set<string>();
 
   mentions = signal<MentionDto[]>([]);
   loading = signal(true);
@@ -71,6 +76,7 @@ export class MentionsPage implements OnInit {
         const names = new Map<string, string>();
         for (const task of tasks) names.set(task.id, task.title);
         for (const group of groups) names.set(group.id, group.name);
+        this.projectIds = new Set(groups.map(group => group.id));
 
         const resolved = mentions.map(mention => ({
           ...mention,
@@ -135,17 +141,29 @@ export class MentionsPage implements OnInit {
     this.navigateToMentionTarget(mention);
   }
 
+  /**
+   * Opens the thing the mention is in, and says on arrival which mention it was.
+   * Task mentions used to open the whole task list, leaving the user to find the
+   * task themselves.
+   */
   navigateToMentionTarget(mention: MentionDto) {
     if (!mention.entityId) return;
+
+    this.notices.show({
+      icon: 'alternate_email',
+      label: 'From your mentions',
+      text: `${mention.mentionedByUserName || 'Someone'} mentioned you in ${mention.entityName || this.entityLabel(mention)}`
+    });
 
     if (this.isProject(mention)) {
       this.uiService.openProjectDetails(mention.entityId);
       return;
     }
 
-    // Task mentions used to dump you on the dashboard, which is not where the
-    // task is. The tasks page is.
-    this.router.navigate(['/tasks']);
+    // A comment mention carries the comment's id, not its task's, so the list is
+    // the closest place; a task mention opens the task itself.
+    if (this.isComment(mention)) this.router.navigate(['/tasks']);
+    else this.router.navigate(['/tasks', mention.entityId]);
   }
 
   /**
@@ -155,6 +173,9 @@ export class MentionsPage implements OnInit {
    * treated 2 as a project, which is actually Comment.
    */
   isProject(mention: MentionDto): boolean {
+    // The id decides when it is a project the user can see: some mentions are
+    // stored with the wrong type.
+    if (mention.entityId && this.projectIds.has(mention.entityId)) return true;
     const type = String(mention.entityType ?? '').toLowerCase();
     return type === '0' || type === 'group' || type === 'project';
   }
@@ -175,20 +196,14 @@ export class MentionsPage implements OnInit {
     return type === '2' || type === 'comment';
   }
 
-  /**
-   * There is no bulk endpoint for mentions, so this marks each unread one and
-   * updates the list once rather than per response.
-   */
+  /** One request for all of them; the list updates straight away. */
   markAllRead() {
-    const unread = this.mentions().filter(m => !m.isRead);
-    if (!unread.length) return;
+    if (!this.mentions().some(m => !m.isRead)) return;
 
     this.mentions.update(list => list.map(m => ({ ...m, isRead: true })));
-    for (const mention of unread) {
-      this.mentionService.markMentionAsRead(mention.id).subscribe({
-        error: () => this.loadMentions()
-      });
-    }
+    this.mentionService.markAllAsRead().subscribe({
+      error: () => this.loadMentions()
+    });
   }
 
   /** Wording when the entity's name could not be resolved locally. */

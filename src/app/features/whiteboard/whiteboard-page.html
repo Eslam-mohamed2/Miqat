@@ -1,8 +1,14 @@
-<div class="whiteboard-container" (mousemove)="dragNote($event)" (mouseup)="endDragNote()"
-     (mouseleave)="endDragNote()">
+<div class="whiteboard-container" (pointermove)="dragNote($event)" (pointerup)="endDragNote()"
+     (pointercancel)="endDragNote()" (pointerleave)="endDragNote()">
+
+  <!-- The board scrolls: it is as large as what has been drawn on it, which can be
+       far bigger than a phone screen. The toolbar below stays put. -->
+  <div #scroller class="board-scroll">
+  <div #surface class="board-surface" [style.width.px]="surfaceWidth()" [style.height.px]="surfaceHeight()">
 
   <canvas #canvas
           [class.select-mode]="tool() === 'select'"
+          [class.panning]="isPanning()"
           (pointerdown)="onPointerDown($event)"
           (pointermove)="onPointerMove($event)"
           (pointerup)="onPointerUp($event)"
@@ -16,7 +22,7 @@
          [style.left.px]="note.x"
          [style.top.px]="note.y"
          [style.backgroundColor]="note.color"
-         (mousedown)="startDragNote($event, note)">
+         (pointerdown)="startDragNote($event, note)">
       <div class="note-header">
         <button type="button" class="note-close" (click)="deleteNote($event, note.id)"
                 aria-label="Delete note">
@@ -27,10 +33,19 @@
            object mutated it in place, which a zoneless app never notices. -->
       <textarea [value]="note.text"
                 (input)="updateNoteText(note.id, $any($event.target).value)"
-                (mousedown)="$event.stopPropagation()"
+                (pointerdown)="$event.stopPropagation()"
                 placeholder="Type a note…"></textarea>
     </div>
   </div>
+
+  </div>
+  </div>
+
+  <!-- Shown while there is more board than screen. -->
+  <p class="pan-hint" *ngIf="canScroll()">
+    <mat-icon>open_with</mat-icon>
+    {{ tool() === 'select' ? 'Drag to move around the board' : 'Choose Select &amp; move to move around the board' }}
+  </p>
 
   <!-- Autosave feedback; silent while idle so it never nags. -->
   <div class="save-state" *ngIf="saveState() !== 'idle'" [class.saved]="saveState() === 'saved'">

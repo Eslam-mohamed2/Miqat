@@ -2,7 +2,9 @@
 
 .detail-page {
   position: relative;
-  padding: 24px 28px 40px;
+  // No outer padding here: the app shell's .page-content is the one place that sets
+  // the page gutter, so every page starts at the same distance from the sidebar.
+  padding: 0 0 40px;
   max-width: 1240px;
   margin: 0 auto;
 }
@@ -129,6 +131,11 @@
   }
 }
 
+// Checklist progress and "Blocked", beside the status chip.
+.head-marks {
+  margin-left: 8px;
+}
+
 .head-actions {
   display: flex;
   gap: 10px;
@@ -199,7 +206,7 @@
 
 .sub-title {
   margin: 18px 0 10px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -255,7 +262,7 @@
   display: inline-block;
   padding: 3px 11px;
   border-radius: 999px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -413,7 +420,7 @@
     white-space: nowrap;
   }
 
-  small { font-size: 11.5px; color: $text-muted; }
+  small { font-size: 12px; color: $text-muted; }
 }
 
 .access-hint {
@@ -460,4 +467,16 @@
   .head-actions .danger-btn { flex: 1; justify-content: center; }
   .field { flex-direction: column; align-items: flex-start; gap: 4px; }
   .field-value { text-align: left; }
+}
+
+// Readable label colours on the light theme: the status and priority colours are
+// mid-tones (amber, teal, grey) that measured about 2:1 as text on white. The text
+// keeps its hue but is mixed towards black by the theme's --tone-text-mix.
+.status-chip,
+.rail-step.active {
+  color: color-mix(in srgb, var(--s, #2ec4a0) var(--tone-text-mix, 100%), #000);
+}
+
+.prio-chip.active {
+  color: color-mix(in srgb, var(--p, #2ec4a0) var(--tone-text-mix, 100%), #000);
 }

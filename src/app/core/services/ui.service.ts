@@ -12,6 +12,16 @@ export class UiService {
   projectDetailsOpen = signal(false);
   selectedProjectId = signal<string | null>(null);
 
+  /**
+   * Counts requests to open the search palette from outside it (the phone menu's
+   * "Search" row). The palette opens each time the number goes up.
+   */
+  searchRequests = signal(0);
+
+  openSearch() {
+    this.searchRequests.update(count => count + 1);
+  }
+
   toggleNotifications() {
     this.projectsPanelOpen.set(false);
     this.notificationPanelOpen.update(v => !v);

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MiniCalendar } from './mini-calendar';
+import { TEST_PROVIDERS } from '../../../../testing/test-providers';
 
 describe('MiniCalendar', () => {
   let component: MiniCalendar;
@@ -8,7 +9,8 @@ describe('MiniCalendar', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MiniCalendar]
+      imports: [MiniCalendar],
+      providers: TEST_PROVIDERS
     })
     .compileComponents();
 
