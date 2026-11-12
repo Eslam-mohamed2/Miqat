@@ -137,6 +137,13 @@ export class CallService {
     this.patch({ phase: 'connecting' });
 
     const peer = this.connectPeer(this.setup);
+
+    // Without an own microphone or camera this side still asks to receive the
+    // friend's, otherwise the offer would leave that half of the call out.
+    const own = new Set(this.localStream()?.getTracks().map(track => track.kind));
+    if (!own.has('audio')) peer.addTransceiver('audio', { direction: 'recvonly' });
+    if (call.video && !own.has('video')) peer.addTransceiver('video', { direction: 'recvonly' });
+
     this.queue(async () => {
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
@@ -192,7 +199,8 @@ export class CallService {
 
   toggleMute(): void {
     const call = this.call();
-    if (!call) return;
+    // Nothing to switch on a device that joined without a microphone.
+    if (!call || !this.localStream()?.getAudioTracks().length) return;
 
     this.localStream()?.getAudioTracks().forEach(track => (track.enabled = call.muted));
     this.patch({ muted: !call.muted });
@@ -200,7 +208,7 @@ export class CallService {
 
   toggleCamera(): void {
     const call = this.call();
-    if (!call?.video) return;
+    if (!call?.video || !this.localStream()?.getVideoTracks().length) return;
 
     this.localStream()?.getVideoTracks().forEach(track => (track.enabled = call.cameraOff));
     this.patch({ cameraOff: !call.cameraOff });
@@ -218,12 +226,18 @@ export class CallService {
 
   /** Opens the microphone (and camera) and loads the server's call settings. Null when the call was dropped meanwhile. */
   private async prepare(video: boolean, attempt: number): Promise<CallSetup | null> {
-    const stream = await openMedia(video);
+    const { stream, missing } = await openMedia(video);
     if (attempt !== this.attempt) {
-      stream.getTracks().forEach(track => track.stop());
+      stream?.getTracks().forEach(track => track.stop());
       return null;
     }
     this.localStream.set(stream);
+
+    // The call goes on with what this device has; the user is told what is missing.
+    const hasSound = !!stream?.getAudioTracks().length;
+    const hasPicture = !!stream?.getVideoTracks().length;
+    this.patch({ muted: !hasSound, cameraOff: video && !hasPicture });
+    if (missing) this.notices.show({ icon: hasSound ? 'videocam_off' : 'mic_off', label: 'Call', text: missing });
 
     this.setup ??= await firstValueFrom(this.http.get<CallSetup>(`${environment.apiUrl}/api/Call/setup`));
     return attempt === this.attempt ? this.setup : null;
@@ -362,25 +376,60 @@ export class CallService {
   }
 }
 
-/** Asks the browser for the microphone, and the camera for a video call. */
-async function openMedia(video: boolean): Promise<MediaStream> {
-  try {
-    return await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: video ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
-    });
-  } catch (err) {
-    const name = (err as DOMException)?.name;
-    const what = video ? 'camera and microphone' : 'microphone';
+/** What this device could open for a call, and a sentence about what it could not. */
+interface OpenedMedia {
+  stream: MediaStream | null;
+  missing?: string;
+}
 
-    if (name === 'NotAllowedError' || name === 'SecurityError') {
-      throw new Error(`Allow this site to use your ${what} in the browser, then try again.`);
+/**
+ * Asks the browser for the microphone, and the camera for a video call.
+ *
+ * A call is not refused because a device is missing: a PC without a camera
+ * joins a video call with sound only, and one without a microphone still sees
+ * and hears the friend. Only a "no" from the user stops the call, because that
+ * is theirs to change.
+ */
+async function openMedia(video: boolean): Promise<OpenedMedia> {
+  const blocked = (err: unknown) => ['NotAllowedError', 'SecurityError'].includes((err as DOMException)?.name);
+
+  if (video) {
+    try {
+      return {
+        stream: await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+        })
+      };
+    } catch (err) {
+      if (blocked(err)) throw new Error('Allow this site to use your camera and microphone in the browser, then try again.');
+      // No camera, or another app holds it: carry on with the microphone below.
     }
-    if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-      throw new Error(`No ${what} was found on this device.`);
-    }
-    throw new Error(`Your ${what} could not be started. Another app may be using it.`);
   }
+
+  try {
+    return {
+      stream: await navigator.mediaDevices.getUserMedia({ audio: true, video: false }),
+      missing: video ? 'Your camera could not be started, so you joined with sound only.' : undefined
+    };
+  } catch (err) {
+    if (blocked(err)) throw new Error('Allow this site to use your microphone in the browser, then try again.');
+  }
+
+  // No microphone either: a camera alone is still worth sending on a video call.
+  if (video) {
+    try {
+      return {
+        stream: await navigator.mediaDevices.getUserMedia({ audio: false, video: true }),
+        missing: 'Your microphone could not be started, so your friend cannot hear you.'
+      };
+    } catch { /* nothing to send at all */ }
+  }
+
+  return {
+    stream: null,
+    missing: 'No microphone could be started on this device, so your friend cannot hear you. You can still hear them.'
+  };
 }
 
 function reasonOf(err: unknown): string {
