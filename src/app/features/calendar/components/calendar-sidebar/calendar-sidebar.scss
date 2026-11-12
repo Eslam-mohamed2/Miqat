@@ -1,3 +1,5 @@
+@use '../../../../../styles/tokens' as *;
+
 .sidebar-container {
   display: flex;
   flex-direction: column;
@@ -28,13 +30,35 @@ h4 {
     display: flex;
     gap: 8px;
     color: var(--text-secondary);
-    
+
     .icon-btn {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      background: none;
+      border: 0;
+      border-radius: 6px;
+      color: inherit;
       cursor: pointer;
-      &:hover { color: var(--text-primary); }
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        color: var(--text-primary);
+        background: var(--bg-hover);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--teal-primary);
+        outline-offset: 1px;
+      }
     }
   }
 }
@@ -46,11 +70,11 @@ h4 {
   text-align: center;
 
   .day-name {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-secondary);
     margin-bottom: 8px;
-    
+
     &.highlight {
       color: var(--primary, #13c296);
     }
@@ -70,8 +94,14 @@ h4 {
     }
 
     .day-circle {
-      width: 24px;
-      height: 24px;
+      // A button: it jumps the main grid to that day.
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      color: inherit;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -82,11 +112,11 @@ h4 {
       &:hover {
         background: var(--bg-hover);
       }
-    }
 
-    &.today .day-circle {
-      background: var(--primary, #13c296);
-      color: white;
+      &:focus-visible {
+        outline: 2px solid var(--teal-primary);
+        outline-offset: 1px;
+      }
     }
   }
 }
@@ -100,20 +130,29 @@ h4 {
 .calendars-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 
   .section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+  }
 
-    .add-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      &:hover { color: var(--text-primary); }
+  .header-btn {
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      color: var(--text-primary);
+      border-color: var(--text-muted);
     }
   }
 }
@@ -121,33 +160,85 @@ h4 {
 .calendar-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 2px;
 }
 
+// The whole row is the control. Previously this was a <mat-checkbox> plus a
+// separate colour dot pushed to the far right, so the name, the box and the
+// colour were three disconnected things with only the tiny box clickable.
 .calendar-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  margin: 0 -8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
 
-  ::ng-deep .mdc-checkbox {
-    padding: 0;
-    margin-right: 8px;
-    .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
-      border-color: var(--checkbox-color, var(--primary)) !important;
-      background-color: var(--checkbox-color, var(--primary)) !important;
+  &:hover { background: var(--bg-hover); }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+
+  // Filtered-out projects stay readable but clearly inactive.
+  &.off {
+    .cal-name { color: var(--text-muted); }
+    .cal-box {
+      background: transparent;
+      border-color: var(--border);
     }
   }
+}
 
-  .dot-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
+.cal-box {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--cal-color, var(--primary));
+  border: 1.5px solid var(--cal-color, var(--primary));
+  transition: background 0.15s ease, border-color 0.15s ease;
 
-  span {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+    line-height: 13px;
+    color: #fff;
   }
+}
+
+.cal-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-count {
+  flex: 0 0 auto;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
 }
 
 .schedule-section {
@@ -223,7 +314,10 @@ h4 {
   }
 }
 
-@media (max-width: 1024px) {
+// Keyed to the calendar's own width (the "calendar" container set on the page), not
+// the window's: see calendar-page.scss. This is the layout for when the sidebar sits
+// underneath the grid.
+@container calendar (max-width: 900px) {
   .sidebar-container {
     flex-direction: row;
     flex-wrap: wrap;
@@ -236,7 +330,9 @@ h4 {
     width: 280px;
     flex-shrink: 0;
   }
-  .calendars-section {
+  .calendars-section,
+  .invitations-section,
+  .reminders-section {
     width: 220px;
     flex-shrink: 0;
   }
@@ -249,15 +345,389 @@ h4 {
   }
 }
 
-@media (max-width: 768px) {
+@container calendar (max-width: 700px) {
   .sidebar-container {
     flex-direction: column;
     gap: 24px;
   }
   .mini-calendar-section,
   .calendars-section,
+  .invitations-section,
+  .reminders-section,
   .schedule-section {
     width: 100%;
     max-width: none;
+    // Lets a section be narrower than its content, so nothing is cut off at 320px.
+    min-width: 0;
+  }
+  // A month grid the full width of a tablet would be oversized.
+  .mini-calendar-section {
+    max-width: 360px;
   }
 }
+
+// ── Added with the real month grid ──────────────────────────────────────────
+// The grid now carries a date per cell, so "today" is marked on the circle
+// itself and days bleeding in from the neighbouring month are dimmed.
+.day-cell.outside .day-circle {
+  // Dimmed, but still readable: at 45% opacity these numbers measured 1.4:1.
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+// The focused day (what Week and Day views are built around).
+.mini-calendar-grid .day-cell .day-circle.selected {
+  box-shadow: inset 0 0 0 2px var(--teal-primary);
+  font-weight: 700;
+}
+
+.mini-calendar-grid .day-cell .day-circle.today {
+  background: var(--teal-primary);
+  // The text colour that goes with the brand fill in each theme: near-black on
+  // the dark theme's bright teal, white on the light theme's deep one.
+  color: var(--btn-quick-add-text);
+  font-weight: 700;
+}
+
+.event-day {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+// Replaces the empty list that still reserved its full height.
+.empty-hint {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+// ── Events: calendars, invitations, reminders ───────────────────────────────
+.side-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-danger) 12%, transparent);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.header-btn mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+}
+
+.count-badge {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--teal-primary);
+  color: var(--btn-quick-add-text);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+// A calendar row: the switch, and a pencil that shows on hover (always on touch).
+.calendar-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  .calendar-item { flex: 1; min-width: 0; }
+}
+
+.row-edit {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+
+  &:hover { background: var(--bg-hover); color: var(--text-primary); }
+  &:focus-visible { opacity: 1; outline: 2px solid var(--primary); outline-offset: -2px; }
+
+  .calendar-row:hover &,
+  &.shown { opacity: 1; }
+
+  @include touch {
+    opacity: 1;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.calendar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+
+  input {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-input);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+
+    &::placeholder { color: var(--text-muted); }
+    &:focus { outline: none; border-color: var(--teal-primary); }
+
+    @include touch { min-height: 44px; font-size: 16px; }
+  }
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch);
+  cursor: pointer;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; color: #fff; }
+
+  &.selected { box-shadow: 0 0 0 2px var(--bg-input), 0 0 0 4px var(--swatch); }
+  &:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+  @include touch { width: 32px; height: 32px; }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+
+  button {
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-input);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled { opacity: 0.6; cursor: default; }
+
+    @include touch { min-height: 40px; }
+  }
+
+  .form-delete {
+    margin-right: auto;
+    border-color: transparent;
+    padding: 0 4px;
+    color: var(--text-danger);
+  }
+
+  .form-save {
+    border-color: transparent;
+    background: var(--teal-primary);
+    color: var(--btn-quick-add-text);
+  }
+}
+
+// Invitations
+.invitations-section,
+.reminders-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invitation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--teal-primary);
+  background: var(--teal-glow);
+}
+
+.invitation-open {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover .invitation-title { text-decoration: underline; }
+}
+
+.invitation-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.invitation-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.invitation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.answer-btn {
+  flex: 1 1 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-input);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { border-color: var(--teal-primary); }
+  &:disabled { opacity: 0.6; cursor: default; }
+
+  &.yes {
+    border-color: transparent;
+    background: var(--teal-primary);
+    color: var(--btn-quick-add-text);
+  }
+
+  @include touch { min-height: 40px; }
+}
+
+// "Upcoming" rows open what they show, so they are buttons now.
+button.schedule-card {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+
+  .event-title { overflow-wrap: anywhere; }
+
+  &:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+}
+
+// Reminders
+.reminder {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.reminder-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  margin: 0 0 0 -8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+
+  > mat-icon { flex-shrink: 0; font-size: 18px; width: 18px; height: 18px; color: var(--text-secondary); }
+
+  &:hover { background: var(--bg-hover); }
+}
+
+.reminder-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.reminder-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reminder-when {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.snooze-row {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+
+  button {
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-input);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover { border-color: var(--teal-primary); }
+    &.remove { border-color: transparent; color: var(--text-danger); }
+
+    @include touch { min-height: 40px; }
+  }
+}
+

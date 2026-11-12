@@ -1,3 +1,5 @@
+@use '../../styles/breakpoints' as *;
+
 // Footer logo - responsive sizing
 .footer-logo {
   height: 56px;
@@ -12,26 +14,8 @@ footer {
   }
 }
 
-// Tablet
-@media (max-width: 1024) {
-  .footer-logo {
-    height: 48px;
-    max-width: 150px;
-  }
-
-  .text-secondary {
-    --bs-text-opacity: 1;
-    color: rgba(var(--bs-secondary-rgb), var(--bs-text-opacity)) !important;
-    font-size: 14px !important;
-  }
-
-  footer .row {
-    gap: 0.5rem;
-  }
-}
-
 // Mobile
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   .footer-logo {
     height: 70px;
     max-width: 150px;
@@ -63,7 +47,7 @@ footer {
 }
 }
 
-@media (max-width: 575px) {
+@include below($bp-phone-lg) {
   .footer-logo {
     height: 34px;
     max-width: 110px;

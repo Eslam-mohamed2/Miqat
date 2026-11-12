@@ -1,22 +1,28 @@
 <div class="agenda-card mt-20">
   <div class="card-header">
-    <div class="title">Due Soon</div>
-    <div class="btn-add">
+    <div class="title">Coming Up</div>
+    <button type="button" class="btn-add" (click)="addTask.emit()" aria-label="Add a task" title="Add a task">
       <mat-icon>add</mat-icon>
-    </div>
+    </button>
   </div>
 
-  <div class="agenda-list" *ngIf="(dueSoon$ | async) as dueSoonList">
-    <div *ngIf="dueSoonList.length === 0" class="empty-state" style="padding: 16px; text-align: center; color: var(--text-muted);">
+  <div class="agenda-list">
+    <div *ngIf="loaded() && !items().length" class="empty-state">
       <p>All caught up!</p>
     </div>
 
-    <div *ngFor="let item of dueSoonList" class="agenda-item">
-      <div class="agenda-time">{{ item.dueDate | date:'shortTime' }}</div>
-      <div class="agenda-content" [ngStyle]="{'border-left-color': getPriorityColor(item.priority)}">
-        <div class="event-title">{{ item.title }}</div>
-        <div class="event-description">{{ item.description || 'No description' }}</div>
+    <a *ngFor="let item of items(); trackBy: trackById" class="agenda-item"
+       [routerLink]="item.link" [queryParams]="item.query">
+      <div class="agenda-time">
+        <span class="agenda-day">{{ item.day }}</span>
+        <span>{{ item.time }}</span>
       </div>
-    </div>
+      <div class="agenda-content" [style.borderLeftColor]="item.color">
+        <div class="event-title">
+          <mat-icon *ngIf="item.isEvent" class="kind-icon" aria-label="Event">event</mat-icon>{{ item.title }}
+        </div>
+        <div class="event-description">{{ item.description }}</div>
+      </div>
+    </a>
   </div>
 </div>

@@ -12,17 +12,20 @@
   padding: 20px 0;
 
   .time {
-    font-size: 140px;
+    // Scales with the screen instead of jumping between fixed sizes at breakpoints.
+    font-size: clamp(3rem, 8vw, 8.75rem);
     font-weight: 700;
-    letter-spacing: 5px;
+    letter-spacing: 0.035em;
+    white-space: nowrap;
     background: var(--color-secondary);
     border-radius: 12px;
-    padding: 30px 80px;
+    padding: 0.2em 0.5em;
+    // Sized in em so the box always fits "HH:MM:SS" at the current font size and
+    // does not change width as the digits tick.
+    width: min(92%, 6em);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
-    // border: 2px solid #1e1e1e;
     text-shadow: 0 0 20px #222;
     transition: all 0.4s ease-in-out;
-    width: 65% !important;
   }
 }
 
@@ -42,33 +45,5 @@
 
   100% {
     transform: rotateX(0);
-  }
-}
-
-// Media queries: Tablet & Mobile
-@media (max-width: 991px) {
-  .flip-clock .time {
-    font-size: 100px;
-    padding: 24px 50px;
-    width: 85% !important;
-  }
-}
-
-@media (max-width: 767px) {
-  .flip-clock {
-    padding: 16px 0;
-    .time {
-      font-size: 64px;
-      padding: 20px 30px;
-      width: 95% !important;
-      letter-spacing: 2px;
-    }
-  }
-}
-
-@media (max-width: 575px) {
-  .flip-clock .time {
-    font-size: 48px;
-    padding: 16px 20px;
   }
 }

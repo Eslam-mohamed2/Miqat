@@ -1,0 +1,203 @@
+@use '../../../styles/tokens' as *;
+@use '../item-extras' as extras;
+
+:host {
+  display: block;
+}
+
+:host(.unavailable) {
+  display: none;
+}
+
+@include extras.item-section;
+
+// Not ".progress": Bootstrap styles that name globally.
+.steps-bar {
+  height: 4px;
+  margin: 0 0 12px;
+  border-radius: 999px;
+  background: $bg-input;
+  overflow: hidden;
+}
+
+.steps-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: $teal-primary;
+  transition: width 0.2s ease;
+}
+
+.line-list {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  border-bottom: 1px solid $border-card;
+
+  &:last-child { border-bottom: 0; }
+
+  // The row's own buttons stay out of the way until the row is pointed at or
+  // one of them has the keyboard. A touch screen has no hover, so there they
+  // are always shown.
+  .line-actions { opacity: 0; transition: opacity 0.15s ease; }
+  &:hover .line-actions,
+  &:focus-within .line-actions { opacity: 1; }
+
+  @include touch {
+    min-height: 46px;
+    .line-actions { opacity: 1; }
+  }
+
+  &.done .line-title {
+    color: $text-muted;
+    text-decoration: line-through;
+  }
+}
+
+.tick {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: $text-muted;
+  cursor: pointer;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+  &[aria-checked='true'] { color: $teal-primary; }
+  &:hover:not(:disabled) { color: $teal-primary; }
+  &:disabled { cursor: default; }
+
+  @include touch { width: 40px; height: 40px; }
+}
+
+.line-title {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: $text-primary;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: text;
+
+  &:hover:not(:disabled) { background: $bg-card-hover; }
+  &:disabled { cursor: default; }
+
+  @include touch { min-height: 40px; }
+}
+
+.line-input,
+.add-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid $border-card;
+  background: $bg-input;
+  color: $text-primary;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: $teal-primary;
+  }
+
+  @include touch { height: 40px; }
+}
+
+.line-actions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.line-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: $text-muted;
+  cursor: pointer;
+
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+  &:hover:not(:disabled) { background: $bg-card-hover; color: $text-primary; }
+  &:disabled { opacity: 0.35; cursor: default; }
+
+  @include touch { width: 36px; height: 40px; }
+}
+
+.add-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  > mat-icon {
+    flex: 0 0 auto;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: $text-muted;
+  }
+}
+
+.add-input {
+  border-color: transparent;
+  background: transparent;
+
+  &::placeholder { color: $text-muted; }
+  &:hover { background: $bg-card-hover; }
+  &:focus { background: $bg-input; }
+}
+
+.add-btn {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid $border-card;
+  background: transparent;
+  color: $text-secondary;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { border-color: $teal-primary; color: $text-primary; }
+  &:disabled { opacity: 0.5; cursor: default; }
+
+  @include touch { min-height: 40px; }
+}
+
+// On the smallest phones the three row buttons would squeeze the text to a few
+// characters per line, so the text gets the full row and the buttons sit under it.
+@include below($bp-phone-sm) {
+  .line { flex-wrap: wrap; }
+  .line-title,
+  .line-input { flex: 1 1 calc(100% - 46px); }
+  .line-actions { margin-left: auto; }
+}

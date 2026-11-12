@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { finalize } from 'rxjs';
 
 import { FlipClock } from '../../flip-clock/flip-clock';
+import { apiErrorMessage } from '../../core/http/api-error';
 
 @Component({
   selector: 'app-forgot-password',
@@ -20,8 +21,11 @@ export class ForgotPasswordComponent {
   private router = inject(Router);
 
   forgotForm: FormGroup;
-  isLoading = false;
-  errorMessage = '';
+  // Signals because the app runs zoneless: plain fields written from an async
+  // callback do not trigger change detection, so loading and error states
+  // never reached the screen.
+  isLoading = signal(false);
+  errorMessage = signal('');
 
   constructor() {
     this.forgotForm = this.fb.group({
@@ -35,18 +39,20 @@ export class ForgotPasswordComponent {
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
     const email = this.forgotForm.value.email;
 
     this.authService.forgotPassword({ email }).pipe(
-      finalize(() => this.isLoading = false)
+      finalize(() => this.isLoading.set(false))
     ).subscribe({
       next: () => {
-        this.router.navigate(['/authentication/verify-otp'], { queryParams: { email } });
+        this.router.navigate(['/authentication/verify-otp'], {
+          queryParams: { email, purpose: 'PasswordReset' }
+        });
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || err.message || 'Failed to request password reset. Please try again.';
+        this.errorMessage.set(apiErrorMessage(err, 'Failed to request password reset. Please try again.'));
       }
     });
   }

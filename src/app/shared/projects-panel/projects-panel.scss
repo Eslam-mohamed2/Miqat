@@ -12,8 +12,11 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 480px;
-  height: 100vh;
+  // Never wider than the screen.
+  width: min(480px, 100vw);
+  // dvh follows the visible viewport, so the panel's footer is not hidden behind
+  // mobile browser chrome the way a 100vh panel is.
+  height: 100dvh;
   background: $bg-sidebar;
   border-left: 1px solid $border-subtle;
   z-index: 901;
@@ -22,7 +25,14 @@
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 
-  @media (max-width: 540px) { width: 100vw; }
+  @supports not (height: 100dvh) { height: 100vh; }
+
+  // Below tablet a fixed 480px panel covers nearly the whole screen anyway, so
+  // it steps down with the viewport instead of overhanging it.
+  @include below($bp-tablet) { width: 82%; }
+
+  // 100% rather than 100vw: vw includes the scrollbar gutter and overflows.
+  @include below($bp-phone-lg) { width: 100%; }
 }
 
 // ── Header ────────────────────────────────────────────
@@ -84,7 +94,7 @@
   align-items: center;
   gap: 6px;
   background: $teal-primary;
-  color: #0d0d0d;
+  color: $btn-quick-add-text;
   font-size: 13px;
   font-weight: 700;
   height: 36px;
@@ -158,8 +168,6 @@
   flex-direction: column;
   gap: 12px;
 
-  &::-webkit-scrollbar { width: 3px; }
-  &::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
 }
 
 // ── Project Card ──────────────────────────────────────
@@ -172,6 +180,9 @@
   overflow: hidden;
   cursor: pointer;
   transition: all 0.25s ease;
+  // The list is a flex column: without this, cards are squashed to fit the panel's
+  // height and their last rows (owner, progress) are cut off.
+  flex-shrink: 0;
 
   &:hover {
     background: $bg-card-hover;
@@ -222,7 +233,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 20px;
@@ -292,7 +303,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 12px;
   color: $text-muted;
 
   mat-icon { font-size: 12px; width: 12px; height: 12px; }
@@ -393,7 +404,7 @@
   align-items: center;
   gap: 6px;
   background: $teal-primary;
-  color: #0d0d0d;
+  color: $btn-quick-add-text;
   font-size: 13px;
   font-weight: 700;
   height: 38px;
@@ -425,14 +436,14 @@
     color: var(--text-muted);
   }
 
-  .close-btn { 
-    background: rgba(255,255,255,0.05); 
-    border-color: rgba(255,255,255,0.1); 
+  .close-btn {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
     color: var(--text-muted);
     &:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
   }
 
-  .search-bar { 
+  .search-bar {
     border-bottom-color: rgba(255,255,255,0.1);
     input { color: var(--text-primary); &::placeholder { color: var(--text-muted); } }
   }
@@ -451,4 +462,81 @@
   .empty-icon-wrap { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
   .empty-title { color: var(--text-primary); }
   .empty-sub { color: var(--text-muted); }
+}
+
+
+// ── Card detail added with the count fix ────────────────────────────────────
+.card-owner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 2px;
+}
+
+.owner-avatar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.owner-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-progress {
+  margin: 10px 0 0;
+
+  &.empty {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+}
+
+.progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  strong { font-size: 12px; font-weight: 700; }
+}
+
+.progress-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+// Project colours are chosen by the user, so one used as a *text* colour can be
+// near-black on the dark theme or near-white on the light one (the seeded
+// "Leadership" navy measured 1.6:1). The colour stays on the tinted background
+// and border; the letters use the theme's text colour. !important because the
+// template sets the colour inline.
+.project-avatar .initials,
+.owner-avatar {
+  color: $text-primary !important;
+}
+
+.status-chip,
+.card-progress strong {
+  color: $text-primary !important;
 }

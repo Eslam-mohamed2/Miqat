@@ -1,167 +1,503 @@
+@use '../../../styles/tokens' as *;
+
 .notifications-page {
-  padding: 2rem;
-  max-width: 900px;
+  // No outer padding here: the app shell's .page-content is the one place that sets
+  // the page gutter, so every page starts at the same distance from the sidebar.
+  max-width: 1100px;
   margin: 0 auto;
+  padding-bottom: 2rem;
 }
 
-.greeting {
-  font-size: 2rem;
+// ── Header ──────────────────────────────────────────────────────────────────
+.page-header {
+  margin-bottom: 1.5rem;
+
+  .title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .greeting {
+    font-size: 2rem;
+    font-weight: 800;
+    color: $text-primary;
+    margin: 0;
+
+    @include below($bp-tablet-sm) { font-size: 1.5rem; }
+  }
+
+  .page-sub {
+    margin: 6px 0 0;
+    font-size: 0.9rem;
+    color: $text-secondary;
+  }
+}
+
+.link-btn {
+  background: none;
+  border: 0;
+  color: $teal-primary;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+
+  &:hover { background: $bg-card-hover; }
+}
+
+.filter-pills {
+  display: flex;
+  gap: 8px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: $bg-card;
+    color: $text-secondary;
+    transition: $transition-std;
+
+    &:hover { background: $bg-card-hover; }
+
+    &.active {
+      background: $teal-glow;
+      color: $text-active;
+    }
+
+    mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+    .pill-count {
+      background: $teal-primary;
+      color: $btn-quick-add-text;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 1px 7px;
+    }
+  }
+}
+
+// ── Groups ──────────────────────────────────────────────────────────────────
+.notif-group + .notif-group { margin-top: 1.75rem; }
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
   font-weight: 700;
-  margin-bottom: 0.25rem;
-  color: var(--text-primary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $text-secondary;
+  margin: 0 0 0.6rem;
+  padding: 0 4px;
+
+  .group-count {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: $text-secondary;
+    background: $bg-card;
+    border: 1px solid $border-card;
+    border-radius: 999px;
+    padding: 0 8px;
+  }
 }
 
-.notifications-container {
-  background: var(--surface-card);
-  border-radius: 16px;
-  padding: 1rem;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+// The list is one card; rows are separated by hairlines. Bare rows on the page
+// background had nothing holding them together and no room around their content.
+.notif-card {
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+  // The row menu drops below its row, so the card must not clip it.
+  overflow: visible;
 }
 
-.empty-state {
+// ── Row ─────────────────────────────────────────────────────────────────────
+.notif-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease;
+
+  & + & { border-top: 1px solid $border-subtle; }
+
+  &:first-child { border-radius: $radius-card $radius-card 0 0; }
+  &:last-child  { border-radius: 0 0 $radius-card $radius-card; }
+  &:only-child  { border-radius: $radius-card; }
+
+  &:hover { background: $bg-card-hover; }
+  &:focus-visible { outline: 2px solid $teal-primary; outline-offset: -2px; }
+
+  // Unread: a bar on the leading edge and a faint tint, not a different layout.
+  &.unread {
+    background: $teal-glow;
+    box-shadow: inset 3px 0 0 $teal-primary;
+  }
+  &.unread:hover { background: $bg-card-hover; }
+
+  // While the item it points at is being looked up.
+  &.opening { opacity: 0.6; cursor: progress; }
+
+  .avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    object-fit: cover;
+    // Dark, not white: the avatar colours are mid-tones and white on them was
+    // only 2-3:1.
+    color: #111827;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+  }
+
+  // Small circular badge on the avatar's corner saying what kind it is.
+  .type-badge {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid $bg-card;
+
+    mat-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+      color: #111827;
+    }
+  }
+
+  .notif-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .notif-text {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: $text-primary;
+    overflow-wrap: anywhere;
+
+    strong { font-weight: 700; }
+    .msg { color: $text-secondary; }
+  }
+
+  // Read rows quieten down; unread ones keep full-strength text.
+  &.unread .notif-text .msg { color: $text-primary; }
+
+  // "Task · Launch email campaign": what the notification is about.
+  .topic-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 4px 10px;
+    border: 1px solid $border-input;
+    border-radius: 999px;
+    background: $bg-input;
+    font-size: 12px;
+    line-height: 1.3;
+    color: $text-secondary;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      color: $teal-primary;
+    }
+
+    .topic-label {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .topic-name {
+      color: $text-primary;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      &::before {
+        content: '·';
+        margin-right: 6px;
+        color: $text-muted;
+      }
+    }
+  }
+
+  .row-end {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .notif-time {
+    font-size: 0.8rem;
+    color: $text-secondary;
+    font-weight: 600;
+    white-space: nowrap;
+
+    &.accent { color: $teal-primary; }
+  }
+
+  .unread-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: $teal-primary;
+    flex-shrink: 0;
+  }
+
+  .go-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: $text-muted;
+    transition: $transition-std;
+  }
+
+  &:hover .go-icon {
+    color: $teal-primary;
+    transform: translateX(2px);
+  }
+
+  .kebab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: $text-secondary;
+    cursor: pointer;
+    opacity: 0;
+    transition: $transition-std;
+
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+    &:hover { background: $bg-card; color: $text-primary; }
+  }
+
+  &:hover .kebab,
+  &:focus-within .kebab { opacity: 1; }
+
+  // Hover-reveal never fires on touch, so keep the control visible there.
+  @include touch {
+    .kebab { opacity: 1; width: 40px; height: 40px; }
+  }
+}
+
+// Phones: time moves under the text so the message keeps the width.
+@include below($bp-phone-lg) {
+  .notif-row {
+    // A grid, so the topic line can use the full width under the time column
+    // instead of being squeezed next to it ("Friend request · T…").
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px 12px;
+    padding: 14px;
+
+    .avatar-wrap { grid-column: 1; grid-row: 1 / span 2; }
+    .notif-body { display: contents; }
+    .notif-text { grid-column: 2; grid-row: 1; }
+    .topic-chip { grid-column: 2 / -1; grid-row: 2; justify-self: start; }
+
+    .avatar { width: 42px; height: 42px; font-size: 0.85rem; }
+    .type-badge { width: 20px; height: 20px; }
+
+    .row-end {
+      grid-column: 3;
+      grid-row: 1;
+      flex-direction: column-reverse;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .go-icon { display: none; }
+  }
+}
+
+.menu-wrap { position: relative; }
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 232px;
+  background: $bg-card;
+  border: 1px solid $border-input;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  padding: 6px;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: $text-primary;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+
+    mat-icon { font-size: 18px; width: 18px; height: 18px; color: $text-secondary; }
+
+    &:hover { background: $bg-card-hover; }
+
+    &.danger:hover {
+      color: #ef4444;
+      mat-icon { color: #ef4444; }
+    }
+  }
+
+  @include below($bp-phone-lg) { min-width: 200px; }
+}
+
+// ── States ──────────────────────────────────────────────────────────────────
+.state-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  
-  .empty-icon-wrap {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-card;
+
+  @include below($bp-tablet-sm) { padding: 2.5rem 1rem; }
+
+  .state-icon {
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: var(--surface-hover);
+    background: $bg-card-hover;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1rem;
-    
-    mat-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: var(--text-secondary);
-    }
+
+    mat-icon { font-size: 32px; width: 32px; height: 32px; color: $text-secondary; }
   }
 
-  .empty-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 0.25rem;
+  .state-title { font-size: 1.1rem; font-weight: 700; color: $text-primary; margin: 0 0 0.25rem; }
+  .state-sub   { font-size: 0.9rem; color: $text-secondary; margin: 0 0 1.25rem; }
+}
+
+.primary-btn {
+  background: $btn-quick-add-bg;
+  color: $btn-quick-add-text;
+  border: 0;
+  border-radius: $radius-btn;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 10px 20px;
+  cursor: pointer;
+
+  &:hover { background: $btn-quick-add-hover; }
+}
+
+.ghost-btn {
+  background: transparent;
+  border: 1px solid $border-card;
+  color: $text-primary;
+  border-radius: $radius-btn;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 9px 18px;
+  cursor: pointer;
+
+  &:hover { background: $bg-card-hover; }
+}
+
+// ── Loading skeleton ────────────────────────────────────────────────────────
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+
+  .skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+
+    & + .skeleton-row { border-top: 1px solid $border-subtle; }
   }
 
-  .empty-sub {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin: 0;
+  .skeleton-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .skeleton-lines { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .skeleton-line { height: 11px; border-radius: 6px; }
+  .skeleton-line.long  { width: 68%; }
+  .skeleton-line.short { width: 28%; }
+
+  .skeleton-avatar,
+  .skeleton-line {
+    background: linear-gradient(90deg, $bg-card-hover 25%, $bg-input 37%, $bg-card-hover 63%);
+    background-size: 400% 100%;
+    animation: notif-shimmer 1.4s ease infinite;
+
+    @include reduced-motion { animation: none; }
   }
 }
 
-.notif-item {
+@keyframes notif-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.load-more-row {
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.25rem;
-  border-radius: 12px;
-  transition: all 0.2s;
-  cursor: pointer;
-  position: relative;
-  background: transparent;
-
-  &:hover {
-    background: var(--surface-hover);
-    .notif-actions { opacity: 1; }
-  }
-
-  &.unread {
-    background: var(--primary-light, rgba(106, 17, 203, 0.04));
-    &:hover { background: var(--primary-light-hover, rgba(106, 17, 203, 0.08)); }
-  }
-
-  .notif-icon {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    mat-icon { font-size: 20px; width: 20px; height: 20px; }
-  }
-
-  .notif-content {
-    flex: 1;
-    min-width: 0;
-
-    .notif-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 0.25rem;
-
-      .notif-title {
-        font-weight: 600;
-        font-size: 0.95rem;
-        color: var(--text-primary);
-      }
-
-      .notif-time {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        white-space: nowrap;
-      }
-    }
-
-    .notif-message {
-      margin: 0;
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      line-height: 1.4;
-    }
-  }
-
-  .notif-actions {
-    display: flex;
-    gap: 0.25rem;
-    opacity: 0;
-    transition: opacity 0.2s;
-
-    .action-icon {
-      background: none;
-      border: none;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.2s;
-
-      &:hover {
-        background: var(--surface-hover);
-        color: var(--text-primary);
-        
-        &.dismiss {
-          color: #ef4444;
-          background: rgba(239,68,68,0.1);
-        }
-      }
-      
-      mat-icon { font-size: 18px; width: 18px; height: 18px; }
-    }
-  }
-
-  .unread-dot {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--primary);
-  }
+  justify-content: center;
+  padding: 1.25rem 0 0.5rem;
 }

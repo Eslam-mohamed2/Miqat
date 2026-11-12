@@ -18,7 +18,6 @@ export class Header implements OnInit, OnDestroy {
 
   toggleMenu() {
     this.isMenuOpen = !this.isMenuOpen;
-    console.log('Mobile menu toggled. New state:', this.isMenuOpen);
     this.Timer.detectChanges();
   }
 

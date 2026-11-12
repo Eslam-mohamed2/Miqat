@@ -8,4 +8,21 @@
   </div>
 </div>
 
-<app-project-details-panel></app-project-details-panel>
+<!-- Says why the user was brought to this page, e.g. after opening a notification. -->
+<div class="context-notice" [class.beside-chat]="chat.available()"
+     *ngIf="notices.notice() as notice" role="status" aria-live="polite">
+  <span class="notice-icon"><mat-icon>{{ notice.icon }}</mat-icon></span>
+  <span class="notice-body">
+    <span class="notice-label">{{ notice.label }}</span>
+    <span class="notice-text">{{ notice.text }}</span>
+  </span>
+  <button type="button" class="notice-close" (click)="notices.clear()" aria-label="Dismiss">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<!-- Chat with friends: bubbles and pop-up windows in the bottom-right corner. -->
+<app-chat-dock />
+
+<!-- Voice and video calls: the ringing pop-up and the call screen, above everything else. -->
+<app-call-overlay />

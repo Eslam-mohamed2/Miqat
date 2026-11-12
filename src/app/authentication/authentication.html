@@ -1,7 +1,7 @@
 <div class="m-0 p-0 position-relative">
   <div class="row d-flex m-0 p-0">
     <div class="col-12 col-lg-4 p-0 order-2 order-lg-1">
-      <div class="auth-container d-flex flex-column justify-content-center align-items-center vh-100 ">
+      <div class="auth-container">
         <!-- Error & Success Messages -->
         <div *ngIf="errorMessage" class="alert alert-danger w-80 text-center py-2">{{ errorMessage }}</div>
         <div *ngIf="successMessage" class="alert alert-success w-80 text-center py-2">{{ successMessage }}</div>
@@ -136,16 +136,16 @@
         </div>
       </div>
     </div>
-    <div class="d-none d-lg-block col-12 col-lg-8 p-0 vh-100 m-0 p-0 order-1 order-lg-2">
+    <div class="d-none d-lg-block col-lg-8 p-0 order-lg-2 auth-clock-col">
       <app-flip-clock></app-flip-clock>
 
 
 
     </div>
   </div>
-  <div class="position-absolute custom-desgin align-content-center">
-    <a href="" class="p-5"><i class="fa-solid fa-house fs-3" routerLink="/home"></i></a>
+  <div class="custom-desgin">
+    <a routerLink="/home" aria-label="Back to home"><i class="fa-solid fa-house"></i></a>
   </div>
 
   <!-- Modal removed, we use the /verify-otp screen instead -->
-</div>
+</div>

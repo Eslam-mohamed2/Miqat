@@ -1,0 +1,68 @@
+@use '../../styles/tokens' as *;
+
+// Shared look of the small sections attached to a task or an event (reminders,
+// files, checklist, dependencies): one title style, one row-remove button, one
+// way to say "empty" and "that failed". Kept in one place so the sections cannot
+// drift apart from each other.
+@mixin item-section {
+  .item-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: $text-muted;
+
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+    .count {
+      margin-left: auto;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+      color: $text-secondary;
+    }
+  }
+
+  .item-empty,
+  .item-note {
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: $text-muted;
+  }
+
+  .item-note { margin: 10px 0 0; }
+
+  .item-error {
+    margin: 10px 0 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $text-danger;
+  }
+
+  .row-remove {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: $text-muted;
+    cursor: pointer;
+
+    mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+    &:hover:not(:disabled) { background: $bg-card-hover; color: $text-danger; }
+    &:disabled { opacity: 0.5; cursor: default; }
+
+    @include touch { width: 40px; height: 40px; }
+  }
+}

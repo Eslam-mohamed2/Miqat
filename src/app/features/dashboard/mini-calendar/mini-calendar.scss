@@ -26,6 +26,8 @@
     .btn-nav {
       width: 28px;
       height: 28px;
+      padding: 0;
+      border: 0;
       border-radius: 6px;
       background: $bg-card;
       color: $text-secondary;
@@ -49,9 +51,9 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
   margin-bottom: 8px;
-  
+
   .dow {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: $text-muted;
     text-align: center;
@@ -66,8 +68,13 @@
 }
 
 .cal-day {
+  // A button: it opens that day in the calendar.
   width: 32px;
   height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,11 +88,17 @@
 
   &:hover { background: $bg-card; color: $text-primary; }
 
-  &.other-month { color: $text-muted; opacity: 0.4; }
+  // Dimmed, but still readable: at 40% opacity these numbers measured 1.4:1.
+  &.other-month { color: $text-muted; opacity: 0.7; }
+
+  &:focus-visible {
+    outline: 2px solid $teal-primary;
+    outline-offset: 1px;
+  }
 
   &.today {
     background: $teal-primary;
-    color: #0d0d0d;
+    color: $btn-quick-add-text;
     font-weight: 700;
     border-radius: 50%;
   }

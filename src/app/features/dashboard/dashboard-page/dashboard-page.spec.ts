@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DashboardPage } from './dashboard-page';
+import { TEST_PROVIDERS } from '../../../../testing/test-providers';
 
 describe('DashboardPage', () => {
   let component: DashboardPage;
@@ -8,7 +9,8 @@ describe('DashboardPage', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DashboardPage]
+      imports: [DashboardPage],
+      providers: TEST_PROVIDERS
     })
     .compileComponents();
 

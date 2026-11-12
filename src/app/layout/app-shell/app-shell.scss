@@ -18,8 +18,121 @@
   flex: 1;
   overflow-y: auto;
   padding: 28px 32px;
+  // Anchors absolutely-positioned children (the canvas pages' layers) to the
+  // content area instead of the viewport.
+  position: relative;
 }
 
-@media (max-width: 768px) {
+@include below($bp-tablet) {
   .page-content { padding: 16px; }
+}
+
+// The floating "Menu" button is shown below the laptop width (see sidebar.scss).
+// Leave room at the end of the page so the last content can be scrolled clear of it.
+@include below($bp-laptop) {
+  .page-content { padding-bottom: 84px; }
+}
+
+// ── Context notice ──────────────────────────────────────────────────────────
+// A small card in the bottom-right corner that says why the user was brought to
+// this page (see NoticeService). Above page content, below dialogs.
+.context-notice {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 880;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px 14px 14px 16px;
+  background: $bg-card;
+  border: 1px solid $border-input;
+  border-left: 4px solid $teal-primary;
+  border-radius: $radius-card;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  animation: notice-in 0.22s ease-out;
+
+  @include reduced-motion { animation: none; }
+}
+
+.notice-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: $teal-glow;
+  color: $teal-primary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+.notice-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notice-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: $text-secondary;
+}
+
+.notice-text {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: $text-primary;
+  overflow-wrap: anywhere;
+}
+
+.notice-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: $text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+  &:hover { background: $bg-card-hover; color: $text-primary; }
+}
+
+@keyframes notice-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// Clear of the floating "Menu" button on smaller screens.
+@include below($bp-laptop) {
+  .context-notice {
+    right: 16px;
+    bottom: 76px;
+  }
+}
+
+// The chat button and its bubbles live in the same corner (see chat-dock.scss):
+// the notice sits to their left.
+.context-notice.beside-chat {
+  right: 94px;
+
+  @include below($bp-laptop) {
+    right: 84px;
+    width: min(420px, calc(100vw - 100px));
+  }
 }

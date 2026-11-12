@@ -1,16 +1,19 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { finalize } from 'rxjs';
 import { FlipClock } from '../../flip-clock/flip-clock';
+import { passwordValidators, passwordsMatchValidator } from '../../core/validators/password.validators';
+import { apiErrorMessage } from '../../core/http/api-error';
 
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FlipClock],
-  templateUrl: './reset-password.html'
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FlipClock],
+  templateUrl: './reset-password.html',
+  styleUrl: './reset-password.scss'
 })
 export class ResetPasswordComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -21,8 +24,11 @@ export class ResetPasswordComponent implements OnInit {
   resetForm!: FormGroup;
   email = '';
   token = '';
-  isLoading = false;
-  errorMessage = '';
+  // Signals because the app runs zoneless: plain fields written from an async
+  // callback do not trigger change detection, so loading and error states
+  // never reached the screen.
+  isLoading = signal(false);
+  errorMessage = signal('');
   showPassword = false;
   showConfirmPassword = false;
 
@@ -40,13 +46,9 @@ export class ResetPasswordComponent implements OnInit {
     });
 
     this.resetForm = this.fb.group({
-      newPassword: ['', [
-        Validators.required,
-        Validators.minLength(8),
-        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
-      ]],
+      newPassword: ['', passwordValidators],
       confirmPassword: ['', [Validators.required]]
-    }, { validators: this.passwordMatchValidator });
+    }, { validators: passwordsMatchValidator('newPassword', 'confirmPassword') });
 
     this.resetForm.get('newPassword')?.valueChanges.subscribe(val => {
       this.updatePasswordStrength(val || '');
@@ -59,14 +61,9 @@ export class ResetPasswordComponent implements OnInit {
       upper: /[A-Z]/.test(password),
       lower: /[a-z]/.test(password),
       number: /\d/.test(password),
-      special: /[@$!%*?&]/.test(password)
+      special: /[^A-Za-z0-9]/.test(password)
     };
     this.strengthScore = Object.values(this.passwordStrength).filter(Boolean).length;
-  }
-
-  passwordMatchValidator(g: FormGroup) {
-    return g.get('newPassword')?.value === g.get('confirmPassword')?.value
-      ? null : { mismatch: true };
   }
 
   togglePassword(): void {
@@ -83,18 +80,18 @@ export class ResetPasswordComponent implements OnInit {
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
     const { newPassword, confirmPassword } = this.resetForm.value;
 
     this.authService.resetPassword({ email: this.email, token: this.token, newPassword, confirmPassword }).pipe(
-      finalize(() => this.isLoading = false)
+      finalize(() => this.isLoading.set(false))
     ).subscribe({
       next: () => {
-        this.router.navigate(['/authentication'], { queryParams: { form: 'login' } });
+        this.router.navigate(['/authentication'], { queryParams: { form: 'login', reset: '1' } });
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || err.message || 'Failed to reset password. Please try again.';
+        this.errorMessage.set(apiErrorMessage(err, 'Failed to reset password. Please try again.'));
       }
     });
   }

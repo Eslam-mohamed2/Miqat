@@ -1,19 +1,30 @@
 <div class="topnav">
   <div class="search-container">
-    <mat-icon class="search-icon">search</mat-icon>
-    <input type="text" placeholder="Search tasks, nodes, or events (Cmd+K)" />
+    <!-- The bare input here was decorative: it had no binding and no handler,
+         while its own placeholder advertised Cmd+K. -->
+    <app-global-search></app-global-search>
   </div>
   
   <div class="right-actions">
     <div class="quick-add-wrap">
       <button class="btn-quick-add" [class.active]="quickAddMenuOpen()" (click)="onQuickAdd()">+ Quick Add</button>
+      <!-- Wider screens: the button above adds a task; this opens the other choices. -->
+      <button type="button" class="btn-quick-add-more" (click)="toggleQuickAddMenu()"
+              aria-haspopup="menu" [attr.aria-expanded]="quickAddMenuOpen()" aria-label="More things to add">
+        <mat-icon>expand_more</mat-icon>
+      </button>
 
-      <div class="quick-add-menu" *ngIf="quickAddMenuOpen()">
-        <button type="button" class="quick-add-option" (click)="openTaskDialog()">
+      <div class="quick-add-menu" *ngIf="quickAddMenuOpen()" role="menu">
+        <button type="button" class="quick-add-option" role="menuitem" (click)="openTaskDialog()">
           <mat-icon>task_alt</mat-icon>
           <span>Task</span>
         </button>
-        <button type="button" class="quick-add-option" (click)="openProjectDialog()">
+        <button type="button" class="quick-add-option" role="menuitem" *ngIf="calendarData.eventsAvailable()"
+                (click)="openEventDialog()">
+          <mat-icon>event</mat-icon>
+          <span>Event</span>
+        </button>
+        <button type="button" class="quick-add-option" role="menuitem" (click)="openProjectDialog()">
           <mat-icon>folder_special</mat-icon>
           <span>Project</span>
         </button>

@@ -1,3 +1,16 @@
+@use '../../../../styles/tokens' as *;
+
+// The calendar lays itself out by the room it actually has, not by the window's
+// width: the app sidebar beside it can be collapsed, hidden or dragged up to 460px
+// wide, so two windows of the same size can leave the calendar very different
+// amounts of space. (With window-width rules, a 1024px screen with the sidebar open
+// squeezed the grid into 350px and cut the Day / Week / Month buttons off.)
+:host {
+  display: block;
+  height: 100%;
+  container: calendar / inline-size;
+}
+
 .calendar-layout {
   display: flex;
   height: 100%;
@@ -5,12 +18,6 @@
   overflow: hidden;
   background-color: var(--surface);
   color: var(--text-primary);
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    overflow-y: auto;
-    height: auto;
-  }
 }
 
 .calendar-main-column {
@@ -19,11 +26,8 @@
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    flex: none;
-  }
+  // The grid's own rules (stacked header, dots instead of chips) key off this.
+  container: calendar-main / inline-size;
 }
 
 .calendar-sidebar-column {
@@ -33,8 +37,23 @@
   flex-direction: column;
   background-color: var(--surface);
   border-left: 1px solid var(--border);
+}
 
-  @media (max-width: 1024px) {
+// Not enough room for the grid and the sidebar side by side: the sidebar moves
+// underneath and the page scrolls.
+@container calendar (max-width: 900px) {
+  .calendar-layout {
+    flex-direction: column;
+    overflow-y: auto;
+    height: auto;
+  }
+
+  .calendar-main-column {
+    border-right: none;
+    flex: none;
+  }
+
+  .calendar-sidebar-column {
     width: 100%;
     border-left: none;
     border-top: 1px solid var(--border);

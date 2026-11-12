@@ -24,8 +24,21 @@
     <div class="skeleton" *ngFor="let i of [1,2,3]"></div>
   </div>
 
+  <!-- Error State -->
+  <div class="empty-state" *ngIf="!loading() && errorMessage()">
+    <div class="empty-icon-wrap">
+      <mat-icon>cloud_off</mat-icon>
+    </div>
+    <p class="empty-title">Couldn't load notifications</p>
+    <p class="empty-sub">{{ errorMessage() }}</p>
+    <button class="btn-text" (click)="loadNotifications()">
+      <mat-icon>refresh</mat-icon>
+      Try again
+    </button>
+  </div>
+
   <!-- Empty State -->
-  <div class="empty-state" *ngIf="!loading() && visibleNotifications().length === 0">
+  <div class="empty-state" *ngIf="!loading() && !errorMessage() && visibleNotifications().length === 0">
     <div class="empty-icon-wrap">
       <mat-icon>notifications_off</mat-icon>
     </div>
@@ -51,7 +64,8 @@
       </div>
 
       <!-- Content -->
-      <div class="notif-content" (click)="markAsRead(n.id)">
+      <div class="notif-content" (click)="open(n)" (keydown.enter)="open(n)" tabindex="0" role="link"
+           [attr.aria-label]="(n.message || n.title) + '. Open'">
         <div class="notif-top">
           <span class="notif-title">{{ n.title }}</span>
           <span class="notif-time">{{ formatTime(n.createdAt) }}</span>
@@ -76,7 +90,7 @@
 
   <!-- Footer -->
   <div class="panel-footer" *ngIf="!loading()">
-    <button class="btn-view-all">
+    <button type="button" class="btn-view-all" (click)="viewAll()">
       <mat-icon>open_in_new</mat-icon>
       View all activity
     </button>

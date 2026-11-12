@@ -1,0 +1,34 @@
+<h3 class="item-title">
+  <mat-icon>attach_file</mat-icon> Files
+  <span class="count" *ngIf="list().length">{{ list().length }}</span>
+</h3>
+
+<div role="list" class="file-list" *ngIf="list().length">
+  <div role="listitem" class="file-row" *ngFor="let file of list(); trackBy: trackById" [class.busy]="busyId() === file.id">
+    <button type="button" class="file-open" (click)="download(file)" [disabled]="busyId() !== null"
+            [title]="'Download ' + file.fileName">
+      <mat-icon class="file-icon">{{ icon(file) }}</mat-icon>
+      <span class="file-text">
+        <strong>{{ file.fileName }}</strong>
+        <small>{{ details(file) }}</small>
+      </span>
+      <mat-icon class="file-get">download</mat-icon>
+    </button>
+    <button type="button" class="row-remove" *ngIf="canRemove(file)" (click)="remove(file)"
+            [disabled]="busyId() !== null" [attr.aria-label]="'Remove ' + file.fileName">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+</div>
+
+<p class="item-empty" *ngIf="!loading() && !list().length">No files attached yet.</p>
+
+<label class="attach-btn" *ngIf="!loading()" [class.disabled]="uploading()">
+  <input type="file" (change)="upload($event)" [disabled]="uploading()" />
+  <span class="spinner" *ngIf="uploading()"></span>
+  <mat-icon *ngIf="!uploading()">upload_file</mat-icon>
+  {{ uploading() ? 'Attaching…' : 'Attach a file' }}
+</label>
+<p class="item-note" *ngIf="!loading()">Documents, images or a zip, up to 10 MB each.</p>
+
+<p class="item-error" *ngIf="error()" role="alert">{{ error() }}</p>

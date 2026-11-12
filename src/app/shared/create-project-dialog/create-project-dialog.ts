@@ -2,18 +2,18 @@ import {
   Component, ChangeDetectionStrategy, inject, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { GroupService } from '../../core/services/group.service';
-import { UserService } from '../../core/services/user.service';
+import { FriendService } from '../../core/services/friend.service';
+import { AuthService } from '../../core/services/auth.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-create-project-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatIconModule],
   templateUrl: './create-project-dialog.html',
   styleUrl: './create-project-dialog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -21,7 +21,8 @@ import { catchError } from 'rxjs/operators';
 export class CreateProjectDialog {
   private dialogRef = inject(MatDialogRef<CreateProjectDialog>);
   private groupService = inject(GroupService);
-  private userService = inject(UserService);
+  private friendService = inject(FriendService);
+  private authService = inject(AuthService);
 
   name = signal('');
   description = signal('');
@@ -29,7 +30,7 @@ export class CreateProjectDialog {
   loading = signal(false);
   error = signal('');
   
-  users = signal<any[]>([]);
+  users = signal<{ id: string; name: string }[]>([]);
   selectedUserIds = signal<string[]>([]);
 
   colorSwatches = [
@@ -39,9 +40,11 @@ export class CreateProjectDialog {
   ];
 
   constructor() {
-    this.userService.getAllUsers().subscribe({
-      next: (data) => this.users.set(data),
-      error: () => console.error('Failed to load users')
+    // Friends, not every user: GET /api/User is [Authorize(Roles = "Admin")] and
+    // returned 403 here, which is why the invite list always said "No users found".
+    this.friendService.getFriendUsers(this.authService.getCurrentUserId()).subscribe({
+      next: people => this.users.set(people),
+      error: () => this.users.set([])
     });
   }
 
@@ -51,6 +54,12 @@ export class CreateProjectDialog {
 
   isValid(): boolean {
     return this.name().trim().length >= 2;
+  }
+
+  initials(name: string): string {
+    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase();
   }
 
   toggleUser(userId: string) {

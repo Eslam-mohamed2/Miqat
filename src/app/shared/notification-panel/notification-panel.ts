@@ -4,17 +4,24 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 import { NotificationService } from '../../core/services/notification.service';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
+import { NotificationDto } from '../../models/api.models';
+import { apiErrorMessage } from '../../core/http/api-error';
+import { notificationTarget } from '../../core/utils/notification-target';
 
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  type?: string; // 'task' | 'mention' | 'system' | 'reminder'
-}
+/** Icon and colour per family of notification type the API sends. */
+const TYPE_LOOKS: { test: (type: string) => boolean; icon: string; color: string }[] = [
+  { test: type => type === 'Reminder' || type === 'TaskDueSoon', icon: 'alarm',           color: '#f4845f' },
+  { test: type => type === 'EventCancelled',                     icon: 'event_busy',      color: '#ef4444' },
+  { test: type => type.startsWith('Event'),                      icon: 'event',           color: '#7c8ef5' },
+  { test: type => type.includes('Mention'),                      icon: 'alternate_email', color: '#f4a835' },
+  { test: type => type.startsWith('Task'),                       icon: 'task_alt',        color: '#2ec4a0' },
+  { test: type => type.startsWith('Group'),                      icon: 'group_add',       color: '#7c8ef5' },
+  { test: type => type.startsWith('Friend'),                     icon: 'person_add',      color: '#7c8ef5' }
+];
+const DEFAULT_LOOK = { icon: 'notifications', color: '#888888' };
 
 @Component({
   selector: 'app-notification-panel',
@@ -64,9 +71,11 @@ export class NotificationPanel implements OnChanges {
   @Output() closed = new EventEmitter<void>();
 
   private notificationService = inject(NotificationService);
+  private router = inject(Router);
 
-  notifications = signal<Notification[]>([]);
+  notifications = signal<NotificationDto[]>([]);
   loading = signal(true);
+  errorMessage = signal('');
   dismissedIds = signal<Set<string>>(new Set());
 
   visibleNotifications = computed(() => {
@@ -84,13 +93,17 @@ export class NotificationPanel implements OnChanges {
 
   loadNotifications() {
     this.loading.set(true);
+    this.errorMessage.set('');
     this.notificationService.getNotifications().subscribe({
-      next: (data: any[]) => {
-        this.notifications.set(data ?? []);
+      next: (data) => {
+        this.notifications.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        this.notifications.set(this.getMockNotifications());
+      error: (err) => {
+        // Previously this substituted invented notifications, which made an outage
+        // look like a working feed. Surface the failure instead.
+        this.notifications.set([]);
+        this.errorMessage.set(apiErrorMessage(err, 'Could not load notifications.'));
         this.loading.set(false);
       }
     });
@@ -117,34 +130,40 @@ export class NotificationPanel implements OnChanges {
     this.closed.emit();
   }
 
+  /**
+   * Marks the notification read and opens what it is about - the same place the
+   * notifications page takes it. One that names nothing opens that page instead.
+   */
+  open(n: NotificationDto) {
+    if (!n.isRead) this.markAsRead(n.id);
+    const target = notificationTarget(n);
+    this.close();
+    if (target) this.router.navigate(target.commands, target.queryParams ? { queryParams: target.queryParams } : {});
+    else this.router.navigate(['/notifications']);
+  }
+
+  viewAll() {
+    this.close();
+    this.router.navigate(['/notifications']);
+  }
+
+  // The three helpers below used to be keyed by 'task' / 'mention' / 'system',
+  // names the API never sends, so every row got the same grey bell.
+  private look(type?: string) {
+    return TYPE_LOOKS.find(entry => entry.test(type ?? '')) ?? DEFAULT_LOOK;
+  }
+
   getTypeIcon(type?: string): string {
-    const icons: Record<string, string> = {
-      task: 'task_alt',
-      mention: 'alternate_email',
-      system: 'info',
-      reminder: 'alarm',
-    };
-    return icons[type ?? 'system'] ?? 'notifications';
+    return this.look(type).icon;
   }
 
   getTypeColor(type?: string): string {
-    const colors: Record<string, string> = {
-      task: '#2ec4a0',
-      mention: '#7c8ef5',
-      system: '#f4a835',
-      reminder: '#f4845f',
-    };
-    return colors[type ?? 'system'] ?? '#888';
+    return this.look(type).color;
   }
 
+  /** The type's colour at 12%, behind its icon. */
   getTypeBg(type?: string): string {
-    const bgs: Record<string, string> = {
-      task: 'rgba(46,196,160,0.12)',
-      mention: 'rgba(124,142,245,0.12)',
-      system: 'rgba(244,168,53,0.12)',
-      reminder: 'rgba(244,132,95,0.12)',
-    };
-    return bgs[type ?? 'system'] ?? 'rgba(136,136,136,0.12)';
+    return `color-mix(in srgb, ${this.look(type).color} 12%, transparent)`;
   }
 
   formatTime(dateStr: string): string {
@@ -157,15 +176,5 @@ export class NotificationPanel implements OnChanges {
     const diffHr = Math.floor(diffMin / 60);
     if (diffHr < 24) return `${diffHr}h ago`;
     return `${Math.floor(diffHr / 24)}d ago`;
-  }
-
-  private getMockNotifications(): Notification[] {
-    return [
-      { id: '1', title: 'Task assigned to you', message: 'Design Sprint planning assigned by Ahmed', isRead: false, createdAt: new Date(Date.now() - 5 * 60000).toISOString(), type: 'task' },
-      { id: '2', title: 'You were mentioned', message: '@you in "Website Redesign" discussion', isRead: false, createdAt: new Date(Date.now() - 30 * 60000).toISOString(), type: 'mention' },
-      { id: '3', title: 'Reminder', message: 'Sprint review starts in 1 hour', isRead: false, createdAt: new Date(Date.now() - 60 * 60000).toISOString(), type: 'reminder' },
-      { id: '4', title: 'Project update', message: 'Mobile App v2 moved to In Progress', isRead: true, createdAt: new Date(Date.now() - 3 * 3600000).toISOString(), type: 'system' },
-      { id: '5', title: 'New comment', message: 'Sara commented on your task', isRead: true, createdAt: new Date(Date.now() - 5 * 3600000).toISOString(), type: 'mention' },
-    ];
   }
 }

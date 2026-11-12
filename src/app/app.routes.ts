@@ -44,8 +44,15 @@ export const routes: Routes = [
     redirectTo: 'home',
     pathMatch: 'full'
   },
-  { 
-    path: 'main', 
+  {
+    // The task list / board used to be linked as /kanban. Old links and bookmarks
+    // land on the page that replaced it instead of on "page not found".
+    path: 'kanban',
+    redirectTo: 'tasks',
+    pathMatch: 'full'
+  },
+  {
+    path: 'main',
     component: Main,
     canActivate: [authGuard]
   },
@@ -57,6 +64,19 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard-page/dashboard-page').then(m => m.DashboardPage)
+      },
+      {
+        path: 'tasks',
+        loadComponent: () => import('./features/tasks/tasks-page').then(m => m.TasksPage)
+      },
+      {
+        path: 'tasks/:id',
+        loadComponent: () =>
+          import('./features/tasks/task-detail/task-detail-page').then(m => m.TaskDetailPage)
+      },
+      {
+        path: 'projects/:id',
+        loadComponent: () => import('./features/projects/project-page').then(m => m.ProjectPage)
       },
       {
         path: 'calendar',
@@ -79,8 +99,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/mentions/mentions-page').then(m => m.MentionsPage)
       },
       {
+        path: 'help',
+        loadComponent: () => import('./features/help/help-page').then(m => m.HelpPage)
+      },
+      {
         path: 'profile/:id',
         loadComponent: () => import('./features/profile/profile-page').then(m => m.ProfilePage)
+      },
+      {
+        // The bare route is the board. `/new` and `/:id` stay so existing links
+        // and bookmarks keep working.
+        path: 'whiteboard',
+        loadComponent: () => import('./features/whiteboard/whiteboard-page').then(m => m.WhiteboardPage)
       },
       {
         path: 'whiteboard/new',
@@ -91,6 +121,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/whiteboard/whiteboard-page').then(m => m.WhiteboardPage)
       },
       {
+        path: 'node-flow',
+        loadComponent: () => import('./features/node-flow/node-flow-page').then(m => m.NodeFlowPage)
+      },
+      {
         path: 'node-flow/new',
         loadComponent: () => import('./features/node-flow/node-flow-page').then(m => m.NodeFlowPage)
       },
@@ -99,5 +133,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/node-flow/node-flow-page').then(m => m.NodeFlowPage)
       }
     ]
+  },
+  {
+    // Must stay last. Without it the router throws on any unmatched URL.
+    path: '**',
+    loadComponent: () => import('./shared/not-found/not-found').then(m => m.NotFound)
   }
 ];

@@ -1,16 +1,29 @@
-<div class="quick-card" (click)="cardClick.emit(card)">
-  <mat-icon class="arrow-icon">north_east</mat-icon>
-  
+<!-- A real <button>, so Enter/Space work and the card is reachable by keyboard. -->
+<button type="button" class="quick-card" (click)="cardClick.emit(card)"
+        [attr.aria-label]="card.title + ' — ' + card.description">
+
+  <!-- Inline SVG rather than a Material ligature: an <mat-icon>north_east</mat-icon>
+       renders the literal text "north_east" until the icon font finishes loading,
+       which is the flicker in the top-right corner of every card. -->
+  <svg class="arrow-icon" viewBox="0 0 24 24" width="16" height="16"
+       fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M7 17 17 7" />
+    <path d="M8 7h9v9" />
+  </svg>
+
   <div class="icon-container" [ngStyle]="{'background': card.iconBg}">
     <mat-icon [ngStyle]="{'color': card.iconColor}">{{ card.icon }}</mat-icon>
   </div>
-  
+
   <h3 class="title">{{ card.title }}</h3>
   <p class="description">{{ card.description }}</p>
-  
-  <div *ngIf="card.hasDecoration" class="decoration-blob">
+
+  <!-- Tinted from the card's own icon token. The fill was a literal #1a2a1a,
+       which sat in the corner as a near-black blob on the light theme. -->
+  <div *ngIf="card.hasDecoration" class="decoration-blob" aria-hidden="true">
     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M40 40H0C0 17.9086 17.9086 0 40 0V40Z" fill="#1a2a1a"/>
+      <path d="M40 40H0C0 17.9086 17.9086 0 40 0V40Z" [style.fill]="card.iconBg"/>
     </svg>
   </div>
-</div>
+</button>

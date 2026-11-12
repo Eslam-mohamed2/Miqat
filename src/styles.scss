@@ -38,11 +38,24 @@ body {
 
 a {
   text-decoration: none !important;
+}
+
+// The marketing site's teal for links and buttons. It is limited to the pages outside
+// the app shell: forced with !important inside the app it overrode every component's
+// own colours (dark teal links on the dark theme, teal text on teal buttons).
+//
+// The :where() inside :not() adds no specificity, so these weigh exactly what the
+// plain `a` and `.btn` rules they replace did. Helpers such as .c-light and
+// .text-white must keep winning over them, or labels turn teal on a teal button.
+a:not(:where(app-app-shell *, .cdk-overlay-container *)),
+.btn:not(:where(app-app-shell *, .cdk-overlay-container *)) {
   color: var(--color-primary) !important;
 }
 
-.btn {
-  color: var(--color-primary) !important;
+// Default link colour inside the app. :where() keeps the specificity at zero so any
+// component rule wins over it.
+:where(app-app-shell, .cdk-overlay-container) a {
+  color: var(--text-link);
 }
 
 ul {
@@ -262,25 +275,19 @@ h4 { font-size: 1rem; }
 }
 
 // ========== Responsive: prevent horizontal overflow ==========
-@media (max-width: 1024px) {
+@include below($bp-laptop) {
   body, html {
+    // "clip" cuts off stray overflow like "hidden" does, but without turning <body>
+    // into the page's scroll container (hidden + height:100% did that, so the document
+    // itself never scrolled on phones and tablets). "hidden" stays as the fallback for
+    // browsers without clip support.
     overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100%;
   }
 }
 
-@media (max-width: 768px) {
-  body, html {
-    overflow-x: hidden;
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 576px) {
-  body, html {
-    overflow-x: hidden;
-    max-width: 100%;
-  }
+@include below($bp-phone-lg) {
   .w-30 {
     width: 30% !important;
   }
@@ -336,7 +343,174 @@ html, body {
 }
 
 /* Material dialog override for TaskWindow dialog panel */
-.cdk-overlay-pane.custom-dialog-container .mat-mdc-dialog-surface {
-  border-radius: 20px !important;
-  overflow: hidden;
+.cdk-overlay-pane.custom-dialog-container {
+  /* Callers pass width: '600px'. On a narrow viewport that panel is wider than
+     the screen, and the gutter below keeps it off both edges rather than letting
+     it run under them. */
+  width: min(600px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100dvh - 32px);
+
+  .mat-mdc-dialog-surface {
+    border-radius: 20px !important;
+    overflow: hidden;
+    /* The surface must not exceed the panel or the dialog's own scroll area
+       never engages and the footer buttons end up off-screen. */
+    max-height: inherit;
+  }
+}
+
+@supports not (max-height: 100dvh) {
+  .cdk-overlay-pane.custom-dialog-container { max-height: calc(100vh - 32px); }
+}
+
+/* ── Primary action button used across the auth flow ─────────────────────────
+   Global on purpose. This was defined only inside authentication.scss (scoped),
+   so on verify-otp, forgot-password and reset-password — components without
+   that stylesheet — `bg-image` resolved to nothing and `text-white` sat on the
+   white card: the Submit button was clickable but invisible. */
+.bg-image {
+  background-image: url('./assets/stacked-waves-haikei.png') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  border: 1px solid #2e6670 !important;
+  // The image is dark teal, so the label is always white - also inside the app's
+  // dialogs, where buttons otherwise take the theme's text colour.
+  color: #fff !important;
+}
+
+// ── Bootstrap inside the app follows the app theme ──────────────────────────────
+// Bootstrap's colours are fixed light-theme values, so its helpers and form controls
+// (.text-muted, .form-label, .form-control, .form-select, placeholders ...) came out
+// dark-on-dark in dark mode. Inside the app shell and its dialogs they read the theme
+// tokens instead. The marketing and sign-in pages are light by design and unaffected.
+app-app-shell,
+.cdk-overlay-container {
+  color: var(--text-primary);
+  --bs-body-color: var(--text-primary);
+  --bs-body-bg: var(--bg-input);
+  --bs-secondary-color: var(--text-secondary);
+  --bs-tertiary-color: var(--text-muted);
+  --bs-secondary-bg: var(--bg-card-hover);
+  --bs-tertiary-bg: var(--bg-card-hover);
+  --bs-border-color: var(--border-input);
+  --bs-heading-color: var(--text-primary);
+  --bs-emphasis-color: var(--text-primary);
+}
+
+body.dark-mode app-app-shell,
+body.dark-mode .cdk-overlay-container {
+  // Native widgets (date-picker icon, select popup, scrollbars) render dark.
+  color-scheme: dark;
+
+  .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+  }
+
+  // Bootstrap's dropdown arrow is dark grey; this is its own dark-theme arrow.
+  .form-select {
+    --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  }
+}
+
+// ── Touch screens ────────────────────────────────────────────────────────────────
+// A finger needs a bigger target than a mouse pointer. On touch devices the small
+// icon-sized controls keep their look but get a larger invisible hit area (a centred
+// ::after), and a few text links and inputs get more height.
+@media (pointer: coarse) {
+  .btn-nav,
+  .btn-add,
+  .view-all,
+  .icon-btn,
+  .header-btn,
+  .card-btn,
+  .close-btn,
+  .action-btn,
+  .color-btn,
+  .btn-close,
+  .edit-btn,
+  .link-btn,
+  .event-capsule,
+  .close-icon,
+  .note-close,
+  .day-circle,
+  .day-number,
+  .cal-day,
+  .password-toggle,
+  .position-relative > .fa-solid.position-absolute {
+    // The ::after is positioned against the control itself. (Controls that are already
+    // absolutely positioned keep that: their own rules are more specific.)
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 40px);
+      height: max(100%, 40px);
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  // Controls packed tightly together (calendar days, delete buttons beside a text
+  // field): a smaller area, so a tap meant for one does not land on its neighbour.
+  .day-circle::after,
+  .day-number::after,
+  .cal-day::after,
+  .close-icon::after,
+  .note-close::after {
+    width: max(100%, 32px);
+    height: max(100%, 32px);
+  }
+
+  // Search fields: the visible box is 40px tall but the <input> inside was 22px.
+  .header-search input,
+  .search-bar input {
+    min-height: 36px;
+  }
+
+  // Plain text links stacked in lists.
+  footer a,
+  .auth-container a:not(.btn) {
+    display: inline-block;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .view-btn {
+    min-height: 40px;
+  }
+
+  // Column headers that sort, inline status pickers, the Table / Board switch and
+  // the project's member summary: taller rows for a finger.
+  .task-table th button,
+  .status-select,
+  .view-switch button,
+  .members-meta {
+    min-height: 36px;
+  }
+
+  // Breadcrumbs and "Created by" links are single words in a line of text.
+  .crumbs a,
+  .head-text .sub a {
+    display: inline-block;
+    padding: 8px 0;
+  }
+}
+
+// ── Colour-coded labels (status, priority, project) ─────────────────────────────
+// A label's colour comes from data: a status, a priority, or a colour the user chose
+// for a project. Templates pass it as the --tone custom property; the text colour is
+// then derived from it per theme (see --tone-text-mix in _tokens.scss), so an amber
+// "Pending" is amber on the dark theme and a readable dark amber on the light one.
+.tone-text {
+  color: var(--tone);
+  color: color-mix(in srgb, var(--tone) var(--tone-text-mix, 100%), #000);
+}
+
+.tone-tint {
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
 }
