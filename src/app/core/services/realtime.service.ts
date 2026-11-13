@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import {
   HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel
@@ -153,11 +153,27 @@ export interface ChatTypingEvent { conversationId: string; userId: string; }
 export interface PresenceEvent { userId: string; isOnline: boolean; }
 
 /**
+ * How long to wait before trying to connect again, by the number of tries that
+ * failed in a row. The last one repeats: the app never stops trying while
+ * someone is signed in.
+ */
+export const RETRY_DELAYS_MS = [0, 2000, 5000, 10_000, 20_000, 30_000];
+/** A drop that lasts this long is told to the app as "lost" (a group call is then left). Trying goes on. */
+export const LOST_AFTER_MS = 45_000;
+
+/**
  * The app's live channel to the server.
  *
  * One connection per session, joined server-side to a per-user group, so every
  * open tab hears about notifications, task changes and new comments the moment
  * they happen instead of on the next poll or reload.
+ *
+ * It keeps itself alive. A start that fails and a connection that drops are
+ * tried again, with longer waits between tries, for as long as someone is
+ * signed in; coming back to the tab or getting the network back tries at once.
+ * The access token it presents is renewed first when it has run out, through
+ * the same single renewal the HTTP requests use. While it is down the server
+ * counts this person as offline, so staying down is not an option.
  */
 @Injectable({
   providedIn: 'root'
@@ -199,66 +215,175 @@ export class RealtimeService {
   readonly groupCallSignal$ = new Subject<GroupCallSignalEvent>();
   /** The connection came back after a drop: whatever was pushed meanwhile was missed. */
   readonly reconnected$ = new Subject<void>();
-  /** The connection is gone and is not coming back by itself. */
+  /**
+   * The connection has been away for a while (LOST_AFTER_MS). It is still being
+   * tried; what cannot wait for it (a group call) ends now.
+   */
   readonly closed$ = new Subject<void>();
+
+  /** True while the connection is up. Lists that it keeps current fall back to asking the server while it is not. */
+  readonly connected = signal(false);
+  /** The connection is up: for the first time, or again after a drop. */
+  readonly connected$ = new Subject<void>();
+
+  /** Between connect() and disconnect(): someone is signed in and the connection is wanted. */
+  private wanted = false;
+  /** A start is on its way. */
+  private starting = false;
+  /** Tries that failed in a row. */
+  private failures = 0;
+  private everConnected = false;
+  private retryTimer?: ReturnType<typeof setTimeout>;
+  private lostTimer?: ReturnType<typeof setTimeout>;
+  private readonly wake = () => this.wakeUp();
+  private readonly wakeIfVisible = () => { if (document.visibilityState === 'visible') this.wakeUp(); };
 
   /** Idempotent — the shell calls this on every entry to the signed-in layout. */
   async connect(): Promise<void> {
-    if (this.connection && this.connection.state !== HubConnectionState.Disconnected) return;
-    if (!this.authService.isLoggedIn()) return;
+    if (this.wanted) {
+      this.wakeUp();
+      return;
+    }
+    // An access token that has run out is fine as long as it can be renewed:
+    // the connection asks for a fresh one before it presents it.
+    if (!this.authService.hasSession()) return;
 
-    this.connection = new HubConnectionBuilder()
+    this.wanted = true;
+    this.failures = 0;
+    this.everConnected = false;
+    this.connection = this.build();
+    this.listenForWakeUps(true);
+    await this.start();
+  }
+
+  /** The connection itself, not started. Its own method so a test can hand in a stand-in. */
+  protected createConnection(): HubConnection {
+    return new HubConnectionBuilder()
       // Same-origin in dev (the proxy forwards /hubs with ws upgrade); the
       // deployed build carries the API origin in environment.apiUrl.
       .withUrl(`${environment.apiUrl}/hubs/miqat`, {
-        // Read at (re)connect time, so a refreshed JWT is picked up without
-        // tearing the connection down.
-        accessTokenFactory: () => this.authService.getToken() ?? ''
+        // Asked for at every (re)connect, and again when the server refuses the
+        // one in use: a token that has run out is renewed first. A failed
+        // renewal fails this try; the next one asks again.
+        accessTokenFactory: async () => (await this.authService.freshToken()) ?? ''
       })
-      .withAutomaticReconnect([0, 2000, 10_000, 30_000])
+      // No withAutomaticReconnect: it gives up after its last delay. The loop
+      // below does the same job without an end (see start() and retryLater()).
       .configureLogging(LogLevel.Warning)
       .build();
+  }
 
-    this.connection.on('notification', (payload: RealtimeNotification) =>
+  /** Makes the connection and wires its events. */
+  private build(): HubConnection {
+    const connection = this.createConnection();
+
+    connection.on('notification', (payload: RealtimeNotification) =>
       this.notification$.next(payload ?? {}));
-    this.connection.on('taskChanged', (payload: TaskChangedEvent) =>
+    connection.on('taskChanged', (payload: TaskChangedEvent) =>
       this.taskChanged$.next(payload));
-    this.connection.on('commentAdded', (payload: { taskId: string }) =>
+    connection.on('commentAdded', (payload: { taskId: string }) =>
       this.commentAdded$.next(payload));
-    this.connection.on('projectCommentChanged', (payload: ProjectCommentEvent) =>
+    connection.on('projectCommentChanged', (payload: ProjectCommentEvent) =>
       this.projectCommentChanged$.next(payload));
-    this.connection.on('eventChanged', (payload: EventChangedEvent) =>
+    connection.on('eventChanged', (payload: EventChangedEvent) =>
       this.eventChanged$.next(payload ?? {}));
 
-    this.connection.on('chatMessage', (payload: ChatMessageEvent) => this.chatMessage$.next(payload));
-    this.connection.on('chatMessageChanged', (payload: ChatMessageEvent) => this.chatMessageChanged$.next(payload));
-    this.connection.on('chatRead', (payload: ChatReadEvent) => this.chatRead$.next(payload));
-    this.connection.on('chatTyping', (payload: ChatTypingEvent) => this.chatTyping$.next(payload));
-    this.connection.on('presenceChanged', (payload: PresenceEvent) => this.presenceChanged$.next(payload));
-    this.connection.on('callIncoming', (payload: CallIncomingEvent) => this.callIncoming$.next(payload));
-    this.connection.on('callAccepted', (payload: { callId: string }) => this.callAccepted$.next(payload));
-    this.connection.on('callSignal', (payload: CallSignalEvent) => this.callSignal$.next(payload));
-    this.connection.on('callEnded', (payload: CallEndedEvent) => this.callEnded$.next(payload));
-    this.connection.on('chatGroupChanged', (payload: ChatGroupEvent) => this.chatGroupChanged$.next(payload));
-    this.connection.on('chatGroupRemoved', (payload: { conversationId: string }) => this.chatGroupRemoved$.next(payload));
-    this.connection.on('groupCallStarted', (payload: GroupCall) => this.groupCallStarted$.next(payload));
-    this.connection.on('groupCallIncoming', (payload: GroupCallIncomingEvent) => this.groupCallIncoming$.next(payload));
-    this.connection.on('groupCallJoined', (payload: GroupCallMemberEvent) => this.groupCallJoined$.next(payload));
-    this.connection.on('groupCallLeft', (payload: GroupCallMemberEvent) => this.groupCallLeft$.next(payload));
-    this.connection.on('groupCallEnded', (payload: GroupCallRef) => this.groupCallEnded$.next(payload));
-    this.connection.on('groupCallDismissed', (payload: GroupCallRef) => this.groupCallDismissed$.next(payload));
-    this.connection.on('groupCallSignal', (payload: GroupCallSignalEvent) => this.groupCallSignal$.next(payload));
-    this.connection.onreconnected(() => this.reconnected$.next());
-    // Not when the app itself hangs up (sign-out).
-    const connection = this.connection;
-    connection.onclose(() => { if (this.connection === connection) this.closed$.next(); });
+    connection.on('chatMessage', (payload: ChatMessageEvent) => this.chatMessage$.next(payload));
+    connection.on('chatMessageChanged', (payload: ChatMessageEvent) => this.chatMessageChanged$.next(payload));
+    connection.on('chatRead', (payload: ChatReadEvent) => this.chatRead$.next(payload));
+    connection.on('chatTyping', (payload: ChatTypingEvent) => this.chatTyping$.next(payload));
+    connection.on('presenceChanged', (payload: PresenceEvent) => this.presenceChanged$.next(payload));
+    connection.on('callIncoming', (payload: CallIncomingEvent) => this.callIncoming$.next(payload));
+    connection.on('callAccepted', (payload: { callId: string }) => this.callAccepted$.next(payload));
+    connection.on('callSignal', (payload: CallSignalEvent) => this.callSignal$.next(payload));
+    connection.on('callEnded', (payload: CallEndedEvent) => this.callEnded$.next(payload));
+    connection.on('chatGroupChanged', (payload: ChatGroupEvent) => this.chatGroupChanged$.next(payload));
+    connection.on('chatGroupRemoved', (payload: { conversationId: string }) => this.chatGroupRemoved$.next(payload));
+    connection.on('groupCallStarted', (payload: GroupCall) => this.groupCallStarted$.next(payload));
+    connection.on('groupCallIncoming', (payload: GroupCallIncomingEvent) => this.groupCallIncoming$.next(payload));
+    connection.on('groupCallJoined', (payload: GroupCallMemberEvent) => this.groupCallJoined$.next(payload));
+    connection.on('groupCallLeft', (payload: GroupCallMemberEvent) => this.groupCallLeft$.next(payload));
+    connection.on('groupCallEnded', (payload: GroupCallRef) => this.groupCallEnded$.next(payload));
+    connection.on('groupCallDismissed', (payload: GroupCallRef) => this.groupCallDismissed$.next(payload));
+    connection.on('groupCallSignal', (payload: GroupCallSignalEvent) => this.groupCallSignal$.next(payload));
 
+    // The connection dropped. Not when the app itself hangs up (sign-out).
+    connection.onclose(() => {
+      if (this.connection !== connection) return;
+
+      this.connected.set(false);
+      // Told as lost only when it stays away; a short gap is bridged silently.
+      clearTimeout(this.lostTimer);
+      this.lostTimer = setTimeout(() => this.closed$.next(), LOST_AFTER_MS);
+      this.retryLater();
+    });
+
+    return connection;
+  }
+
+  /** One try. A failure books the next one; nothing is thrown. */
+  private async start(): Promise<void> {
+    const connection = this.connection;
+    if (!connection || !this.wanted || this.starting || connection.state !== HubConnectionState.Disconnected) return;
+
+    clearTimeout(this.retryTimer);
+    this.retryTimer = undefined;
+    this.starting = true;
     try {
-      await this.connection.start();
+      await connection.start();
     } catch {
-      // Best-effort: the app is fully usable without the live channel — polling
-      // and manual refresh still work. Reconnect handles later recovery.
+      // The app is fully usable without the live channel (lists ask the server
+      // instead), and the next try is booked here.
+      this.starting = false;
+      if (this.connection === connection && this.wanted) {
+        this.failures++;
+        this.retryLater();
+      }
+      return;
     }
+    this.starting = false;
+    // Signed out while it was connecting: disconnect() has stopped it.
+    if (this.connection !== connection) return;
+
+    this.failures = 0;
+    clearTimeout(this.lostTimer);
+    const again = this.everConnected;
+    this.everConnected = true;
+    this.connected.set(true);
+    this.connected$.next();
+    if (again) this.reconnected$.next();
+  }
+
+  private retryLater(): void {
+    if (!this.wanted || this.retryTimer !== undefined) return;
+
+    const delay = RETRY_DELAYS_MS[Math.min(this.failures, RETRY_DELAYS_MS.length - 1)];
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = undefined;
+      this.start();
+    }, delay);
+  }
+
+  /**
+   * The tab is looked at again, or the network is back: if the connection is
+   * down, try now instead of sitting out the rest of a wait.
+   */
+  private wakeUp(): void {
+    if (!this.wanted || this.starting || this.connection?.state !== HubConnectionState.Disconnected) return;
+
+    this.failures = 0;
+    this.start();
+  }
+
+  private listenForWakeUps(on: boolean): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const change = on ? 'addEventListener' : 'removeEventListener';
+    window[change]('online', this.wake);
+    window[change]('focus', this.wake);
+    // A page brought back from the browser's back/forward cache has lost its connection.
+    window[change]('pageshow', this.wake);
+    document[change]('visibilitychange', this.wakeIfVisible);
   }
 
   /**
@@ -296,6 +421,14 @@ export class RealtimeService {
   async disconnect(): Promise<void> {
     const connection = this.connection;
     this.connection = null;
+    this.wanted = false;
+    this.starting = false;
+    this.failures = 0;
+    clearTimeout(this.retryTimer);
+    this.retryTimer = undefined;
+    clearTimeout(this.lostTimer);
+    this.listenForWakeUps(false);
+    this.connected.set(false);
     if (connection) {
       try {
         await connection.stop();

@@ -25,15 +25,15 @@ export const AR_PUBLIC: Dictionary = {
   'The privacy policy is not published yet': 'لم تُنشر سياسة الخصوصية بعد',
   'The terms are not published yet': 'لم تُنشر الشروط بعد',
   'There is no status page yet': 'لا توجد صفحة لحالة الخدمة بعد',
-  '© {year} Miqat · Made in Cairo': '© {year} ميقات · صُنع في القاهرة',
+  '© {year} Miqat · Made in Cairo': '© {year} Miqat · صُنع في القاهرة',
 
   // ── Landing page: hero ────────────────────────────────────────────────────
-  'Plan my day: Miqat proposes, you approve': 'خطّط يومي: ميقات يقترح وأنت تقرّر',
+  'Plan my day: Miqat proposes, you approve': 'خطّط يومي: Miqat يقترح وأنت تقرّر',
   'The calendar that *plans with you.*': 'التقويم الذي *يخطّط معك.*',
   'Miqat keeps your meetings, tasks, whiteboards and plans in one calm place, then finds the right time for the work that matters. In English or Arabic, around your week and your prayers.':
-    'ميقات يجمع اجتماعاتك ومهامك وسبوراتك وخططك في مكان واحد هادئ، ثم يجد الوقت المناسب للعمل الأهم. بالعربية أو الإنجليزية، وفق أسبوعك وأوقات صلاتك.',
-  'See a day with Miqat': 'شاهد يومًا مع ميقات',
-  'Press *C* anywhere in Miqat to create anything.': 'اضغط *C* في أي مكان من ميقات لإنشاء أي شيء.',
+    'Miqat يجمع اجتماعاتك ومهامك وسبوراتك وخططك في مكان واحد هادئ، ثم يجد الوقت المناسب للعمل الأهم. بالعربية أو الإنجليزية، وفق أسبوعك وأوقات صلاتك.',
+  'See a day with Miqat': 'شاهد يومًا مع Miqat',
+  'Press *C* anywhere in Miqat to create anything.': 'اضغط *C* في أي مكان من Miqat لإنشاء أي شيء.',
   'Product preview': 'لمحة عن المنتج',
 
   // The week picture: sample content, as an Arabic-speaking team would have it.
@@ -77,7 +77,7 @@ export const AR_PUBLIC: Dictionary = {
   'Mariam': 'مريم',
   'Sara': 'سارة',
   'Fri is your weekend. Omar is free *Sun 13:00* instead.': 'الجمعة يوم عطلتك. عمر متاح *الأحد 13:00* بدلًا منه.',
-  'Planned by Miqat': 'خطّطه ميقات',
+  'Planned by Miqat': 'خطّطه Miqat',
   'Due today at 17:00. Placed in your morning focus window, clear of meetings and Dhuhr.':
     'تُستحق اليوم 17:00. وُضعت في فترة تركيزك الصباحية، بعيدًا عن الاجتماعات وصلاة الظهر.',
   'Keep': 'إبقاء',
@@ -95,9 +95,9 @@ export const AR_PUBLIC: Dictionary = {
     'كل شيء مرتبط بكل شيء: الملاحظة اللاصقة تصير مهمة، والمهمة تجد ساعتها، والساعة تصير اجتماعًا.',
   'Type it the way you’d say it': 'اكتبها كما تقولها',
   'Miqat reads people, dates, times, lengths, repeats and projects as you type, in English or Arabic, and shows you what it understood before you press Enter.':
-    'ميقات يقرأ الأشخاص والتواريخ والأوقات والمدد والتكرار والمشاريع وأنت تكتب، بالعربية أو الإنجليزية، ويعرض عليك ما فهمه قبل أن تضغط Enter.',
+    'Miqat يقرأ الأشخاص والتواريخ والأوقات والمدد والتكرار والمشاريع وأنت تكتب، بالعربية أو الإنجليزية، ويعرض عليك ما فهمه قبل أن تضغط Enter.',
   'Tick what deserves today. Miqat places it. Nothing moves until you approve.':
-    'اختر ما يستحق يومك، وميقات يضعه في مكانه. لا شيء يتحرك قبل موافقتك.',
+    'اختر ما يستحق يومك، وMiqat يضعه في مكانه. لا شيء يتحرك قبل موافقتك.',
   '6 h': '6 س',
   'of 8 h planned': 'من 8 س مخطّطة',
   'Balanced. 2 h left for the unexpected.': 'يوم متوازن. تبقى ساعتان لما لم يكن في الحسبان.',
@@ -107,7 +107,7 @@ export const AR_PUBLIC: Dictionary = {
   'Sun 15 · 15:00 works for all four': 'الأحد 15 · 15:00 يناسب الأربعة',
   'Prayer times and Hijri dates': 'أوقات الصلاة والتواريخ الهجرية',
   'An optional layer for your city. Miqat plans around it and tells you when a meeting runs into one.':
-    'طبقة اختيارية لمدينتك. ميقات يخطّط حولها وينبّهك إذا تعارض اجتماع مع صلاة.',
+    'طبقة اختيارية لمدينتك. Miqat يخطّط حولها وينبّهك إذا تعارض اجتماع مع صلاة.',
   'Thursday 12 November · 2 Jumada II 1448': 'الخميس 12 نوفمبر · 2 جمادى الآخرة 1448',
   'Tasks that know your calendar': 'مهام تعرف تقويمك',
   'Every task shows when you’ll actually do it, and keeps its time when it moves on the board.':
@@ -126,17 +126,17 @@ export const AR_PUBLIC: Dictionary = {
   '+1 day on QA: Beta launch stays on Thu 26 Nov.': 'يوم إضافي لضمان الجودة: يبقى الإطلاق التجريبي يوم الخميس 26 نوفمبر.',
 
   // ── Landing page: a day with Miqat ────────────────────────────────────────
-  'A day with Miqat': 'يوم مع ميقات',
+  'A day with Miqat': 'يوم مع Miqat',
   'Thursday, composed.': 'خميس هادئ ومنظّم.',
   'Plan@@day stop': 'التخطيط',
   'Miqat lays out your meetings, places three tasks in the gaps, and you approve the day in one click.':
-    'ميقات يرتّب اجتماعاتك ويضع ثلاث مهام في الفراغات، وأنت توافق على يومك بنقرة واحدة.',
+    'Miqat يرتّب اجتماعاتك ويضع ثلاث مهام في الفراغات، وأنت توافق على يومك بنقرة واحدة.',
   'Meet@@day stop': 'الاجتماع',
   'Six minutes before standup, the join button is waiting. Sara joins from Riyadh, an hour ahead.':
     'قبل الاجتماع اليومي بست دقائق، زر الانضمام في انتظارك. سارة تنضم من الرياض، وتوقيتها متقدم بساعة.',
   'Pause@@day stop': 'وقفة',
   'Dhuhr falls inside Sprint planning, so Miqat suggested starting at 12:00. Everyone said yes.':
-    'صلاة الظهر تقع في أثناء تخطيط السبرنت، فاقترح ميقات البدء 12:00. ووافق الجميع.',
+    'صلاة الظهر تقع في أثناء تخطيط السبرنت، فاقترح Miqat البدء 12:00. ووافق الجميع.',
   'Think together': 'التفكير معًا',
   'The design review opens its whiteboard. Three stickies become tasks before the meeting ends.':
     'مراجعة التصميم تفتح سبورتها. ثلاث ملاحظات لاصقة تصير مهامّ قبل أن ينتهي الاجتماع.',
@@ -147,7 +147,7 @@ export const AR_PUBLIC: Dictionary = {
   // ── Landing page: Arabic and Hijri ────────────────────────────────────────
   'Made for how our week actually works.': 'صُمّم لأسبوعنا كما نعيشه فعلًا.',
   'Most calendars were designed for a Monday-to-Friday world. Miqat starts from yours.':
-    'أغلب التقاويم صُمّمت لعالم يعمل من الاثنين إلى الجمعة. ميقات يبدأ من عالمك.',
+    'أغلب التقاويم صُمّمت لعالم يعمل من الاثنين إلى الجمعة. Miqat يبدأ من عالمك.',
   'A Sunday-to-Thursday week, with Friday and Saturday as your weekend': 'أسبوع من الأحد إلى الخميس، والجمعة والسبت عطلتك',
   'Arabic and English everywhere, including quick add': 'العربية والإنجليزية في كل مكان، حتى في الإضافة السريعة',
   'Hijri dates next to Gregorian, using Umm al-Qura': 'التواريخ الهجرية بجانب الميلادية، وفق تقويم أم القرى',
@@ -158,16 +158,16 @@ export const AR_PUBLIC: Dictionary = {
   'Questions, answered.': 'أسئلة وأجوبتها.',
   'Do I have to use prayer times?': 'هل يجب أن أستخدم أوقات الصلاة؟',
   'No. Prayer times and Hijri dates are layers you switch on or off. When they are on, Miqat plans around them and warns you when a meeting runs into one.':
-    'لا. أوقات الصلاة والتواريخ الهجرية طبقتان تفعّلهما أو توقفهما متى شئت. وعند تفعيلهما يخطّط ميقات حولهما وينبّهك إذا تعارض اجتماع مع صلاة.',
-  'Does Miqat work in Arabic?': 'هل يعمل ميقات بالعربية؟',
+    'لا. أوقات الصلاة والتواريخ الهجرية طبقتان تفعّلهما أو توقفهما متى شئت. وعند تفعيلهما يخطّط Miqat حولهما وينبّهك إذا تعارض اجتماع مع صلاة.',
+  'Does Miqat work in Arabic?': 'هل يعمل Miqat بالعربية؟',
   'Yes. The whole interface works right to left, and quick add understands Arabic phrases like “بكرة الساعة ٣ العصر” as well as English.':
     'نعم. الواجهة كلها تعمل من اليمين إلى اليسار، والإضافة السريعة تفهم عبارات عربية مثل «بكرة الساعة ٣ العصر» كما تفهم الإنجليزية.',
   'Can I bring my Google calendar?': 'هل يمكنني إحضار تقويم Google؟',
   'Yes. Import it from Settings or the calendar and choose which Google calendars to copy. Their events appear next to your Miqat tasks, boards and flows. It is a copy, so import again to refresh it.':
-    'نعم. استورده من الإعدادات أو من التقويم، واختر تقاويم Google التي تريد نسخها. تظهر أحداثها بجانب مهامك ولوحاتك ومخططاتك في ميقات. وهي نسخة، فأعد الاستيراد لتحديثها.',
-  'Will Miqat move my meetings on its own?': 'هل ينقل ميقات اجتماعاتي من تلقاء نفسه؟',
+    'نعم. استورده من الإعدادات أو من التقويم، واختر تقاويم Google التي تريد نسخها. تظهر أحداثها بجانب مهامك ولوحاتك ومخططاتك في Miqat. وهي نسخة، فأعد الاستيراد لتحديثها.',
+  'Will Miqat move my meetings on its own?': 'هل ينقل Miqat اجتماعاتي من تلقاء نفسه؟',
   'Never. Miqat proposes time blocks for your tasks and suggests better meeting times. You approve every change.':
-    'أبدًا. ميقات يقترح فترات عمل لمهامك وأوقاتًا أفضل لاجتماعاتك. وكل تغيير بموافقتك.',
+    'أبدًا. Miqat يقترح فترات عمل لمهامك وأوقاتًا أفضل لاجتماعاتك. وكل تغيير بموافقتك.',
   'Who can see my calendar?': 'من يستطيع رؤية تقويمي؟',
   'Only the people you share it with. Booking links show when you are free, never what your events are.':
     'فقط من تشاركه معهم. روابط الحجز تُظهر أوقاتك المتاحة، ولا تكشف أحداثك أبدًا.',
@@ -209,7 +209,7 @@ export const AR_PUBLIC: Dictionary = {
   'Forgot password?': 'نسيت كلمة المرور؟',
   'Signing in…': 'جارٍ تسجيل الدخول…',
   'Already have an account?': 'لديك حساب؟',
-  'New to Miqat?': 'جديد على ميقات؟',
+  'New to Miqat?': 'جديد على Miqat؟',
   'Create an account': 'إنشاء حساب',
   'Your email is verified. You can sign in now.': 'تم التحقق من بريدك الإلكتروني. يمكنك تسجيل الدخول الآن.',
   'Your password has been reset. You can sign in now.': 'تمت إعادة تعيين كلمة المرور. يمكنك تسجيل الدخول الآن.',
@@ -272,20 +272,20 @@ export const AR_PUBLIC: Dictionary = {
   'Work week': 'أسبوع العمل',
   '{from} – {to}': '{from} – {to}',
   'Prayer times': 'أوقات الصلاة',
-  'Shown on your calendar. Miqat plans around them.': 'تظهر في تقويمك، وميقات يخطّط حولها.',
+  'Shown on your calendar. Miqat plans around them.': 'تظهر في تقويمك، وMiqat يخطّط حولها.',
   'Hijri dates': 'التواريخ الهجرية',
   'Next to every Gregorian date': 'بجانب كل تاريخ ميلادي',
   'Method@@prayer times': 'طريقة الحساب',
   'Start with today': 'ابدأ من اليوم',
   'Working hours {start} – {end} · {city}': 'ساعات العمل {start} – {end} · {city}',
-  'Miqat has no prayer times for {city} yet.': 'لا يملك ميقات أوقات الصلاة لمدينة {city} بعد.',
-  'Dashed days are your weekend. Miqat won’t suggest work there.': 'الأيام ذات الإطار المتقطّع عطلتك، ولن يقترح ميقات عملًا فيها.',
+  'Miqat has no prayer times for {city} yet.': 'لا يملك Miqat أوقات الصلاة لمدينة {city} بعد.',
+  'Dashed days are your weekend. Miqat won’t suggest work there.': 'الأيام ذات الإطار المتقطّع عطلتك، ولن يقترح Miqat عملًا فيها.',
   'Could not load your account. Please try again.': 'تعذّر تحميل حسابك. حاول مرة أخرى.',
   'Could not save your week. Please try again.': 'تعذّر حفظ أسبوعك. حاول مرة أخرى.',
 
   // ── The public booking page ───────────────────────────────────────────────
   'Times shown in your time zone': 'الأوقات معروضة بمنطقتك الزمنية',
-  '{name}’s calendar is kept by Miqat. Only free times are shown.': 'تقويم {name} يديره ميقات. تُعرض الأوقات المتاحة فقط.',
+  '{name}’s calendar is kept by Miqat. Only free times are shown.': 'تقويم {name} يديره Miqat. تُعرض الأوقات المتاحة فقط.',
   'Choose a day': 'اختر يومًا',
   'Previous month': 'الشهر السابق',
   'Next month': 'الشهر التالي',
@@ -310,9 +310,9 @@ export const AR_PUBLIC: Dictionary = {
   'This booking link isn’t available.': 'رابط الحجز هذا غير متاح.',
   'There is no booking page at this address right now. The link may have been switched off, or the address may be mistyped. Ask the person who sent it to you for a new one.':
     'لا توجد صفحة حجز على هذا العنوان الآن. ربما أُوقف الرابط، أو كُتب العنوان خطأً. اطلب رابطًا جديدًا ممّن أرسله إليك.',
-  'About Miqat': 'عن ميقات',
-  'Have a Miqat account? Sign in to plan your own week.': 'لديك حساب في ميقات؟ سجّل الدخول لتخطّط أسبوعك.',
-  'Scheduled with Miqat': 'تمت الجدولة عبر ميقات'
+  'About Miqat': 'عن Miqat',
+  'Have a Miqat account? Sign in to plan your own week.': 'لديك حساب في Miqat؟ سجّل الدخول لتخطّط أسبوعك.',
+  'Scheduled with Miqat': 'تمت الجدولة عبر Miqat'
 };
 
 export const AR_PUBLIC_PLURALS: PluralDictionary = {

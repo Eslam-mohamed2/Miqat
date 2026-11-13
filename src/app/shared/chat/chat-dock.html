@@ -21,7 +21,7 @@
                   [attr.aria-label]="headLabel(c)"
                   [attr.aria-expanded]="chat.isOpen(c.id)">
             <app-chat-avatar [name]="title(c)" [url]="c.friend.profilePictureUrl" [group]="!!c.isGroup"
-                             [online]="!c.isGroup && chat.isOnline(c.friend.id)" [size]="44" />
+                             [online]="presence(c)" [size]="44" />
             @if (c.unreadCount) {
               <span class="count">{{ badge(c.unreadCount) }}</span>
             }
@@ -72,7 +72,7 @@
             <div class="item-row">
               <button type="button" class="item" [class.unread]="c.unreadCount > 0" (click)="openChat(c)">
                 <app-chat-avatar [name]="title(c)" [url]="c.friend.profilePictureUrl" [group]="!!c.isGroup"
-                                 [online]="!c.isGroup && chat.isOnline(c.friend.id)" [size]="38" />
+                                 [online]="presence(c)" [size]="38" />
                 <span class="item-text">
                   <span class="item-name"><bdi>{{ title(c) }}</bdi></span>
                   @if (c.activeCall) {
@@ -98,6 +98,7 @@
             </div>
           }
 
+          <!-- Every friend there is no chat with yet, online or not. -->
           @if (matchingFriends().length) {
             <p class="group-title">{{ 'Start a chat' | t }}</p>
             @for (f of matchingFriends(); track f.id) {
@@ -106,17 +107,27 @@
                                  [online]="chat.isOnline(f.id)" [size]="38" />
                 <span class="item-text">
                   <span class="item-name"><bdi>{{ f.fullName }}</bdi></span>
-                  <span class="item-last">{{ (chat.isOnline(f.id) ? 'Online' : 'Say hello') | t }}</span>
+                  <span class="item-last">{{ (chat.isOnline(f.id) ? 'Online' : 'Offline') | t }}</span>
                 </span>
               </button>
             }
           }
 
-          @if (!matchingChats().length && !matchingFriends().length) {
-            <p class="empty">
-              {{ (search().trim()
-                ? (chat.groupsAvailable() ? 'No friend or group matches that name.' : 'No friend matches that name.')
-                : 'Add friends to start chatting with them.') | t }}
+          @if (chat.friendsState() === 'failed') {
+            <!-- Not "no friends": the list of friends did not arrive. -->
+            <p class="error retry" role="alert">
+              <span>{{ 'Could not load your friends. Check your connection and try again.' | t }}</span>
+              <button type="button" (click)="chat.loadFriends()">{{ 'Try again' | t }}</button>
+            </p>
+          } @else if (!matchingChats().length && !matchingFriends().length) {
+            <p class="empty" [attr.role]="friendsLoading() ? 'status' : null">
+              @if (search().trim()) {
+                {{ (chat.groupsAvailable() ? 'No friend or group matches that name.' : 'No friend matches that name.') | t }}
+              } @else if (friendsLoading()) {
+                {{ 'Loading your friends…' | t }}
+              } @else {
+                {{ 'Add friends to start chatting with them.' | t }}
+              }
             </p>
           }
         </div>

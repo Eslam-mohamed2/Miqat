@@ -430,9 +430,9 @@ describe('the Inbox in Arabic', () => {
     expect(items[3].snippet).toEqual('طلب صداقة · أجب عنه هنا');
   });
 
-  it('keeps two Arabic initials apart, and uses the first letter of ميقات for Miqat itself', () => {
+  it('keeps two Arabic initials apart, and uses M for Miqat itself, whose name stays as it is', () => {
     expect(initialsOf('مريم عادل')).toEqual('م‌ع');
-    expect(initialsOf('')).toEqual('م');
+    expect(initialsOf('')).toEqual('M');
     expect(initialsOf('Mariam Adel')).toEqual('MA');
   });
 });

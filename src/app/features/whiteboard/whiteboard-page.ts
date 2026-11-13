@@ -73,6 +73,8 @@ const MAP_H = 92;
 const MAP_PAD = 6;
 /** How long "N tasks added" stays, with its Undo. */
 const MADE_NOTICE_MS = 8000;
+/** How often a running timer's time left is saved. */
+const TIMER_SAVE_MS = 30_000;
 
 const TOOL_KEYS: Record<string, Tool> = {
   v: 'select', h: 'hand', s: 'sticky', r: 'shape', t: 'text', p: 'pen', c: 'connector', f: 'frame'
@@ -438,12 +440,16 @@ export class WhiteboardPage implements OnInit, OnDestroy {
   /** The timer stops by itself when that prayer time comes (Settings → Planning: plan around prayer). */
   readonly pausePlanned = computed(() => this.running() && !!this.prayer() && this.prefs.planAroundPrayer());
 
-  /** The "add an item" row of the agenda is open. */
+  /** The "add an item" row of the agenda was opened with its button. */
   readonly agendaOpen = signal(false);
+  /** The row is there: opened, or always while the agenda is still empty. */
+  readonly agendaAdding = computed(() => this.agendaOpen() || !this.agenda().items.length);
   private agendaField = viewChild<ElementRef<HTMLInputElement>>('agendaField');
   readonly running = signal(false);
   private timer: ReturnType<typeof setInterval> | null = null;
   private timerEndsAt = 0;
+  /** When the running timer's time left was last sent to be saved. */
+  private timerSavedAt = 0;
   private pauseAt: { name: string; at: number } | null = null;
 
   /** The agenda item the timer is on: the chosen one, or the first that is not done. */
@@ -456,6 +462,11 @@ export class WhiteboardPage implements OnInit, OnDestroy {
     const item = this.currentItem();
     const left = !item ? 0 : agenda.current === item.id ? agenda.left : item.minutes * 60;
     return num(`${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`);
+  });
+  /** Why the timer cannot be started, for its button while that is off. */
+  readonly timerHint = computed(() => {
+    if (this.currentItem()) return '';
+    return this.agenda().items.length ? t('Every item is finished. Press one to run it again.') : t('Add an agenda item first');
   });
 
   readonly topVotes = computed(() => {
@@ -540,6 +551,8 @@ export class WhiteboardPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.destroyed = true;
+    // A timer that is running stops here: the time it had left is saved with the board.
+    if (this.running()) this.dirty = true;
     this.stopTimer();
     if (this.madeNoticeTimer) clearTimeout(this.madeNoticeTimer);
     // Leaving inside the debounce window: send what has not been sent yet.
@@ -1454,7 +1467,26 @@ export class WhiteboardPage implements OnInit, OnDestroy {
     const length = clamp(Math.round(+latinDigits(minutes.value)) || 10, 1, 240);
     this.agenda.update(agenda => ({ ...agenda, items: [...agenda.items, { id: uid('a'), title: text, minutes: length }] }));
     title.value = '';
+    // The row stays for the next item, also after the first one (until then it was there because the agenda was empty).
+    this.agendaOpen.set(true);
+    title.focus();
     this.touch();
+  }
+
+  /** The "+" of the agenda: opens and closes the row; while the agenda is empty the row is always there and it only puts the keyboard in it. */
+  toggleAgendaAdd() {
+    if (!this.agenda().items.length) {
+      this.agendaOpen.set(true);
+      this.agendaField()?.nativeElement.focus();
+      return;
+    }
+    this.agendaOpen.set(!this.agendaOpen());
+  }
+
+  /** Escape in the row: closed, and the keyboard goes back to the button that opens it. */
+  closeAgendaAdd(opener: HTMLElement) {
+    this.agendaOpen.set(false);
+    if (this.agenda().items.length) opener.focus();
   }
 
   removeAgendaItem(id: string) {
@@ -1489,12 +1521,18 @@ export class WhiteboardPage implements OnInit, OnDestroy {
     const left = agenda.current === item.id && agenda.left > 0 ? agenda.left : item.minutes * 60;
     this.agenda.set({ ...agenda, current: item.id, left });
 
+    // The clock of the panel moves every half minute: brought up to date here, a prayer time that
+    // has just passed (the pause it caused, for one) is not planned for again.
+    this.now.set(Date.now());
     const prayer = this.prayer();
-    this.pauseAt = prayer && this.prefs.planAroundPrayer() ? prayer : null;
+    this.pauseAt = prayer && prayer.at > Date.now() && this.prefs.planAroundPrayer() ? prayer : null;
     this.timerEndsAt = Date.now() + left * 1000;
     this.running.set(true);
     // Counted from the clock, not from the ticks: a tab in the background ticks late.
     this.timer = setInterval(() => this.tick(), 250);
+    // Which item it is on is saved now, the time left as it runs.
+    this.timerSavedAt = Date.now();
+    this.touch();
   }
 
   private tick() {
@@ -1502,13 +1540,20 @@ export class WhiteboardPage implements OnInit, OnDestroy {
       const name = this.pauseAt.name;
       this.pauseAt = null;
       this.stopTimer();
+      // The heading goes on to the prayer after this one.
+      this.now.set(Date.now());
       this.touch();
       this.toasts.show(t('Timer paused for {prayer}.', { prayer: t(name) }));
       return;
     }
     const left = Math.max(0, Math.ceil((this.timerEndsAt - Date.now()) / 1000));
     if (left !== this.agenda().left) this.agenda.update(agenda => ({ ...agenda, left }));
-    if (left === 0) this.finishItem();
+    if (left === 0) { this.finishItem(); return; }
+    // So a tab that is closed or reloaded loses at most this much of the time already run.
+    if (Date.now() - this.timerSavedAt >= TIMER_SAVE_MS) {
+      this.timerSavedAt = Date.now();
+      this.touch();
+    }
   }
 
   /** Ticks off the current item and moves the timer to the next one, if there is one. */

@@ -17,10 +17,11 @@ import { apiErrorMessage } from '../../../../core/http/api-error';
 import { t, tCount } from '../../../../core/i18n/i18n';
 import { NumPipe, TCountPipe, TPipe } from '../../../../core/i18n/t.pipe';
 import { AttendeeStatus, EventDto, ReminderDto, UserCalendarDto } from '../../../../models/api.models';
+import { occasionSummary } from '../../../../core/utils/occasions';
 import { isValidTimeZone, timeZoneLabel } from '../../../../core/utils/time-zone';
 import { BoardDay, CalendarBoard, PlanTask } from '../../calendar-board.service';
 import { DEFAULT_TASK_COLOR } from '../../calendar-chips';
-import { isolate, listOf, loadLevel, monthAndYear, monthName, weekdayName } from '../../calendar-layout';
+import { isolate, listOf, loadLevel, monthAndYear, monthName, shortDate, weekdayName } from '../../calendar-layout';
 import { EventActions } from '../../event-actions.service';
 import { openGoogleImport } from '../google-import/google-import';
 import { CALENDAR_COLORS } from './calendar-colors';
@@ -211,6 +212,31 @@ export class CalendarSidebar implements OnInit {
   /** Jump the main view to a day. */
   selectDay(day: BoardDay) {
     this.state.selectDate(day.date);
+  }
+
+  /**
+   * The next holidays and occasions, listed under their layer: "Coptic Christmas · Thu 7 Jan".
+   * The year is said when it is not this one.
+   */
+  readonly comingUp = computed(() => {
+    const thisYear = this.board.todayKey().slice(0, 4);
+    return this.board.nextOccasions().map(occasion => {
+      const [year, month, day] = occasion.date.split('-').map(Number);
+      return {
+        id: occasion.id,
+        name: occasion.name,
+        date: occasion.date,
+        holiday: occasion.kind === 'holiday',
+        when: shortDate(new Date(year, month - 1, day), undefined, String(year) !== thisYear),
+        title: occasionSummary(occasion)
+      };
+    });
+  });
+
+  /** Open the calendar on an occasion's first day (`yyyy-mm-dd`). */
+  showOccasion(date: string) {
+    const [year, month, day] = date.split('-').map(Number);
+    this.state.selectDate(new Date(year, month - 1, day));
   }
 
   /** A task dropped on a date gets a block that day. */

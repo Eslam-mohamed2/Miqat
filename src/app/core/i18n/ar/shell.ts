@@ -13,7 +13,7 @@ export const AR_SHELL: Dictionary = {
   // ── The rail and the phone tab bar (layout/sidebar) ────────────────────────
   'Sections': 'الأقسام',
   'Main@@navigation': 'التنقل الرئيسي',
-  'Miqat home': 'الصفحة الرئيسية لميقات',
+  'Miqat home': 'الصفحة الرئيسية لـMiqat',
   'New event': 'حدث جديد',
   'New task': 'مهمة جديدة',
   'New project': 'مشروع جديد',

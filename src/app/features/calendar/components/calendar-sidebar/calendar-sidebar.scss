@@ -547,6 +547,50 @@
   color: $mq-muted;
 }
 
+// The next holidays and occasions, under their layer: each opens its day.
+.coming {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 4px;
+}
+
+.coming-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: $mq-text-3;
+  font-family: inherit;
+  font-size: 11.5px;
+  text-align: start;
+  cursor: pointer;
+  @include mq-focus(-2px);
+
+  &:hover { background: $mq-hover; color: $mq-text; }
+}
+
+.coming-glyph {
+  @include cal.occasion-glyph(5px);
+  margin-inline: 2px;
+}
+
+.coming-name {
+  flex: 1;
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+.coming-when {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: $mq-muted;
+  white-space: nowrap;
+}
+
 // Calendar and project colours, as the theme draws them (see cal.tone).
 .plan-dot,
 .cal-dot,

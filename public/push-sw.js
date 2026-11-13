@@ -52,7 +52,7 @@ self.addEventListener('push', event => {
   const title = data.title || 'Miqat';
   const options = {
     body: data.message || '',
-    icon: '/favicon.ico',
+    icon: '/logo/miqat-app-icon-192.png',
     badge: '/favicon.ico',
     // The same notification pushed twice replaces itself instead of stacking.
     tag: data.id || undefined,

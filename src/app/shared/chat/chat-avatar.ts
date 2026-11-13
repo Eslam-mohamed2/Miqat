@@ -7,7 +7,8 @@ const ARABIC_LETTER = /\p{Script=Arabic}/u;
 
 /**
  * A person's round picture for the chat: the photo, or their initials when
- * there is none or it fails to load, with a green dot while they are online.
+ * there is none or it fails to load, with a green dot while they are online
+ * and a quiet grey one while they are not (the same two dots as the People list).
  */
 @Component({
   selector: 'app-chat-avatar',
@@ -23,6 +24,8 @@ const ARABIC_LETTER = /\p{Script=Arabic}/u;
     }
     @if (online()) {
       <span class="online-dot" [title]="'Online' | t"></span>
+    } @else if (online() === false) {
+      <span class="offline-dot" [title]="'Offline' | t"></span>
     }
   `,
   styleUrl: './chat-avatar.scss',
@@ -31,7 +34,8 @@ const ARABIC_LETTER = /\p{Script=Arabic}/u;
 export class ChatAvatar {
   readonly name = input('');
   readonly url = input<string | null | undefined>(null);
-  readonly online = input(false);
+  /** True: online. False: offline. Null (a group, or someone whose state is not known): no dot. */
+  readonly online = input<boolean | null>(null);
   /** A group chat: the initials of its name, tinted with the accent so it reads apart from a person. */
   readonly group = input(false);
   /** Diameter in pixels. */

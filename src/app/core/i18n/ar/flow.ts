@@ -169,7 +169,7 @@ export const AR_FLOW: Dictionary = {
 
   // ── Plan my day: choosing tasks ─────────────────────────────────────────────
   'What deserves today?': 'ما الذي يستحق يومك؟',
-  'Tick tasks to place them. Miqat finds the time.': 'حدّد المهام لوضعها في يومك، وميقات يجد لها الوقت.',
+  'Tick tasks to place them. Miqat finds the time.': 'حدّد المهام لوضعها في يومك، وMiqat يجد لها الوقت.',
   'Loading your tasks': 'جارٍ تحميل مهامك',
   'Your tasks could not be loaded.': 'تعذّر تحميل مهامك.',
   'Nothing is due today and nothing is late.': 'لا شيء مستحق اليوم ولا شيء متأخر.',
@@ -188,7 +188,7 @@ export const AR_FLOW: Dictionary = {
   // ── Plan my day: the day ────────────────────────────────────────────────────
   'Today’s schedule': 'جدول اليوم',
   'Proposed day': 'اليوم المقترح',
-  'Dashed blocks are Miqat’s suggestions. Drag to adjust.': 'الفترات المتقطعة اقتراحات ميقات. اسحبها للتعديل.',
+  'Dashed blocks are Miqat’s suggestions. Drag to adjust.': 'الفترات المتقطعة اقتراحات Miqat. اسحبها للتعديل.',
   'Shuffle': 'إعادة ترتيب',
   '{title}, {time}, {estimate}. Arrow up and down move it': '{title}، {time}، {estimate}. حرّكها بسهمَي الأعلى والأسفل',
   'Now, {time}': 'الآن، {time}',
@@ -210,8 +210,8 @@ export const AR_FLOW: Dictionary = {
   'of {duration} workday': 'من أصل {duration} ليوم العمل',
   'Meetings {meetings}, tasks {tasks}, of {duration} workday': 'الاجتماعات {meetings}، المهام {tasks}، من أصل {duration} ليوم العمل',
   'Over capacity by {duration}.': 'تجاوزت طاقة اليوم بمقدار {duration}.',
-  'Over capacity by {duration}. Miqat suggests moving “{title}” to tomorrow.': 'تجاوزت طاقة اليوم بمقدار {duration}. يقترح ميقات نقل «{title}» إلى الغد.',
-  'Over capacity by {duration}. Miqat suggests moving “{title}” to {weekday}.': 'تجاوزت طاقة اليوم بمقدار {duration}. يقترح ميقات نقل «{title}» إلى يوم {weekday}.',
+  'Over capacity by {duration}. Miqat suggests moving “{title}” to tomorrow.': 'تجاوزت طاقة اليوم بمقدار {duration}. يقترح Miqat نقل «{title}» إلى الغد.',
+  'Over capacity by {duration}. Miqat suggests moving “{title}” to {weekday}.': 'تجاوزت طاقة اليوم بمقدار {duration}. يقترح Miqat نقل «{title}» إلى يوم {weekday}.',
   'Balanced. {duration} left for the unexpected.': 'يوم متوازن. يتبقى {duration} للطوارئ.',
   'Your working day ended at {time}: nothing more can be placed today.': 'انتهى يوم عملك الساعة {time}: لا يمكن وضع المزيد اليوم.',
   'Meetings are {duration} over your {hours} h cap.': 'الاجتماعات تتجاوز حدّك البالغ {hours} س بمقدار {duration}.',
@@ -245,7 +245,7 @@ export const AR_FLOW: Dictionary = {
   'Project update': 'تحديث مشروع',
   'Notification': 'إشعار',
   'Someone': 'شخص ما',
-  'M@@the first letter of Miqat': 'م',
+  'M@@the first letter of Miqat': 'M',
 
   // ── Inbox: the sentences the API writes, said again ─────────────────────────
   // An Arabic word always stands between the person and the title: two Latin names

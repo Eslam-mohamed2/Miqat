@@ -114,7 +114,7 @@ export const AR_TASKS: Dictionary = {
   'Assigned to {name}': 'المكلَّف: {name}',
 
   // ── The board ──────────────────────────────────────────────────────────────
-  'Miqat has no sprints yet, so the board shows every task': 'لا دورات عمل في ميقات بعد، لذا تعرض اللوحة كل المهام',
+  'Miqat has no sprints yet, so the board shows every task': 'لا دورات عمل في Miqat بعد، لذا تعرض اللوحة كل المهام',
   'no sprint set up yet': 'لم تُعدّ دورة عمل بعد',
   'Done@@progress': 'المنجَز',
   '{percent} · {done} of {total}': '{percent} · {done} من {total}',
@@ -197,7 +197,7 @@ export const AR_TASKS: Dictionary = {
   'Find time today': 'ابحث عن وقت اليوم',
   'Not scheduled': 'غير مجدولة',
   'Cycle': 'الدورة',
-  'Sprints are not set up in Miqat yet': 'دورات العمل غير متاحة في ميقات بعد',
+  'Sprints are not set up in Miqat yet': 'دورات العمل غير متاحة في Miqat بعد',
   'No sprint': 'بلا دورة عمل',
   'Repeats': 'التكرار',
   'Daily': 'يوميًا',

@@ -56,7 +56,8 @@ describe('Sidebar', () => {
 
     expect(host.querySelector('nav.rail')?.getAttribute('aria-label')).toBe('الأقسام');
     expect([...host.querySelectorAll('.tab')].map(tab => tab.textContent?.trim())).toEqual(['يوم', 'أسبوع', 'المهام', 'الوارد']);
-    expect(said().filter(text => /[A-Za-z]/.test(text))).toEqual([]);
+    // The product's name stays "Miqat" in Arabic; nothing else is in English.
+    expect(said().filter(text => /[A-Za-z]/.test(text.replace(/Miqat/g, '')))).toEqual([]);
   });
 
   it('counts what is new in the Inbox the Arabic way', async () => {

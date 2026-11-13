@@ -29,6 +29,8 @@ export const AR_CHAT: Dictionary = {
   'No friend or group matches that name.': 'لا يوجد صديق أو مجموعة بهذا الاسم.',
   'No friend matches that name.': 'لا يوجد صديق بهذا الاسم.',
   'Add friends to start chatting with them.': 'أضف أصدقاء لتبدأ المحادثة معهم.',
+  'Loading your friends…': 'جارٍ تحميل أصدقائك…',
+  'Could not load your friends. Check your connection and try again.': 'تعذّر تحميل قائمة أصدقائك. تحقق من اتصالك وحاول مرة أخرى.',
   'Could not open the chat. Try again.': 'تعذّر فتح المحادثة. حاول مرة أخرى.',
 
   // ── A chat window ──────────────────────────────────────────────────────────

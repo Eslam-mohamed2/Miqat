@@ -5,6 +5,7 @@ import { Dictionary, PluralDictionary } from '../i18n';
  * schedule, the phone's day screen, the left column and the occasion marks.
  */
 export const AR_CALENDAR: Dictionary = {
+  'Coming up': 'القادم',
   // How dates, times and lists are put together
   '{weekday}, {day} {month} {year}': '{weekday}، {day} {month} {year}',
   '{weekday}, {day} {month}': '{weekday}، {day} {month}',

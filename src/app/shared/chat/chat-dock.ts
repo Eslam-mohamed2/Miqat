@@ -89,6 +89,17 @@ export class ChatDock {
 
   protected title(conversation: ChatConversation): string { return chatTitle(conversation); }
 
+  /** The dot on a chat's picture: online or offline for a friend, none for a group or a closed chat. */
+  protected presence(conversation: ChatConversation): boolean | null {
+    return conversation.isGroup || !conversation.canSend ? null : this.chat.isOnline(conversation.friend.id);
+  }
+
+  /** The friends are on their way: the list must not say there are none. */
+  protected readonly friendsLoading = computed(() => {
+    const state = this.chat.friendsState();
+    return state === 'idle' || state === 'loading';
+  });
+
   /** What the list shows under a name: the newest message, in a few words. */
   protected preview(conversation: ChatConversation): string {
     return previewText(conversation, this.chat.currentUserId);

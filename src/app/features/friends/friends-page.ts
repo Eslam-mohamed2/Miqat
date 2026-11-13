@@ -43,6 +43,9 @@ const MUTUALS_LIMIT = 16;
 /** How many group chats the Friends list shows before "Show all". */
 const GROUPS_SHOWN = 4;
 const DAY_MS = 86_400_000;
+/** A list that did not arrive is asked for again by itself: after this long, then twice as long. */
+const RELOAD_AFTER_MS = 3000;
+const RELOADS = 2;
 
 /**
  * People (design/miqat-2.0, V2-People): friends, requests and blocked people on
@@ -84,6 +87,11 @@ export class FriendsPage {
   private readonly found = signal<PersonCard[] | null>(null);
 
   protected readonly loading = signal(true);
+  /** The friends have never arrived: the list must not say "no friends yet". */
+  protected readonly friendsMissing = signal(false);
+  private friendsLoaded = false;
+  private reloads = 0;
+  private reloadTimer?: ReturnType<typeof setTimeout>;
   protected readonly searching = signal(false);
   protected readonly error = signal('');
   protected readonly query = signal('');
@@ -113,7 +121,10 @@ export class FriendsPage {
 
   constructor() {
     const timer = setInterval(() => this.now.set(new Date()), 30_000);
-    this.destroyRef.onDestroy(() => clearInterval(timer));
+    this.destroyRef.onDestroy(() => {
+      clearInterval(timer);
+      clearTimeout(this.reloadTimer);
+    });
 
     if (typeof matchMedia === 'function') {
       const media = matchMedia('(min-width: 1024px)');
@@ -195,7 +206,8 @@ export class FriendsPage {
     const open = this.requests().filter(card => !this.answered().has(card.userId)).length;
     const blocked = this.blocked().filter(card => !this.unblocked().has(card.userId)).length;
     return [
-      { key: 'friends', label: t('Friends · {n}', { n: this.friends().length }) },
+      // Everyone, online or not. Without a number while the list has not arrived.
+      { key: 'friends', label: this.friendsMissing() ? t('Friends') : t('Friends · {n}', { n: this.friends().length }) },
       { key: 'requests', label: t('Requests · {n}', { n: open }) },
       { key: 'blocked', label: t('Blocked · {n}', { n: blocked }) }
     ];
@@ -235,13 +247,23 @@ export class FriendsPage {
 
   // ── Data ───────────────────────────────────────────────────────────────────
 
-  protected loadData(quiet = false): void {
+  /**
+   * Loads the lists. Friends are listed whether they are online or not: who is
+   * online only decides the dot and the line under the name.
+   *
+   * A list that does not arrive keeps what it showed before (a failed request
+   * never empties it) and is asked for again by itself a couple of times;
+   * `again` marks such a repeat, which leaves the error line up until it works.
+   */
+  protected loadData(quiet = false, again = false): void {
+    clearTimeout(this.reloadTimer);
+    if (!again) this.reloads = 0;
     if (!quiet) this.loading.set(true);
-    this.error.set('');
+    if (!again) this.error.set('');
 
     let failed = 0;
     const safe = <T>(request: Observable<T[]>) =>
-      request.pipe(catchError(() => { failed++; return of([] as T[]); }));
+      request.pipe(catchError(() => { failed++; return of(null); }));
 
     forkJoin({
       suggestions: safe(this.friendService.getSuggestions()),
@@ -249,21 +271,34 @@ export class FriendsPage {
       friends: safe(this.friendService.getMyFriends()),
       sent: safe(this.friendService.getSentRequests())
     }).subscribe(result => {
-      this.suggestions.set(result.suggestions
-        .filter(user => user.id !== this.myId)
-        .map(user => this.fromUser(user)));
-      this.requests.set(this.keepAnswered(result.requests.map(row => this.fromFriendship(row, true))));
-      this.friends.set(result.friends
-        .map(row => this.fromFriendship(row, row.senderId !== this.myId))
-        .sort((a, b) => a.name.localeCompare(b.name)));
-      this.sent.set(result.sent.map(row => this.fromFriendship(row, false)));
+      if (result.suggestions) {
+        this.suggestions.set(result.suggestions
+          .filter(user => user.id !== this.myId)
+          .map(user => this.fromUser(user)));
+      }
+      if (result.requests) {
+        this.requests.set(this.keepAnswered(result.requests.map(row => this.fromFriendship(row, true))));
+      }
+      if (result.friends) {
+        this.friends.set(result.friends
+          .map(row => this.fromFriendship(row, row.senderId !== this.myId))
+          .sort((a, b) => a.name.localeCompare(b.name)));
+        this.friendsLoaded = true;
+      }
+      this.friendsMissing.set(!this.friendsLoaded);
+      if (result.sent) this.sent.set(result.sent.map(row => this.fromFriendship(row, false)));
 
       if (failed === 4) this.error.set(t('Could not load your people. Check your connection and try again.'));
       else if (failed) this.error.set(t('Some of this page could not be loaded.'));
+      else this.error.set('');
 
       this.loading.set(false);
       this.loadAvailability();
       this.loadMutuals([...this.requests(), ...this.suggestions()]);
+
+      if (failed && this.reloads < RELOADS) {
+        this.reloadTimer = setTimeout(() => this.loadData(true, true), RELOAD_AFTER_MS * ++this.reloads);
+      }
     });
 
     this.loadBlocked();
@@ -576,10 +611,27 @@ export class FriendsPage {
     if (this.chat.isOnline(card.userId)) return t('Online');
 
     const since = card.since ? new Date(card.since) : null;
-    if (since && !Number.isNaN(since.getTime())) {
-      return t('Friends since {date}', { date: since.toLocaleDateString(locale(), { month: 'long', year: 'numeric' }) });
+    const known = !!since && !Number.isNaN(since.getTime());
+    // On a server with chat, who is online is known: someone who is not says so.
+    if (this.chat.available()) {
+      return known
+        ? t('Offline · Friends since {date}', { date: since!.toLocaleDateString(locale(), { month: 'short', year: 'numeric' }) })
+        : t('Offline');
+    }
+
+    if (known) {
+      return t('Friends since {date}', { date: since!.toLocaleDateString(locale(), { month: 'long', year: 'numeric' }) });
     }
     return card.country || t('Friend');
+  }
+
+  /** What the dot on a friend's picture means, for a pointer resting on it and for a screen reader. */
+  protected presenceLabel(userId: string): string {
+    switch (this.presence(userId)) {
+      case 'busy': return t('In a meeting');
+      case 'online': return t('Online');
+      default: return this.chat.available() ? t('Offline') : '';
+    }
   }
 
   /** Under the name of someone who is not a friend yet: country and mutual friends. */

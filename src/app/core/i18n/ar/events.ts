@@ -133,7 +133,7 @@ export const AR_EVENTS: Dictionary = {
   'The event could not be deleted.': 'تعذّر حذف الحدث.',
   'The event was not moved.': 'لم يُنقل الحدث.',
   'The event was not moved back.': 'لم يُعَد الحدث إلى وقته.',
-  'Linked in Miqat': 'مرتبط في ميقات',
+  'Linked in Miqat': 'مرتبط في Miqat',
   'Dismiss': 'إغلاق',
 
   // A task on the calendar
@@ -223,14 +223,14 @@ export const AR_EVENTS: Dictionary = {
   'Reading your calendars…': 'جارٍ قراءة تقاويمك…',
   'Importing…': 'جارٍ الاستيراد…',
   'Import again': 'استيراد من جديد',
-  'Pick calendars from your Google account, and Miqat copies their events here, next to your tasks.': 'اختر تقاويم من حسابك في Google، وسينسخ ميقات أحداثها إلى هنا بجانب مهامك.',
+  'Pick calendars from your Google account, and Miqat copies their events here, next to your tasks.': 'اختر تقاويم من حسابك في Google، وسينسخ Miqat أحداثها إلى هنا بجانب مهامك.',
   'It is a copy made now, not a live connection.': 'هذه نسخة تؤخذ الآن، لا اتصال مباشر.',
   'Changes you make in Google later are not followed. Import again to refresh.': 'التغييرات التي تجريها لاحقًا في Google لا تُتابَع. استورد من جديد للتحديث.',
-  'Miqat asks Google for permission to read your calendars and nothing else. It cannot change anything in Google.': 'يطلب ميقات من Google إذن قراءة تقاويمك فقط، ولا يستطيع تغيير أي شيء في Google.',
-  'The permission is used for this import only. Miqat does not keep it.': 'يُستخدم الإذن لهذا الاستيراد فقط، ولا يحتفظ به ميقات.',
+  'Miqat asks Google for permission to read your calendars and nothing else. It cannot change anything in Google.': 'يطلب Miqat من Google إذن قراءة تقاويمك فقط، ولا يستطيع تغيير أي شيء في Google.',
+  'The permission is used for this import only. Miqat does not keep it.': 'يُستخدم الإذن لهذا الاستيراد فقط، ولا يحتفظ به Miqat.',
   'Google opens in its own window. Allow pop-ups if your browser asks.': 'تُفتح Google في نافذة مستقلة. اسمح بالنوافذ المنبثقة إذا طلب متصفحك ذلك.',
   'Finish in the Google window that opened.': 'أكمل الخطوات في نافذة Google التي فُتحت.',
-  'Each calendar you tick becomes a calendar in Miqat with the same name.': 'كل تقويم تحدّده يصبح تقويمًا في ميقات بالاسم نفسه.',
+  'Each calendar you tick becomes a calendar in Miqat with the same name.': 'كل تقويم تحدّده يصبح تقويمًا في Miqat بالاسم نفسه.',
   'Your Google calendars': 'تقاويمك في Google',
   'Main': 'الرئيسي',
   'Period': 'الفترة',
@@ -240,9 +240,9 @@ export const AR_EVENTS: Dictionary = {
   'The last 12 months and the next 12': 'الاثنا عشر شهرًا الماضية والاثنا عشر القادمة',
   'Everything, past and future': 'كل شيء، الماضي والقادم',
   'A repeating event with dates in this period comes with its whole series.': 'الحدث المتكرر الذي له تواريخ في هذه الفترة يُستورد مع سلسلته كاملة.',
-  'Events you imported before are updated, not added twice. An event you delete in Google later stays in Miqat until you delete it here.': 'الأحداث التي استوردتها من قبل تُحدَّث ولا تُضاف مرتين. والحدث الذي تحذفه لاحقًا من Google يبقى في ميقات حتى تحذفه هنا.',
-  'This Google account has no calendars Miqat can read, so there is nothing to import.': 'لا يحتوي حساب Google هذا تقاويم يستطيع ميقات قراءتها، فلا يوجد ما يُستورد.',
-  'Keep this window open while Miqat copies your events.': 'أبقِ هذه النافذة مفتوحة ريثما ينسخ ميقات أحداثك.',
+  'Events you imported before are updated, not added twice. An event you delete in Google later stays in Miqat until you delete it here.': 'الأحداث التي استوردتها من قبل تُحدَّث ولا تُضاف مرتين. والحدث الذي تحذفه لاحقًا من Google يبقى في Miqat حتى تحذفه هنا.',
+  'This Google account has no calendars Miqat can read, so there is nothing to import.': 'لا يحتوي حساب Google هذا تقاويم يستطيع Miqat قراءتها، فلا يوجد ما يُستورد.',
+  'Keep this window open while Miqat copies your events.': 'أبقِ هذه النافذة مفتوحة ريثما ينسخ Miqat أحداثك.',
   'Calendar {current} of {total}': 'التقويم {current} من {total}',
   'Calendars being imported': 'التقاويم الجاري استيرادها',
   'What was imported': 'ما تم استيراده',
@@ -257,8 +257,8 @@ export const AR_EVENTS: Dictionary = {
   '{what}. {failed}.': '{what}. {failed}.',
   'No events were brought in. The reason is under each calendar.': 'لم يُستورد أي حدث. السبب مذكور تحت كل تقويم.',
   'There was nothing to import: the calendars you chose have no events in that period.': 'لا يوجد ما يُستورد: التقاويم التي اخترتها لا تحتوي أحداثًا في تلك الفترة.',
-  'Repeats on several weekdays, so Miqat keeps one series per weekday: {titles}.': 'يتكرر في عدة أيام من الأسبوع، لذا يحتفظ ميقات بسلسلة لكل يوم: {titles}.',
-  'Repeats by a rule Miqat cannot follow exactly, so check its dates: {titles}.': 'يتكرر وفق قاعدة لا يستطيع ميقات اتباعها بدقة، فراجع تواريخه: {titles}.',
+  'Repeats on several weekdays, so Miqat keeps one series per weekday: {titles}.': 'يتكرر في عدة أيام من الأسبوع، لذا يحتفظ Miqat بسلسلة لكل يوم: {titles}.',
+  'Repeats by a rule Miqat cannot follow exactly, so check its dates: {titles}.': 'يتكرر وفق قاعدة لا يستطيع Miqat اتباعها بدقة، فراجع تواريخه: {titles}.',
   'This is a copy of your Google calendars as they are now. Changes you make in Google later are not followed. Import again to refresh.': 'هذه نسخة من تقاويمك في Google كما هي الآن. التغييرات التي تجريها لاحقًا في Google لا تُتابَع. استورد من جديد للتحديث.'
 };
 
@@ -352,8 +352,8 @@ export const AR_EVENTS_PLURALS: PluralDictionary = {
     many: 'جارٍ القراءة من Google… {n} حدثًا حتى الآن', other: 'جارٍ القراءة من Google… {n} حدث حتى الآن'
   },
   'Saving {n} events to Miqat…': {
-    zero: 'جارٍ الحفظ في ميقات…', one: 'جارٍ حفظ حدث واحد في ميقات…', two: 'جارٍ حفظ حدثين في ميقات…',
-    few: 'جارٍ حفظ {n} أحداث في ميقات…', many: 'جارٍ حفظ {n} حدثًا في ميقات…', other: 'جارٍ حفظ {n} حدث في ميقات…'
+    zero: 'جارٍ الحفظ في Miqat…', one: 'جارٍ حفظ حدث واحد في Miqat…', two: 'جارٍ حفظ حدثين في Miqat…',
+    few: 'جارٍ حفظ {n} أحداث في Miqat…', many: 'جارٍ حفظ {n} حدثًا في Miqat…', other: 'جارٍ حفظ {n} حدث في Miqat…'
   },
   '{titles} and {n} more': {
     zero: '{titles}', one: '{titles} وواحد آخر', two: '{titles} واثنان آخران', few: '{titles} و{n} أخرى',

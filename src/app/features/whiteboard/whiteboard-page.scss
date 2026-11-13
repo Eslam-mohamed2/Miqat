@@ -1254,4 +1254,18 @@
     background: transparent;
     opacity: 1;
   }
+
+  // The two smallest buttons of the panel look the same and take a thumb: 40px around their middle answers.
+  .agenda-plus,
+  .agenda-submit {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+    }
+  }
+
+  .agenda-plus::after { inset: -10px; }
+  .agenda-submit::after { inset: -6px; }
 }

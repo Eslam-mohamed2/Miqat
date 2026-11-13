@@ -197,7 +197,9 @@ const COUNTRIES: Record<string, Country> = {
     name: 'Egypt',
     islamic: { 'new-year': 1, mawlid: 1, 'eid-al-fitr': 3, arafah: 1, 'eid-al-adha': 3 },
     rules: [
+      fixed(1, 1, NEW_YEAR, observance),
       fixed(1, 7, 'Coptic Christmas'),
+      fixed(3, 21, 'Mother’s Day', observance),
       fixed(1, 25, 'Revolution Day and Police Day'),
       fixed(4, 25, 'Sinai Liberation Day'),
       fixed(5, 1, LABOUR),
@@ -205,7 +207,8 @@ const COUNTRIES: Record<string, Country> = {
       orthodox(1, 'Sham El-Nessim'),
       fixed(6, 30, '30 June Revolution Day'),
       fixed(7, 23, 'Revolution Day (23 July)'),
-      fixed(10, 6, 'Armed Forces Day')
+      fixed(10, 6, 'Armed Forces Day'),
+      fixed(12, 23, 'Victory Day', observance)
     ]
   },
   SA: {

@@ -13,7 +13,8 @@
       } @else {
         <button type="button" class="who" (click)="openDetails()"
                 [title]="'Open the profile of {name}' | t: { name: c.friend.fullName }">
-          <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl" [online]="online()" [size]="34" />
+          <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl"
+                           [online]="c.canSend ? online() : null" [size]="34" />
           <span class="who-text">
             <span class="who-name"><bdi>{{ c.friend.fullName }}</bdi></span>
             <span class="who-status" [class.live]="typing()">

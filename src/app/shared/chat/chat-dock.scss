@@ -246,6 +246,23 @@ p, h1, h2, h3 {
   color: $mq-late;
 }
 
+// The friends could not be loaded: the sentence and "Try again", as on the People page.
+.error.retry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px;
+  line-height: 1.45;
+
+  button {
+    @include mq-btn-ghost(28px, 0 8px, 8px);
+    flex-shrink: 0;
+    font-size: 12px;
+    color: $mq-text-2;
+  }
+}
+
 .list {
   flex: 1;
   min-height: 0;

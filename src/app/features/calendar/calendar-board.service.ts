@@ -13,7 +13,9 @@ import { apiErrorMessage } from '../../core/http/api-error';
 import { t, tCount } from '../../core/i18n/i18n';
 import { DayOfWeekName, TaskDto } from '../../models/api.models';
 import { HijriDate, hijriDate, hijriDayLabel, hijriFullLabel, hijriRangeLabel } from '../../core/utils/hijri';
-import { OccasionDay, countryName, hasHolidays, isMuslimMajority, occasionsByDay } from '../../core/utils/occasions';
+import {
+  Occasion, OccasionDay, countryName, hasHolidays, isMuslimMajority, occasionsBetween, occasionsByDay
+} from '../../core/utils/occasions';
 import { countryOfZone } from '../../core/utils/zone-country';
 import {
   PRAYER_METHODS, PrayerMethod, PrayerName, placeForZone, prayerLabel, prayerTimes
@@ -224,6 +226,21 @@ export class CalendarBoard {
     }
     return found;
   }
+
+  /**
+   * The next few holidays and occasions from today on, up to a year ahead. A month can
+   * have none at all (Egypt has none in November and December), so the side panel
+   * lists these under the layer: the layer then always shows what is coming.
+   */
+  readonly nextOccasions = computed<Occasion[]>(() => {
+    if (!this.occasionsOn()) return [];
+    const today = this.todayKey();
+    const [year, month, day] = today.split('-');
+    const yearLater = `${Number(year) + 1}-${month}-${day === '29' && month === '02' ? '28' : day}`;
+    return occasionsBetween(today, yearLater, this.occasionCache().query)
+      .filter(occasion => occasion.date >= today)
+      .slice(0, 3);
+  });
 
   /** The zone of the second hour column, or null when it is off or the same as the first. */
   readonly secondZone = computed(() => {

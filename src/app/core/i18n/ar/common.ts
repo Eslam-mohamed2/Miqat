@@ -6,7 +6,7 @@ import { Dictionary, PluralDictionary } from '../i18n';
  */
 export const AR_COMMON: Dictionary = {
   // The product and its places
-  'Miqat': 'ميقات',
+  'Miqat': 'Miqat',
   'Calendar': 'التقويم',
   'Tasks': 'المهام',
   'Board': 'اللوحة',

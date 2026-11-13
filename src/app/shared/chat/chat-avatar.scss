@@ -39,7 +39,8 @@ img {
   color: $mq-accent-text;
 }
 
-.online-dot {
+.online-dot,
+.offline-dot {
   box-sizing: content-box;
   position: absolute;
   inset-inline-end: -1px;
@@ -51,4 +52,9 @@ img {
   border-radius: 50%;
   background: $mq-green;
   border: 2px solid var(--avatar-ring, #{$mq-bg});
+}
+
+// Offline: the grey of the People list's dot.
+.offline-dot {
+  background: $mq-placeholder;
 }

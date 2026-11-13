@@ -110,6 +110,7 @@ export const AR_CANVAS: Dictionary = {
   'Agenda': 'جدول الأعمال',
   'Add an agenda item': 'إضافة بند إلى جدول الأعمال',
   'Add an agenda item first': 'أضف بندًا إلى جدول الأعمال أولًا',
+  'Every item is finished. Press one to run it again.': 'انتهت كل البنود. اضغط على أحدها لتشغيله من جديد.',
   'Add an item': 'إضافة بند',
   'New agenda item': 'بند جديد في جدول الأعمال',
   'Add to the agenda': 'إضافة إلى جدول الأعمال',

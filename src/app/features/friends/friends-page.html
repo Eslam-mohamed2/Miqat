@@ -122,7 +122,8 @@
                       [attr.aria-pressed]="selectedId() === f.userId" (click)="select(f.userId)">
                 <span class="face">
                   <app-chat-avatar [name]="f.name" [url]="f.avatarUrl" [size]="38" />
-                  <span class="presence" [class]="'presence ' + presence(f.userId)"></span>
+                  <span class="presence" [class]="'presence ' + presence(f.userId)"
+                        [attr.title]="presenceLabel(f.userId) || null"></span>
                 </span>
                 <span class="row-text">
                   <span class="row-name" dir="auto">{{ f.name }}</span>
@@ -138,7 +139,8 @@
             } @empty {
               @if (query().trim()) {
                 <span class="none">{{ 'No one matches that search.' | t }}</span>
-              } @else {
+              } @else if (!friendsMissing()) {
+                <!-- Not said while the friends have not arrived: the line above then offers "Try again". -->
                 <span class="none">{{ 'No friends yet. Use “Add friend” to find people.' | t }}</span>
               }
             }
@@ -220,7 +222,8 @@
   <div class="profile-side">
     @if (selectedId(); as id) {
       <app-person-profile [userId]="id" (changed)="onRelationChange($event)" (back)="closeProfile()" />
-    } @else if (!loading()) {
+    } @else if (!loading() && !friendsMissing()) {
+      <!-- Not while the friends have not arrived: "No one here yet" would be a guess. -->
       <div class="nobody">
         <span class="nobody-title">{{ (friends().length ? 'Pick someone' : 'No one here yet') | t }}</span>
         <span>

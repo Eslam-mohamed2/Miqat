@@ -7,7 +7,7 @@ import { t } from '../i18n/i18n';
 import { AuthService } from './auth.service';
 import { FriendService } from './friend.service';
 import {
-  ChatGroupEvent, ChatMessageEvent, ChatParticipant, GroupCall, GroupCallMemberEvent, RealtimeService
+  ChatGroupEvent, ChatMessageEvent, ChatParticipant, GroupCall, GroupCallMemberEvent, PresenceEvent, RealtimeService
 } from './realtime.service';
 import { applyCallMembers, applyGroupChange, applyRead, typingLabel } from './chat-text';
 
@@ -68,13 +68,25 @@ const PEEK_SHOWN_MS = 6000;
 /** Chat windows side by side: two on a desktop, one on anything narrower. */
 const WIDE_SCREEN_PX = 1280;
 const MAX_HEADS = 6;
+/** While the live connection is down, the chats and who is online are read from the server this often instead. */
+export const POLL_WHILE_DOWN_MS = 30_000;
+/** Waits before asking again for the chats when the server did not answer; the last one repeats. */
+export const REFRESH_RETRY_MS = [2000, 5000, 10_000, 30_000];
+/** Waits before asking again for the friends; after the last one the list says it could not be loaded. */
+export const FRIENDS_RETRY_MS = [2000, 5000];
+
+/** Where the list of friends stands: not asked yet, on its way, there, or it could not be loaded. */
+export type FriendsState = 'idle' | 'loading' | 'ready' | 'failed';
 
 /**
  * Chats between friends and in groups: the list, the messages, what is unread,
  * who is online, and which chats are docked on the screen as bubbles or open windows.
  *
- * One instance for the whole app, fed by the live connection, so every piece
- * of chat UI shows the same state without asking the server again.
+ * One instance for the whole app, so every piece of chat UI shows the same
+ * state. Everything listed is read from the server with plain requests; the
+ * live connection then keeps it current. While that connection is down, the
+ * lists are simply read again every half minute, and once more the moment it
+ * is back, so nothing here depends on it being up.
  */
 @Injectable({ providedIn: 'root' })
 export class ChatService {
@@ -93,6 +105,20 @@ export class ChatService {
   private fetching = new Map<string, Array<(conversation: ChatConversation) => void>>();
   private groupsProbed = false;
   private me: string | null = null;
+  /** Counts the sign-ins this service has served: an answer that arrives for an earlier one is dropped. */
+  private session = 0;
+
+  private refreshing = false;
+  /** Something happened while the chats were being read: read them once more afterwards. */
+  private refreshQueued = false;
+  private refreshFailures = 0;
+  private refreshRetry?: ReturnType<typeof setTimeout>;
+  private pollTimer?: ReturnType<typeof setInterval>;
+  /** Readings of "who is online" on their way, and what was pushed about it since the oldest of them was asked. */
+  private onlineReadings = 0;
+  private presenceMeanwhile: PresenceEvent[] = [];
+  private friendsFailures = 0;
+  private friendsRetry?: ReturnType<typeof setTimeout>;
 
   /** Null until the server was asked; false on an API build without chat (the UI then hides itself). */
   readonly available = signal<boolean | null>(null);
@@ -105,8 +131,13 @@ export class ChatService {
   private readonly typingUsers = signal<Readonly<Record<string, readonly string[]>>>({});
   private readonly peekIds = signal<ReadonlySet<string>>(new Set());
 
-  /** The user's friends, for starting a chat or a group with them. Filled by loadFriends(). */
+  /**
+   * The user's friends, for starting a chat or a group with them: all of them,
+   * whether they have the app open or not. Filled by loadFriends().
+   */
   readonly friends = signal<ChatPerson[]>([]);
+  /** So a list can tell "no friends" from "still loading" and "could not be loaded". */
+  readonly friendsState = signal<FriendsState>('idle');
   /** The "New group" dialog is open (the chat corner draws it, on every page). */
   readonly creatingGroup = signal(false);
 
@@ -142,13 +173,14 @@ export class ChatService {
   start(): void {
     if (this.subscriptions.length) return;
     this.me = this.auth.getCurrentUserId();
+    this.session++;
 
     this.subscriptions = [
       this.realtime.chatMessage$.subscribe(m => this.onMessage(m)),
       this.realtime.chatMessageChanged$.subscribe(m => this.onMessageChanged(m)),
       this.realtime.chatRead$.subscribe(e => this.onRead(e.conversationId, e.userId, e.readAt)),
       this.realtime.chatTyping$.subscribe(e => this.showTyping(e.conversationId, e.userId)),
-      this.realtime.presenceChanged$.subscribe(e => this.setOnline(e.userId, e.isOnline)),
+      this.realtime.presenceChanged$.subscribe(e => this.onPresence(e)),
       this.realtime.chatGroupChanged$.subscribe(e => this.onGroupChanged(e)),
       this.realtime.chatGroupRemoved$.subscribe(e => this.dropConversation(e.conversationId)),
       this.realtime.groupCallStarted$.subscribe(call => this.patchConversation(call.conversationId, c => ({ ...c, activeCall: call }))),
@@ -156,11 +188,20 @@ export class ChatService {
       this.realtime.groupCallLeft$.subscribe(e => this.onCallMembers(e)),
       this.realtime.groupCallEnded$.subscribe(e => this.patchConversation(e.conversationId,
         c => (c.activeCall?.callId === e.callId ? { ...c, activeCall: null } : c))),
-      // Whatever was pushed while the connection was down was missed.
-      this.realtime.reconnected$.subscribe(() => this.refresh())
+      // The connection is up, for the first time or again. Whatever was pushed
+      // before that moment was missed (at the start: someone who came online
+      // after the first answer was written), so the lists are read once more.
+      this.realtime.connected$.subscribe(() => this.refresh())
     ];
 
     this.refresh();
+    // Without the live connection nothing is pushed: ask instead, while the page is looked at.
+    this.pollTimer = setInterval(() => {
+      const looking = typeof document === 'undefined' || document.visibilityState === 'visible';
+      // Not while a reading that failed is waiting for its next try: that wait is deliberate.
+      const waiting = this.refreshRetry !== undefined;
+      if (looking && !waiting && !this.realtime.connected() && this.available() !== false) this.refresh();
+    }, POLL_WHILE_DOWN_MS);
   }
 
   /** Called on leaving the signed-in layout (sign-out): nothing of one account may reach the next. */
@@ -175,6 +216,19 @@ export class ChatService {
     this.fetching.clear();
     this.groupsProbed = false;
     this.me = null;
+    this.session++;
+    this.refreshing = false;
+    this.refreshQueued = false;
+    this.refreshFailures = 0;
+    clearTimeout(this.refreshRetry);
+    this.refreshRetry = undefined;
+    clearInterval(this.pollTimer);
+    this.pollTimer = undefined;
+    this.onlineReadings = 0;
+    this.presenceMeanwhile = [];
+    this.friendsFailures = 0;
+    clearTimeout(this.friendsRetry);
+    this.friendsRetry = undefined;
 
     this.available.set(null);
     this.groupsAvailable.set(false);
@@ -184,24 +238,49 @@ export class ChatService {
     this.typingUsers.set({});
     this.peekIds.set(new Set());
     this.friends.set([]);
+    this.friendsState.set('idle');
     this.creatingGroup.set(false);
     this.heads.set([]);
     this.openIds.set([]);
   }
 
+  /**
+   * Reads the chats and who is online from the server. Called at the start, each
+   * time the live connection comes up, and every half minute while it is down.
+   */
   private refresh(): void {
+    if (this.refreshing) {
+      this.refreshQueued = true;
+      return;
+    }
+
+    const session = this.session;
+    this.refreshing = true;
+    this.refreshQueued = false;
+    clearTimeout(this.refreshRetry);
+    this.refreshRetry = undefined;
+    const since = this.beginOnlineReading();
+
     forkJoin({
       conversations: this.http.get<ChatConversation[]>(this.apiUrl),
-      online: this.http.get<string[]>(`${this.apiUrl}/online`)
+      // On its own feet: if only this one fails, the chats are still listed and
+      // the people in them are as online as the chats say.
+      online: this.http.get<string[]>(`${this.apiUrl}/online`).pipe(catchError(() => of(null)))
     }).subscribe({
       next: ({ conversations, online }) => {
+        if (session !== this.session) return;
+        this.refreshing = false;
+        this.refreshFailures = 0;
+
         const firstLoad = this.available() !== true;
         // Chats opened here that have no message yet are not in the server's list; keep them.
         const listed = new Set(conversations.map(c => c.id));
         const local = this.allConversations().filter(c => !listed.has(c.id) && !c.lastMessageAt);
 
         this.allConversations.set([...conversations, ...local]);
-        this.onlineIds.set(new Set([...online, ...conversations.flatMap(onlineIn)]));
+        const ids = new Set([...(online ?? this.onlineIds()), ...conversations.flatMap(onlineIn)]);
+        this.endOnlineReading(since, ids);
+        this.onlineIds.set(ids);
         this.available.set(true);
         this.probeGroups(conversations);
 
@@ -210,12 +289,60 @@ export class ChatService {
         this.heads.update(ids => ids.filter(id => firstLoad || known.has(id)));
         this.openIds.update(ids => ids.filter(id => known.has(id)));
 
-        if (firstLoad) this.restoreHeads();
+        if (firstLoad) {
+          this.restoreHeads();
+          // So the chat list has the friends before it is opened for the first time.
+          if (this.friendsState() === 'idle') this.loadFriends();
+        }
         this.openIds().forEach(id => this.loadMessages(id, true));
+
+        if (this.refreshQueued) this.refresh();
       },
-      // 404 is an API build without chat; anything else leaves chat hidden rather than half working.
-      error: () => { if (this.available() === null) this.available.set(false); }
+      error: (err: HttpErrorResponse) => {
+        if (session !== this.session) return;
+        this.refreshing = false;
+        this.endOnlineReading(since);
+
+        // 404 is an API build without chat: the chat stays hidden.
+        if (err?.status === 404) {
+          if (this.available() === null) this.available.set(false);
+          return;
+        }
+
+        // Anything else is a server that is waking up or a gap in the network,
+        // not a reason to take the chat (and everyone in it) off the screen for
+        // the rest of the visit: ask again, a little later each time.
+        const wait = REFRESH_RETRY_MS[Math.min(this.refreshFailures++, REFRESH_RETRY_MS.length - 1)];
+        this.refreshRetry = setTimeout(() => {
+          this.refreshRetry = undefined;
+          this.refresh();
+        }, wait);
+      }
     });
+  }
+
+  /**
+   * A reading of "who is online" is on its way. What is pushed from now on is
+   * newer than its answer will be, so it is remembered and wins over the answer.
+   */
+  private beginOnlineReading(): number {
+    this.onlineReadings++;
+    return this.presenceMeanwhile.length;
+  }
+
+  private endOnlineReading(since: number, ids?: Set<string>): void {
+    if (ids) {
+      this.presenceMeanwhile.slice(since).forEach(e => (e.isOnline ? ids.add(e.userId) : ids.delete(e.userId)));
+    }
+    if (--this.onlineReadings <= 0) {
+      this.onlineReadings = 0;
+      this.presenceMeanwhile = [];
+    }
+  }
+
+  private onPresence(event: PresenceEvent): void {
+    if (this.onlineReadings > 0) this.presenceMeanwhile.push(event);
+    this.setOnline(event.userId, event.isOnline);
   }
 
   /**
@@ -239,13 +366,25 @@ export class ChatService {
     });
   }
 
-  /** Loads the user's friends, for the lists that start a chat or fill a group. */
+  /**
+   * Loads the user's friends, for the lists that start a chat or fill a group.
+   * Every friend is listed: being offline never takes anyone off these lists.
+   *
+   * A failure is tried again twice by itself. The friends already listed stay
+   * listed meanwhile; with none listed, the state says the list could not be
+   * loaded so the screen does not claim the user has no friends.
+   */
   loadFriends(): void {
+    const session = this.session;
     const me = this.me;
+    clearTimeout(this.friendsRetry);
+    this.friendsRetry = undefined;
+    if (this.friendsState() !== 'ready') this.friendsState.set('loading');
 
     this.friendService.getMyFriends().subscribe({
       next: rows => {
-        if (me !== this.me) return;
+        if (session !== this.session) return;
+        this.friendsFailures = 0;
         this.friends.set(rows.map(row => {
           const friendIsSender = row.senderId !== me;
           return {
@@ -255,8 +394,22 @@ export class ChatService {
               (friendIsSender ? row.senderProfilePictureUrl : row.receiverProfilePictureUrl)
           };
         }).sort((a, b) => a.fullName.localeCompare(b.fullName)));
+        this.friendsState.set('ready');
       },
-      error: () => { /* the chats that exist are still listed */ }
+      error: () => {
+        if (session !== this.session) return;
+
+        if (this.friendsFailures < FRIENDS_RETRY_MS.length) {
+          this.friendsRetry = setTimeout(() => {
+            this.friendsRetry = undefined;
+            this.loadFriends();
+          }, FRIENDS_RETRY_MS[this.friendsFailures++]);
+          return;
+        }
+
+        this.friendsFailures = 0;
+        if (this.friendsState() !== 'ready') this.friendsState.set('failed');
+      }
     });
   }
 

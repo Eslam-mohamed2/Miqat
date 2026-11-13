@@ -338,9 +338,9 @@ const SERVICES: Dictionary = {
   'The Google window was closed before it finished, so nothing was imported. If Google showed an error there instead of a sign-in, this address is not approved for Google sign-in yet.':
     'أُغلقت نافذة Google قبل أن تكتمل، فلم يُستورد شيء. إن أظهرت Google خطأً هناك بدل تسجيل الدخول، فهذا العنوان غير معتمد بعد لتسجيل الدخول عبر Google.',
   'Your browser blocked the Google window. Allow pop-ups for Miqat and try again.':
-    'حجب متصفحك نافذة Google. اسمح بالنوافذ المنبثقة لميقات ثم حاول مرة أخرى.',
+    'حجب متصفحك نافذة Google. اسمح بالنوافذ المنبثقة لـMiqat ثم حاول مرة أخرى.',
   'You did not give Miqat permission to read your Google calendars, so nothing was imported.':
-    'لم تمنح ميقات إذن قراءة تقاويمك على Google، فلم يُستورد شيء.',
+    'لم تمنح Miqat إذن قراءة تقاويمك على Google، فلم يُستورد شيء.',
   'Google did not pass on the permission to read your calendars. Try again and tick the calendar box when Google asks.':
     'لم تمنح Google إذن قراءة تقاويمك. حاول مرة أخرى وحدّد خانة التقويم عندما تسألك Google.',
   'Google refused the request. This is ours to fix, not yours; you can still import an .ics file.':
@@ -348,14 +348,14 @@ const SERVICES: Dictionary = {
   'Google’s permission ran out (it lasts about an hour). Start the import again.':
     'انتهت صلاحية إذن Google (يدوم نحو ساعة). ابدأ الاستيراد من جديد.',
   'Google has not been set up to share calendars with Miqat yet. This is ours to fix, not yours; you can still import an .ics file.':
-    'لم تُضبط Google بعد لمشاركة التقاويم مع ميقات. إصلاح ذلك علينا لا عليك، وما زال بإمكانك استيراد ملف ICS.',
+    'لم تُضبط Google بعد لمشاركة التقاويم مع Miqat. إصلاح ذلك علينا لا عليك، وما زال بإمكانك استيراد ملف ICS.',
   'Google is taking too many requests right now. Try again in a minute.': 'تتلقى Google طلبات كثيرة الآن. حاول بعد دقيقة.',
   'Google no longer has this calendar.': 'هذا التقويم لم يعد موجودًا على Google.',
   'Google could not be reached. Check your connection and try again.': 'تعذّر الوصول إلى Google. تحقق من اتصالك وحاول مرة أخرى.',
   'Google could not finish this. Try again in a minute.': 'تعذّر على Google إكمال ذلك. حاول بعد دقيقة.',
   'Google refused to let Miqat read this. Try again, or import an .ics file instead.':
-    'رفضت Google السماح لميقات بقراءة ذلك. حاول مرة أخرى، أو استورد ملف ICS.',
-  'Miqat could not save these events. Try again.': 'تعذّر على ميقات حفظ هذه الأحداث. حاول مرة أخرى.'
+    'رفضت Google السماح لـMiqat بقراءة ذلك. حاول مرة أخرى، أو استورد ملف ICS.',
+  'Miqat could not save these events. Try again.': 'تعذّر على Miqat حفظ هذه الأحداث. حاول مرة أخرى.'
 };
 
 /**

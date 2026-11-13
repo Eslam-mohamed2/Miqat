@@ -195,6 +195,18 @@
               [attr.aria-label]="layer.label" [disabled]="!!layer.disabled" [title]="layer.disabled"
               (click)="toggleLayer(layer)"><span></span></button>
     </div>
+    <!-- What is coming, so the layer shows something in a month that has no occasion. -->
+    @if (layer.id === 'occasions' && layer.on && comingUp().length) {
+      <div class="coming" role="list" [attr.aria-label]="'Coming up' | t">
+        @for (next of comingUp(); track next.id) {
+          <button type="button" class="coming-row" role="listitem" [title]="next.title" (click)="showOccasion(next.date)">
+            <span class="coming-glyph" [class.holiday]="next.holiday" aria-hidden="true"></span>
+            <span class="coming-name">{{ next.name }}</span>
+            <span class="coming-when">{{ next.when }}</span>
+          </button>
+        }
+      </div>
+    }
   }
 </section>
 

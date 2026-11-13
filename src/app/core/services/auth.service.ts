@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { Observable, defer, firstValueFrom, of, throwError } from 'rxjs';
+import { tap, catchError, finalize, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   LoginRequest, RegisterRequest, RefreshTokenRequest, VerifyOtpDto,
@@ -14,6 +14,20 @@ import { isApiEnvelope } from '../http/api-response';
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 const LEGACY_TOKEN_KEY = 'token';
+/** The live connection renews a token that is about to run out, so it is not refused halfway through connecting. */
+const ABOUT_TO_EXPIRE_MS = 10_000;
+/** The name under which the tabs of this browser take turns renewing the session. */
+const RENEWAL_LOCK = 'miqat.session.renewal';
+/** A tab that does not get its turn within this time renews anyway. */
+const RENEWAL_TURN_WAIT_MS = 10_000;
+
+/** The refresh token was refused (or there is none): the session is over and the user has been sent to sign in. */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('Session expired');
+    this.name = 'SessionExpiredError';
+  }
+}
 
 @Injectable({
   providedIn: 'root'
@@ -47,6 +61,128 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/refresh`, data, { responseType: 'text' }).pipe(
       tap(res => this.saveToken(res))
     );
+  }
+
+  /** The renewal that is on its way, shared by everyone who asks while it is. */
+  private renewal: Observable<string> | null = null;
+
+  /**
+   * Renews the access token with the stored refresh token and answers the new one.
+   *
+   * There is one renewal at a time for the whole app: the HTTP interceptor and
+   * the live connection both come here, and whoever asks while one is on its way
+   * waits for that one. The API rotates refresh tokens (using one revokes it), so
+   * two renewals side by side would make the second fail and sign the user out.
+   * For the same reason the tabs of one browser take turns (see renewInTurn):
+   * they share the stored tokens, and after a sleep they all wake up together.
+   *
+   * Fails with {@link SessionExpiredError} when the session is really over (the
+   * user is then signed out and sent to the sign-in screen), and with the
+   * original error when the server could not be reached: a dropped connection is
+   * not the end of a session.
+   */
+  renewSession(): Observable<string> {
+    if (this.renewal) return this.renewal;
+
+    const renewal: Observable<string> = defer(() => this.renewInTurn()).pipe(
+      catchError(err => {
+        if (err instanceof SessionExpiredError) this.logout().subscribe();
+        return throwError(() => err);
+      }),
+      finalize(() => { if (this.renewal === renewal) this.renewal = null; }),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+    this.renewal = renewal;
+    return renewal;
+  }
+
+  /**
+   * Renews when it is this tab's turn. A tab that waited finds the token the
+   * tab before it stored, and uses that one instead of asking the server again.
+   */
+  private renewInTurn(): Observable<string> {
+    const stale = this.getToken();
+    const renew = (): Observable<string> => {
+      const stored = this.getToken();
+      if (stored && stored !== stale && !this.isTokenExpired(stored, ABOUT_TO_EXPIRE_MS)) return of(stored);
+      return this.renewOnce(true);
+    };
+
+    const locks = this.tabLocks();
+    if (!locks) return renew();
+
+    return new Observable<string>(subscriber => {
+      let started = false;
+      const giveUp = new AbortController();
+      const timer = setTimeout(() => giveUp.abort(), RENEWAL_TURN_WAIT_MS);
+      const run = () => new Promise<void>(done => {
+        started = true;
+        clearTimeout(timer);
+        renew().subscribe({
+          next: token => subscriber.next(token),
+          error: err => { done(); subscriber.error(err); },
+          complete: () => { done(); subscriber.complete(); }
+        });
+      });
+
+      // The turn is held until the new tokens are stored (the promise of run()).
+      locks.request(RENEWAL_LOCK, { signal: giveUp.signal }, run).catch(() => {
+        clearTimeout(timer);
+        // No turn (another tab is stuck with it, or the browser refused): renew anyway.
+        if (!started) run();
+      });
+    });
+  }
+
+  /** The browser's locks, shared by its tabs; null where there are none. Its own method so a test can replace it. */
+  private tabLocks(): LockManager | null {
+    return typeof navigator !== 'undefined' && navigator.locks ? navigator.locks : null;
+  }
+
+  private renewOnce(mayRetry: boolean): Observable<string> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) return throwError(() => new SessionExpiredError());
+
+    return this.refresh({ token: this.getToken() || '', refreshToken }).pipe(
+      map(response => {
+        const token = this.extractTokens(response)?.accessToken;
+        if (!token) throw new SessionExpiredError();
+        return token;
+      }),
+      catchError(err => {
+        if (err instanceof SessionExpiredError) return throwError(() => err);
+
+        // A refusal does not always mean the session is over: another tab may have
+        // used this refresh token first, which revokes it and stores a new one.
+        // If storage now holds a different token, that one is live: try it, once.
+        const stored = this.getRefreshToken();
+        if (mayRetry && stored && stored !== refreshToken) return this.renewOnce(false);
+
+        // Only a refusal from the refresh endpoint itself ends the session.
+        const refused = err?.status === 401 || err?.status === 403;
+        return throwError(() => (refused ? new SessionExpiredError() : err));
+      })
+    );
+  }
+
+  /**
+   * An access token the server will accept right now, for the live connection:
+   * the stored one while it is good, otherwise a renewed one. Null when nobody
+   * is signed in. Rejects when the token had to be renewed and could not be.
+   */
+  async freshToken(): Promise<string | null> {
+    const token = this.getToken();
+    if (!token) return null;
+    if (!this.isTokenExpired(token, ABOUT_TO_EXPIRE_MS)) return token;
+    // Nothing to renew it with: the server decides.
+    if (!this.getRefreshToken()) return token;
+
+    return firstValueFrom(this.renewSession());
+  }
+
+  /** Someone is signed in: the access token is good, or there is a refresh token to renew it with. */
+  hasSession(): boolean {
+    return this.isLoggedIn() || (!!this.getToken() && !!this.getRefreshToken());
   }
 
   logout(data?: RefreshTokenRequest): Observable<unknown> {
@@ -211,11 +347,11 @@ export class AuthService {
     }
   }
 
-  /** True when the token carries an `exp` claim that has already passed. */
-  isTokenExpired(token: string | null = this.getToken()): boolean {
+  /** True when the token carries an `exp` claim that has already passed (or passes within `withinMs`). */
+  isTokenExpired(token: string | null = this.getToken(), withinMs = 0): boolean {
     const payload = this.decodeToken(token);
     if (!payload || typeof payload['exp'] !== 'number') return false;
-    return payload['exp'] * 1000 <= Date.now();
+    return payload['exp'] * 1000 <= Date.now() + withinMs;
   }
 
   isLoggedIn(): boolean {

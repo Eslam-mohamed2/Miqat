@@ -340,8 +340,8 @@
     <section class="agenda">
       <div class="agenda-head">
         <span class="eyebrow">{{ 'Agenda' | t }}</span>
-        <button type="button" class="agenda-plus" [attr.aria-label]="'Add an agenda item' | t" [title]="'Add an agenda item' | t"
-                [attr.aria-expanded]="agendaOpen()" (click)="agendaOpen.set(!agendaOpen())">
+        <button #agendaPlus type="button" class="agenda-plus" [attr.aria-label]="'Add an agenda item' | t" [title]="'Add an agenda item' | t"
+                [attr.aria-expanded]="agendaAdding()" (click)="toggleAgendaAdd()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
         </button>
         @if (prayer(); as next) {
@@ -351,7 +351,7 @@
       <div class="timer-line">
         <span class="timer" role="timer" [attr.aria-label]="'Time left in this item' | t">{{ timerText() }}</span>
         <button type="button" class="timer-btn" [attr.aria-label]="(running() ? 'Pause timer' : 'Start timer') | t"
-                [disabled]="!currentItem()" [title]="currentItem() ? '' : ('Add an agenda item first' | t)" (click)="toggleTimer()">
+                [disabled]="!currentItem()" [title]="timerHint()" (click)="toggleTimer()">
           @if (running()) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
           } @else {
@@ -382,11 +382,12 @@
         <span class="hint">{{ 'No agenda yet. Add what this session should cover and the timer keeps each item to its time.' | t }}</span>
       }
 
-      @if (agendaOpen() || !agenda().items.length) {
+      @if (agendaAdding()) {
         <form class="agenda-add" (submit)="$event.preventDefault(); addAgendaItem(newTitle, newMinutes)">
           <input #newTitle #agendaField type="text" dir="auto" class="agenda-new" [placeholder]="'Add an item' | t" maxlength="80" [attr.aria-label]="'New agenda item' | t"
-                 (keydown.escape)="agendaOpen.set(false)" />
-          <input #newMinutes [type]="numberField" inputmode="numeric" class="agenda-minutes" min="1" max="240" [value]="10 | num" [attr.aria-label]="'Minutes' | t" />
+                 (keydown.escape)="closeAgendaAdd(agendaPlus)" />
+          <input #newMinutes [type]="numberField" inputmode="numeric" class="agenda-minutes" min="1" max="240" [value]="10 | num" [attr.aria-label]="'Minutes' | t"
+                 (keydown.escape)="closeAgendaAdd(agendaPlus)" />
           <span class="agenda-unit">{{ 'min' | t }}</span>
           <button type="submit" class="agenda-submit" [attr.aria-label]="'Add to the agenda' | t" [title]="'Add' | t">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
