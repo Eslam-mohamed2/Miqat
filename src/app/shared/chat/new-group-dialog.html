@@ -1,0 +1,37 @@
+<div class="veil" (click)="close()"></div>
+
+<section class="dialog" role="dialog" aria-modal="true" aria-labelledby="new-group-title">
+  <header class="top">
+    <h2 id="new-group-title">{{ 'New group' | t }}</h2>
+    <button type="button" class="icon-btn" (click)="close()" [attr.aria-label]="'Close' | t" [title]="'Close' | t">
+      <app-chat-icon name="close" [size]="15" />
+    </button>
+  </header>
+
+  <label class="field">
+    <span class="label">{{ 'Name' | t }}</span>
+    <input #nameBox type="text" maxlength="60" [placeholder]="'Weekend trip' | t" autocomplete="off"
+           [attr.dir]="name() ? 'auto' : null"
+           [value]="name()" (input)="name.set($any($event.target).value)" (keydown.enter)="create()" />
+  </label>
+
+  <div class="field grow">
+    <span class="label">
+      {{ memberIds().length ? ('People · {n} chosen' | t: { n: memberIds().length }) : ('People' | t) }}
+    </span>
+    <app-friend-picker [people]="chat.friends()" [selected]="memberIds()" (selectedChange)="pick($event)"
+                       [emptyText]="'Add friends on the People page first. A group is made of your friends.' | t" />
+  </div>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <footer class="foot">
+    <span class="hint" aria-live="polite">{{ hint() }}</span>
+    <button type="button" class="cancel" (click)="close()">{{ 'Cancel' | t }}</button>
+    <button type="button" class="create" (click)="create()" [disabled]="!ready() || saving()">
+      {{ (saving() ? 'Creating…' : 'Create group') | t }}
+    </button>
+  </footer>
+</section>

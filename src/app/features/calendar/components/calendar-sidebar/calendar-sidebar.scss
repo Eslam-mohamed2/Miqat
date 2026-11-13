@@ -1,511 +1,458 @@
 @use '../../../../../styles/tokens' as *;
+@use '../../calendar' as cal;
 
-.sidebar-container {
+// design/miqat-2.0: the left column of Main / L-Week.
+:host {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 24px;
-  overflow-y: auto;
+  gap: 24px;
+  padding: 18px 16px;
+  color: $mq-text;
 }
 
-h4 {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.mini-calendar-section {
+.section-head {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.mini-calendar-header {
-  display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-
-  .nav-arrows {
-    display: flex;
-    gap: 8px;
-    color: var(--text-secondary);
-
-    .icon-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      padding: 0;
-      background: none;
-      border: 0;
-      border-radius: 6px;
-      color: inherit;
-      cursor: pointer;
-
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
-
-      &:hover {
-        color: var(--text-primary);
-        background: var(--bg-hover);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--teal-primary);
-        outline-offset: 1px;
-      }
-    }
-  }
+  gap: 8px;
+  padding: 0 4px;
 }
 
-.mini-calendar-grid {
+.section-title,
+.list-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.section-note {
+  font-size: 11px;
+  color: $mq-muted;
+  white-space: nowrap;
+
+  &.plan-total { font-size: 11.5px; }
+}
+
+.hint {
+  padding: 2px 4px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: $mq-muted;
+}
+
+.side-error {
+  margin: -8px 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #{$mq-late} 10%, transparent);
+  border: 1px solid color-mix(in srgb, #{$mq-late} 32%, transparent);
+  font-size: 12px;
+  line-height: 1.45;
+  color: $mq-late;
+}
+
+// ── Mini month ──────────────────────────────────────────────────────────────
+.mini,
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  row-gap: 2px;
   text-align: center;
-
-  .day-name {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 8px;
-
-    &.highlight {
-      color: var(--primary, #13c296);
-    }
-  }
-
-  .day-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    aspect-ratio: 1;
-
-    &.not-current {
-      color: var(--text-muted, #9ca3af);
-    }
-
-    .day-circle {
-      // A button: it jumps the main grid to that day.
-      width: 28px;
-      height: 28px;
-      padding: 0;
-      border: 0;
-      background: none;
-      font: inherit;
-      color: inherit;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      cursor: pointer;
-      transition: background 0.2s;
-
-      &:hover {
-        background: var(--bg-hover);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--teal-primary);
-        outline-offset: 1px;
-      }
-    }
-  }
 }
 
-.divider {
-  height: 1px;
-  background-color: var(--border);
-  margin: 24px 0;
+.mini-dow {
+  padding-bottom: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: $mq-muted;
 }
 
-.calendars-section {
+.mini-day {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .header-btn {
-    padding: 3px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: transparent;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: color 0.15s ease, border-color 0.15s ease;
-
-    &:hover {
-      color: var(--text-primary);
-      border-color: var(--text-muted);
-    }
-  }
-}
-
-.calendar-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-// The whole row is the control. Previously this was a <mat-checkbox> plus a
-// separate colour dot pushed to the far right, so the name, the box and the
-// colour were three disconnected things with only the tiny box clickable.
-.calendar-item {
-  display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 7px 8px;
-  margin: 0 -8px;
+  justify-content: center;
+  gap: 2px;
+  height: 32px;
+  padding: 0;
   border: 0;
   border-radius: 8px;
   background: transparent;
+  color: $mq-text-3;
+  font-family: inherit;
+  font-size: 12px;
+  // As the design draws them: the font's own figures, not the tabular ones.
+  font-feature-settings: normal;
   cursor: pointer;
-  text-align: left;
-  transition: background 0.15s ease;
+  transition: background $mq-t-press $mq-ease-quick, color $mq-t-press $mq-ease-quick;
+  @include mq-focus(1px);
 
-  &:hover { background: var(--bg-hover); }
+  &:hover { background: $mq-hover; color: $mq-text; }
+  &.out { color: $mq-placeholder; }
 
-  &:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: -2px;
+  &.in-view {
+    background: $mq-hover;
+    color: $mq-text;
   }
 
-  // Filtered-out projects stay readable but clearly inactive.
-  &.off {
-    .cal-name { color: var(--text-muted); }
-    .cal-box {
-      background: transparent;
-      border-color: var(--border);
+  &.today {
+    background: $mq-accent;
+    color: $mq-on-accent;
+    font-weight: 700;
+  }
+
+  // A public holiday: a small diamond in the corner.
+  &.holiday {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      inset-inline-end: 3px;
+      width: 4px;
+      height: 4px;
+      border-radius: 1px;
+      background: $mq-accent-text;
+      transform: rotate(45deg);
     }
+
+    &.today::after { background: $mq-on-accent; }
   }
 }
 
-.cal-box {
-  flex: 0 0 auto;
+// How full the day is: a longer and stronger mark for a busier day.
+.mini-load {
+  height: 2px;
+  border-radius: 2px;
+
+  &[data-load='0'] { width: 0; }
+  &[data-load='1'] { width: 6px; background: color-mix(in srgb, #{$mq-accent} 55%, transparent); }
+  &[data-load='2'] { width: 10px; background: color-mix(in srgb, #{$mq-accent} 75%, transparent); }
+  &[data-load='3'] { width: 14px; background: color-mix(in srgb, #{$mq-accent} 95%, transparent); }
+
+  .today & { background: $mq-on-accent; }
+}
+
+// ── To plan ─────────────────────────────────────────────────────────────────
+.plan-card {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: var(--cal-color, var(--primary));
-  border: 1.5px solid var(--cal-color, var(--primary));
-  transition: background 0.15s ease, border-color 0.15s ease;
+  gap: 8px;
+  padding: 9px 8px;
+  border-radius: 10px;
+  border: 1px solid $mq-line;
+  background: $mq-card;
+  cursor: grab;
+  transition: background $mq-t-press $mq-ease-quick, border-color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
 
-  mat-icon {
-    font-size: 13px;
-    width: 13px;
-    height: 13px;
-    line-height: 13px;
-    color: #fff;
-  }
+  &:hover { background: $mq-row-hover; }
+  &:active { cursor: grabbing; }
 }
 
-.cal-name {
+.grip {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: $mq-line-7;
+}
+
+.plan-text {
   flex: 1;
   min-width: 0;
-  font-size: 0.8125rem;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cal-count {
-  flex: 0 0 auto;
-  min-width: 20px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  color: var(--text-secondary);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-}
-
-.schedule-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-
-  .schedule-date {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    letter-spacing: 0.05em;
-
-    .date-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background-color: var(--primary, #13c296);
-    }
-  }
-}
-
-.schedule-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.schedule-card {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  }
-
-  .event-time {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  .event-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .event-subtitle {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.75rem;
-    color: var(--text-muted, #9ca3af);
-
-    .subtitle-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-    }
-  }
 }
 
-// Keyed to the calendar's own width (the "calendar" container set on the page), not
-// the window's: see calendar-page.scss. This is the layout for when the sidebar sits
-// underneath the grid.
-@container calendar (max-width: 900px) {
-  .sidebar-container {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 32px;
-    padding: 24px 16px;
-    height: auto;
-    overflow-y: visible;
-  }
-  .mini-calendar-section {
-    width: 280px;
-    flex-shrink: 0;
-  }
-  .calendars-section,
-  .invitations-section,
-  .reminders-section {
-    width: 220px;
-    flex-shrink: 0;
-  }
-  .schedule-section {
-    flex: 1;
-    min-width: 280px;
-  }
-  .divider {
-    display: none;
-  }
-}
-
-@container calendar (max-width: 700px) {
-  .sidebar-container {
-    flex-direction: column;
-    gap: 24px;
-  }
-  .mini-calendar-section,
-  .calendars-section,
-  .invitations-section,
-  .reminders-section,
-  .schedule-section {
-    width: 100%;
-    max-width: none;
-    // Lets a section be narrower than its content, so nothing is cut off at 320px.
-    min-width: 0;
-  }
-  // A month grid the full width of a tablet would be oversized.
-  .mini-calendar-section {
-    max-width: 360px;
-  }
-}
-
-// ── Added with the real month grid ──────────────────────────────────────────
-// The grid now carries a date per cell, so "today" is marked on the circle
-// itself and days bleeding in from the neighbouring month are dimmed.
-.day-cell.outside .day-circle {
-  // Dimmed, but still readable: at 45% opacity these numbers measured 1.4:1.
-  color: var(--text-muted);
-  opacity: 0.7;
-}
-
-// The focused day (what Week and Day views are built around).
-.mini-calendar-grid .day-cell .day-circle.selected {
-  box-shadow: inset 0 0 0 2px var(--teal-primary);
-  font-weight: 700;
-}
-
-.mini-calendar-grid .day-cell .day-circle.today {
-  background: var(--teal-primary);
-  // The text colour that goes with the brand fill in each theme: near-black on
-  // the dark theme's bright teal, white on the light theme's deep one.
-  color: var(--btn-quick-add-text);
-  font-weight: 700;
-}
-
-.event-day {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--teal-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-// Replaces the empty list that still reserved its full height.
-.empty-hint {
-  margin: 8px 0 0;
+.plan-title {
   font-size: 12.5px;
-  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-// ── Events: calendars, invitations, reminders ───────────────────────────────
-.side-error {
-  margin: 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 12.5px;
+.plan-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: $mq-muted;
+}
+
+.plan-dot {
+  @include cal.dot(6px, 2px);
+}
+
+.plan-project {
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+.plan-est {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: $mq-line;
+  color: $mq-text-3;
+}
+
+.plan-due {
+  flex-shrink: 0;
   font-weight: 600;
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--text-danger) 12%, transparent);
+
+  &.alone { margin-inline-start: auto; }
+  &.late { color: $mq-late; }
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.header-btn mat-icon {
-  font-size: 14px;
-  width: 14px;
-  height: 14px;
-  vertical-align: -2px;
-}
-
-.count-badge {
-  min-width: 20px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--teal-primary);
-  color: var(--btn-quick-add-text);
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-}
-
-// A calendar row: the switch, and a pencil that shows on hover (always on touch).
-.calendar-row {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-
-  .calendar-item { flex: 1; min-width: 0; }
-}
-
-.row-edit {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
+.more-btn {
+  align-self: flex-start;
+  min-height: 24px;
+  padding: 0 4px;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: $mq-accent-text;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  @include mq-focus;
 
-  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+  &:hover { text-decoration: underline; }
+}
 
-  &:hover { background: var(--bg-hover); color: var(--text-primary); }
-  &:focus-visible { opacity: 1; outline: 2px solid var(--primary); outline-offset: -2px; }
+// ── Invitations ─────────────────────────────────────────────────────────────
+.invite {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 8px;
+  border-radius: 10px;
+  border: 1px solid $mq-line;
+  background: $mq-card;
+}
 
-  .calendar-row:hover &,
-  &.shown { opacity: 1; }
+.invite-open {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  @include mq-focus;
+
+  &:hover .invite-title { text-decoration: underline; }
+}
+
+.invite-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.invite-meta {
+  font-size: 11px;
+  line-height: 1.4;
+  color: $mq-muted;
+}
+
+.invite-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.invite-btn {
+  @include mq-btn-outline(28px, 0 4px, 8px);
+  font-size: 11.5px;
+  color: $mq-text-4;
+
+  &.yes {
+    border-color: $mq-accent-text;
+    background: color-mix(in srgb, #{$mq-accent} 12%, transparent);
+    color: $mq-text;
+  }
+
+  @include touch { height: 40px; }
+}
+
+// ── Calendars, projects, layers ─────────────────────────────────────────────
+.lists {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.list-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 0 6px;
+  padding-inline: 4px 0;
+}
+
+.list-title {
+  padding: 0 4px 6px;
+
+  .list-head & { padding: 0; }
+  &.spaced { padding-top: 14px; }
+}
+
+.head-btn {
+  @include mq-icon-btn(24px, 7px);
 
   @include touch {
-    opacity: 1;
     width: 40px;
     height: 40px;
   }
 }
 
-.calendar-form {
+.side-menu {
+  position: absolute;
+  top: calc(100% - 2px);
+  inset-inline-end: 0;
+  z-index: 20;
+  width: 216px;
+
+  a.mq-menu-item { text-decoration: none; }
+
+  // "Import from Google Calendar" takes two lines in a column this narrow.
+  .mq-menu-item {
+    padding-block: 7px;
+    line-height: 1.3;
+  }
+}
+
+// The real file input stays in the page for the keyboard and screen readers;
+// only its box is taken out of view.
+.file-item {
+  position: relative;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &:focus-within {
+    outline: 2px solid $mq-accent;
+    outline-offset: -2px;
+  }
+
+  &.disabled { opacity: .5; cursor: default; }
+}
+
+.cal-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  &:hover .row-btn,
+  &:focus-within .row-btn { opacity: 1; }
+}
+
+.cal-toggle,
+.reminder-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: $mq-text-3;
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: start;
+  cursor: pointer;
+  transition: color $mq-t-press $mq-ease-quick;
+  @include mq-focus(0);
+
+  &:hover { color: $mq-text; }
+
+  @include touch { min-height: 40px; }
+}
+
+.cal-dot {
+  @include cal.dot(10px, 3px);
+  box-sizing: border-box;
+  border: 1.5px solid var(--cal-tone);
+  transition: background $mq-t-change $mq-ease-calm;
+}
+
+// Switched off: the dot empties and the name steps back.
+.cal-toggle[aria-checked='false'] {
+  color: $mq-muted;
+
+  .cal-dot { background: transparent; }
+}
+
+.cal-name {
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+.reminder-open {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+
+  .cal-name { max-width: 100%; color: $mq-text-2; }
+}
+
+.row-btn {
+  @include mq-icon-btn(24px, 7px);
+  opacity: 0;
+  transition: opacity $mq-t-press $mq-ease-quick;
+
+  &.shown,
+  &:focus-visible { opacity: 1; }
+
+  // Nothing hovers on a touch screen, so the button is always there.
+  @include touch {
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+  }
+}
+
+.cal-form {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 10px;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg-input);
+  margin: 6px 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
 
   input {
+    @include mq-field(34px, 8px);
     width: 100%;
-    min-height: 36px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border-input);
-    background: var(--bg-card);
-    color: var(--text-primary);
-    font-size: 0.875rem;
+    min-width: 0;
+    background: $mq-card;
 
-    &::placeholder { color: var(--text-muted); }
-    &:focus { outline: none; border-color: var(--teal-primary); }
-
-    @include touch { min-height: 44px; font-size: 16px; }
+    @include touch {
+      height: 44px;
+      font-size: 16px;
+    }
   }
 }
 
@@ -516,218 +463,93 @@ h4 {
 }
 
 .swatch {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 24px;
   height: 24px;
   padding: 0;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  background: var(--swatch);
+  border: 0;
+  border-radius: 8px;
+  background: var(--cal-tone);
   cursor: pointer;
+  transition: transform $mq-t-press $mq-ease-quick, box-shadow $mq-t-change $mq-ease-calm;
+  @include mq-focus;
 
-  mat-icon { font-size: 14px; width: 14px; height: 14px; color: #fff; }
+  &:hover { transform: scale(1.08); }
+  &[aria-checked='true'] { box-shadow: 0 0 0 2px $mq-field, 0 0 0 3.5px $mq-text; }
 
-  &.selected { box-shadow: 0 0 0 2px var(--bg-input), 0 0 0 4px var(--swatch); }
-  &:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
-
-  @include touch { width: 32px; height: 32px; }
+  @include touch {
+    width: 36px;
+    height: 36px;
+  }
 }
 
-.form-actions {
+.form-actions,
+.snooze {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: 6px;
+}
 
-  button {
-    min-height: 32px;
-    padding: 0 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-input);
-    background: transparent;
-    color: var(--text-primary);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    cursor: pointer;
+.snooze {
+  justify-content: flex-start;
+  padding: 2px 4px 8px;
+  font-size: 11.5px;
+  color: $mq-muted;
+}
 
-    &:disabled { opacity: 0.6; cursor: default; }
+.form-btn {
+  @include mq-btn-outline(28px, 0 10px, 7px);
+  font-size: 12px;
 
-    @include touch { min-height: 40px; }
-  }
-
-  .form-delete {
-    margin-right: auto;
+  &.fill {
     border-color: transparent;
-    padding: 0 4px;
-    color: var(--text-danger);
+    background: $mq-accent;
+    color: $mq-on-accent;
+    font-weight: 700;
+
+    &:hover:not(:disabled) { background: $mq-accent; color: $mq-on-accent; filter: brightness(1.06); }
   }
 
-  .form-save {
-    border-color: transparent;
-    background: var(--teal-primary);
-    color: var(--btn-quick-add-text);
-  }
-}
-
-// Invitations
-.invitations-section,
-.reminders-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.invitation {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px dashed var(--teal-primary);
-  background: var(--teal-glow);
-}
-
-.invitation-open {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: left;
-  cursor: pointer;
-
-  &:hover .invitation-title { text-decoration: underline; }
-}
-
-.invitation-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow-wrap: anywhere;
-}
-
-.invitation-meta {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.invitation-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.answer-btn {
-  flex: 1 1 auto;
-  min-height: 30px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border-input);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover:not(:disabled) { border-color: var(--teal-primary); }
-  &:disabled { opacity: 0.6; cursor: default; }
-
-  &.yes {
-    border-color: transparent;
-    background: var(--teal-primary);
-    color: var(--btn-quick-add-text);
+  &.danger {
+    margin-inline-end: auto;
+    color: $mq-late;
+    border-color: color-mix(in srgb, #{$mq-late} 45%, transparent);
   }
 
-  @include touch { min-height: 40px; }
+  .snooze &.danger { margin-inline-end: 0; }
+
+  @include touch { height: 40px; }
 }
 
-// "Upcoming" rows open what they show, so they are buttons now.
-button.schedule-card {
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-
-  .event-title { overflow-wrap: anywhere; }
-
-  &:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
-}
-
-// Reminders
-.reminder {
+.layer {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 2px;
+  gap: 10px;
+  padding: 4px;
 }
 
-.reminder-open {
+.layer-text {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  margin: 0 0 0 -8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-
-  > mat-icon { flex-shrink: 0; font-size: 18px; width: 18px; height: 18px; color: var(--text-secondary); }
-
-  &:hover { background: var(--bg-hover); }
-}
-
-.reminder-text {
-  display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 1px;
 }
 
-.reminder-title {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.layer-name {
+  font-size: 12.5px;
+  color: $mq-text-2;
 }
 
-.reminder-when {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+.layer-hint {
+  font-size: 11px;
+  color: $mq-muted;
 }
 
-.snooze-row {
-  flex: 1 1 100%;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 4px 0 6px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-
-  button {
-    min-height: 28px;
-    padding: 0 10px;
-    border-radius: 999px;
-    border: 1px solid var(--border-input);
-    background: transparent;
-    color: var(--text-primary);
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-
-    &:hover { border-color: var(--teal-primary); }
-    &.remove { border-color: transparent; color: var(--text-danger); }
-
-    @include touch { min-height: 40px; }
-  }
+// Calendar and project colours, as the theme draws them (see cal.tone).
+.plan-dot,
+.cal-dot,
+.swatch {
+  @include cal.tone;
 }
-

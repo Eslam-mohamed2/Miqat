@@ -1,1331 +1,1350 @@
-@use "sass:math";
-@use '../../styles/breakpoints' as *;
+@use '../../styles/tokens' as *;
+@use './public' as *;
 
-// Hero section entrance animations (CSS, no deprecated @angular/animations)
-@keyframes heroFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
+// Sticky-note paper in the whiteboard picture. A note keeps its own colour in both
+// themes, so these are not theme tokens.
+$sticky-green: #CFE2D3;
+$sticky-sand: #EAD9AE;
+$sticky-ink: #1C1A16;
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+:host {
+  @include public-page;
+
+  // What the light design draws differently from the dark one (L-Landing), beyond
+  // the token swap. Dark values first.
+  --lp-neutral: #{$mq-text-3};          // the "personal" calendar colour
+  --lp-chip-ink: 55%;                   // a recognised word: its colour ...
+  --lp-chip-toward: white;              // ... mixed toward this
+  --lp-time-ink: 70%;                   // the time line of an event block
+  --lp-hatch-a: 12%;                    // the two stripes of a planned block
+  --lp-hatch-b: 5%;
+  --lp-planned-edge: color-mix(in srgb, #{$mq-accent} 60%, transparent);
+  --lp-dotted: color-mix(in srgb, #{$mq-accent} 55%, transparent);
+
+  @include grow-with-window;
 }
 
-.hero-fade-in {
-  animation: heroFadeIn 1.2s ease-out 300ms both;
+:host-context(html[data-theme='light']) {
+  --lp-neutral: color-mix(in srgb, color-mix(in srgb, #{$mq-muted} 50%, #{$mq-line-7}) 83%, #{$mq-accent-text});
+  --lp-chip-ink: 42%;
+  --lp-chip-toward: #{$mq-text};
+  --lp-time-ink: 45%;
+  --lp-hatch-a: 24%;
+  --lp-hatch-b: 10%;
+  --lp-planned-edge: #{$mq-accent-text};
+  --lp-dotted: #{$mq-accent-text};
 }
 
-.hero-lead-in {
-  animation: heroFadeIn 1.1s ease-out 700ms both;
+h1, h2, h3, p { margin: 0; }
+
+h1, h2 {
+  font-family: $mq-serif;
+  font-weight: 400;
 }
 
-.hero-buttons-in {
-  animation: heroFadeIn 1.1s ease-out 1.1s both;
+section {
+  box-sizing: border-box;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: 28px;
 }
 
-.house-Container {
-  height: 85vh;
+// A word Miqat recognised in a quick-add sentence.
+.chip {
+  padding: 1px 7px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--tone) 18%, transparent);
+  color: color-mix(in srgb, var(--tone) var(--lp-chip-ink), var(--lp-chip-toward));
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--tone) 60%, transparent);
 }
 
-.content-spacing {
-  padding-left: 130px !important;
+.good {
+  font-size: 12.5px;
+  color: $mq-green;
+
+  &.strong { font-weight: 600; }
 }
 
-.vh-100 {
-  height: 91.5vh !important;
-}
+.sr { @include sr-only; }
 
-.Content-information {
-  font-size: 70px !important;
-}
-
-.border-c {
-  border-color: #0a6663 !important;
-}
-
-.btn-custom {
-  transition: all 1s ease;
-}
-
-.btn-custom:hover {
-  background-color: var(--color-light) !important;
-  color: var(--color-primary) !important;
-  transform: scale(1.05);
-}
-
-.btn-customx {
-  transition: all 1s ease;
-}
-
-.btn-customx:hover {
-  background-color: var(--color-primary) !important;
-  color: var(--color-light) !important;
-  transform: scale(1.05);
-}
-
-.content-Info {
-  // Scales with the window up to the full 90px. A fixed 90px overflowed the hero's
-  // half-width column on small laptops and tablets held sideways (1024px), cutting
-  // "Welcome to" off behind the calendar.
-  font-size: clamp(3rem, 6.2vw, 90px) !important;
-  margin-bottom: 25px !important;
-}
-
-// The falling-clocks layer fills the calendar column, which is its positioning
-// context (position-relative in the template). That holds whether the column sits
-// beside the hero or below it, so no per-screen-size offsets are needed.
-.clock-rain {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+// ── Hero ──────────────────────────────────────────────────────────────────────
+.top {
+  position: relative;
   overflow: hidden;
 }
 
 .clock {
   position: absolute;
-  top: -50px;
-  width: 30px;
-  height: 30px;
-  opacity: 0.72;
-  animation: fall linear infinite;
-}
-
-@for $i from 1 through 50 {
-  .clock:nth-child(#{$i}) {
-    left: math.random(100) * 1%;
-    animation-duration: (math.random(10) + 5) * 1s;
-    animation-delay: math.random(10) * 1s;
-  }
-}
-
-@keyframes fall {
-  0% {
-    transform: translateY(-100px) rotate(0deg);
-    opacity: 0.72;
-  }
-
-  100% {
-    transform: translateY(110vh) rotate(360deg);
-    opacity: 0.65;
-  }
-}
-
-.Active-clock {
-  font-size: 280px;
-  color: white !important;
-  left: 100% !important;
-  top: 10% !important;
-  z-index: 0 !important;
-}
-
-@keyframes glassShimmer {
-  0% {
-    left: -75%;
-  }
-
-  50% {
-    left: 125%;
-  }
-
-  100% {
-    left: 125%;
-  }
-}
-
-.calendar-container {
-  background: rgb(255 255 255 / 0%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 28px;
-  box-shadow:
-    0 20px 60px rgba(46, 102, 112, 0.15),
-    0 4px 20px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  max-width: 780px;
-  width: 65%;
-  // 520px where there is room for it, never wider than the column it sits in.
-  min-width: min(520px, 100%);
-  z-index: 100 !important;
-  overflow: hidden;
-
-  .calendar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: linear-gradient(
-      135deg,
-      rgba(46, 102, 112, 0.85) 0%,
-      rgba(58, 122, 132, 0.75) 50%,
-      rgba(46, 102, 112, 0.9) 100%
-    );
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
-    color: white;
-    padding: 1.25rem 2rem;
-    border-radius: 24px 24px 0 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow:
-      0 4px 24px rgba(46, 102, 112, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    position: relative;
-    overflow: hidden;
-
-    // Frosted top-edge highlight
-    &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 8%;
-      right: 8%;
-      height: 1px;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.5) 25%,
-        rgba(255, 255, 255, 0.8) 50%,
-        rgba(255, 255, 255, 0.5) 75%,
-        transparent
-      );
-      pointer-events: none;
-    }
-
-    // Sweeping glass shimmer
-    &::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: -75%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(
-        120deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.08) 40%,
-        rgba(255, 255, 255, 0.18) 50%,
-        rgba(255, 255, 255, 0.08) 60%,
-        transparent 100%
-      );
-      animation: glassShimmer 6s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    span {
-      font-weight: 600;
-      font-size: 1.5rem;
-      letter-spacing: 0.03em;
-      position: relative;
-      z-index: 2;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-    }
-
-    button {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      font-size: 1.35rem;
-      cursor: pointer;
-      color: #fff;
-      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      z-index: 2;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.28);
-        border-color: rgba(255, 255, 255, 0.35);
-        transform: scale(1.08);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-
-      &:active {
-        transform: scale(0.95);
-      }
-    }
-  }
-
-  .calendar-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--color-primary) !important;
-    padding: 1.25rem 1.5rem 0.75rem;
-    opacity: 0.9;
-
-    div {
-      padding: 0.35rem 0;
-    }
-  }
-
-  .calendar-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 72px;
-    gap: 8px;
-    padding: 0 1.5rem 1.5rem;
-
-    div {
-      /* border: 1px solid rgba(46, 102, 112, 0.1); */
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.5rem;
-      font-size: 1.05rem;
-      font-weight: 500;
-      cursor: pointer;
-      position: relative;
-      /* background: rgba(250, 249, 245, 0.65); */
-      transition: all 0.45s ease;
-
-      &:hover {
-        background: rgba(230, 253, 252, 0.75);
-        border-color: rgba(46, 102, 112, 0.22);
-        transform: translateY(-1px);
-      }
-
-      &.today {
-        border: 2px solid var(--color-primary);
-        background: rgba(46, 102, 112, 0.1);
-        color: var(--color-primary);
-        font-weight: 700;
-        font-size: 1.1rem;
-      }
-
-      &.selected {
-        background: var(--color-primary);
-        color: #fff;
-        border-color: var(--color-primary);
-        box-shadow: 0 4px 12px rgba(46, 102, 112, 0.35);
-        transform: scale(1.02);
-      }
-    }
-  }
-
-  .calendar-events {
-    margin: 0 1.5rem 1.5rem;
-    padding: 1.25rem;
-    background: rgba(250, 249, 245, 0.55);
-    border-radius: 20px;
-    border: 1px solid rgba(46, 102, 112, 0.08);
-
-    .event {
-      display: flex;
-      align-items: center;
-      padding: 0.85rem 1rem;
-      background: rgba(255, 255, 255, 0.75);
-      border: 1px solid rgba(46, 102, 112, 0.06);
-      border-left: 5px solid;
-      margin-bottom: 0.6rem;
-      border-radius: 14px;
-      transition: all 0.45s ease;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.9);
-        transform: translateX(4px);
-      }
-
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        margin-right: 0.75rem;
-        flex-shrink: 0;
-      }
-
-      .title {
-        font-weight: 600;
-        font-size: 1rem;
-      }
-
-      .time {
-        font-size: 0.875rem;
-        color: var(--color-gray);
-      }
-    }
-  }
-}
-
-.main-Title {
-  margin-bottom: 10px !important;
-}
-
-.main-Title::after {
-  content: "";
-  position: absolute;
-  width: 70%;
-  bottom: -20%;
-  left: 15%;
-  height: 4px;
-  margin-top: 10px;
-  border-radius: 2px;
-  background-color: var(--color-primary);
-}
-
-.p-Custom {
-  padding: 10px !important;
-}
-
-.Animationaly::after {
-  content: "";
-  position: absolute;
-  top: 75%;
-  left: 75%;
-  width: 23%;
-  z-index: -10;
-  height: 40%;
-  background: var(--color-primary);
-  border-radius: 100%;
-}
-
-.Animationaly::before {
-  content: "";
-  position: absolute;
-  top: 70%;
-  left: 65%;
-  width: 20%;
-  z-index: -10;
-  height: 40%;
-  background: var(--color-accent);
-  border-radius: 100%;
-}
-
-.Cusotm-Changes {
-  width: fit-content !important;
-  margin: 10px auto;
-}
-
-.m-Custom {
-  margin-top: 90px !important;
-  // padding : 30px 9!important;
-}
-
-.Cards-Bg {
-  background-image: url("../../assets/stacked-waves-haikei.png") !important;
-  background-repeat: no-repeat !important;
-  background-size: cover !important;
-  height: 430px !important;
-  transition:
-    transform 0.9s ease,
-    box-shadow 0.9s ease;
-}
-
-.Cards-Bg:hover {
-  transform: scale(1.09) !important;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-  transition-delay: 0s !important;
-}
-
-.icon {
-  width: 30px;
-  height: 30px;
-  background-color: var(--color-accent);
-  border-radius: 100%;
-  margin-right: 10px;
-  margin-top: 10px;
-  position: relative;
-}
-
-.icon i {
-  position: absolute;
-  left: 18%;
-  top: 22%;
-  color: white !important;
-  z-index: 1;
-}
-
-.Title {
-  display: inline-block !important;
-  position: relative;
-  margin-bottom: 15px !important;
-}
-
-.Title::after {
-  content: "";
-  position: absolute;
-  width: 5px;
-  height: 60% !important;
-  bottom: 8px;
-  left: -10px;
-  height: 4px;
-  margin-top: 10px;
-  border-radius: 5px;
-  background-color: var(--color-accent);
-}
-
-.cards h4 i {
-  font-size: 12px !important;
-  margin-right: 5px !important;
-}
-
-.cards span {
-  font-size: 12px !important;
-}
-
-.bg-image {
-  background-image: url(../../assets/circle-scatter-haikei.png) !important;
-  background-position: center !important;
-}
-
-.py-custom-cards {
-  padding: 60px 0px;
-}
-
-.bg-dots {
-  padding: 15px 25px;
-  border-radius: 25px;
-  background-color: rgb(255 255 255 / 88%);
-}
-
-.Squares {
-  width: 50px;
-  height: 50px;
-  padding: 15px;
-}
-
-.Card {
-  justify-content: center !important;
-  align-items: anchor-center;
-}
-
-.Card h4 {
-  font-size: 25px !important;
-  font-weight: 500 !important;
-  margin-bottom: 5px !important;
-}
-
-.Card p {
-  text-align: center !important;
-  font-size: 16px !important;
-  font-weight: 400 !important;
-}
-
-.Card .icon {
-  width: 90px !important;
-  height: 90px !important;
-  position: relative;
-  margin-bottom: 10px !important;
-}
-
-.Card .icon i {
-  font-size: 30px !important;
-  position: absolute;
-  top: 30px !important;
-  left: 25px !important;
-}
-
-.Card-Bg {
-  background-image: url("../../assets/stacked-waves-haikei.png") !important;
-  background-repeat: no-repeat !important;
-  background-size: cover !important;
-}
-
-.Card-animation {
-  transition: transform 0.9s ease;
-  padding: 40px 10px;
-}
-
-.Card-animation:hover {
-  transform: scale(1.09) !important;
-  transition-delay: 0s !important;
-}
-
-.btn-custom-end {
-  color: var(--color-primary) !important;
-  background-color: var(--color-light) !important;
-  transition: all 1s ease !important;
-}
-
-.btn-custom-end:hover {
-  background-color: var(--color-primary) !important;
-  border: 2px solid var(--color-light) !important;
-  color: var(--color-light) !important;
-  border: 1px solid #fff !important;
-}
-
-.first {
-  left: -6.5%;
-  top: -35%;
-  font-size: 325px;
-  color: white;
-}
-
-.second {
-  top: 25% !important;
-  left: 85%;
-  font-size: 350px !important;
-  color: white !important;
-}
-
-.icon-Bottoms {
-  width: 90px !important;
-  height: 90px !important;
-  position: relative;
-  margin-bottom: 10px !important;
-  border-radius: 50% !important;
-}
-
-.icon-Bottoms i {
-  position: absolute;
-  top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  color: white !important;
-  font-size: 24px !important;
+  top: -30px;
+  z-index: 0;
+  width: 860px;
+  height: 860px;
+  margin-left: -430px;
+  opacity: .6;
+  color: $mq-accent-text;
+  pointer-events: none;
+
+  svg { display: block; }
 }
 
-.stars {
+.numeral {
+  font-family: 'IBM Plex Sans Arabic', serif;
+  font-size: 40px;
+}
+
+.pin { fill: $mq-bg; }
+
+// A hand starts at the angle of the time (--at) and turns from there. Without
+// animation (reduced motion) it rests at that angle, so the clock still tells the time.
+.hand {
+  transform-origin: 430px 430px;
+  transform: rotate(var(--at, 0deg));
+  animation: lp-hand linear infinite;
+}
+
+.hand-hour { animation-duration: 43200s; }
+.hand-minute { animation-duration: 3600s; }
+.hand-second { animation-duration: 60s; }
+
+@keyframes lp-hand {
+  from { transform: rotate(var(--at, 0deg)); }
+  to { transform: rotate(calc(var(--at, 0deg) + 360deg)); }
+}
+
+.clock-veil {
   position: absolute;
-  left: math.random(100) * 1%;
-  animation-duration: (math.random(10) + 5) * 1s;
-  animation-delay: math.random(10) * 1s;
+  left: 50%;
+  top: 170px;
+  z-index: 0;
+  width: 1000px;
+  height: 470px;
+  margin-left: -500px;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, #{$mq-bg} 86%, transparent) 0%,
+    color-mix(in srgb, #{$mq-bg} 70%, transparent) 42%,
+    transparent 70%
+  );
 }
 
-// ---- Scroll-triggered reveal (one-by-one, modern style) ----
-.reveal-on-scroll {
-  opacity: 0;
-  transform: translateY(32px);
-  transition:
-    opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+.hero {
+  position: relative;
+  z-index: 1;
+  padding-top: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  text-align: center;
 
-  &.revealed {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+  h1 {
+    max-width: 900px;
+    font-size: 96px;
+    line-height: .98;
+    letter-spacing: -.02em;
 
-// Stagger children when parent is revealed (one by one)
-.reveal-group.revealed {
-  .reveal-item {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.reveal-group .reveal-item {
-  opacity: 0;
-  transform: translateY(28px);
-  transition:
-    opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 1s cubic-bezier(0.22, 1, 0.36, 1);
-
-  @for $i from 0 through 12 {
-    &.stagger-#{$i} {
-      transition-delay: #{$i * 140}ms;
-    }
+    em { color: $mq-accent-text; }
   }
 }
 
-// Features in Depth: slide in from left/right
-.reveal-group .reveal-item.reveal-from-left {
-  transform: translateX(-80px);
-  transition:
-    opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+.news {
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid $mq-line-2;
+  background: $mq-card;
+  font-size: 13px;
+  @include link-color($mq-text-3);
+  transition: color $mq-t-press $mq-ease-quick, border-color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+  @include touch-area(4px, 0px);
+
+  &:hover {
+    @include link-color($mq-text);
+    border-color: $mq-line-4;
+  }
+
+  svg { margin-inline-end: 6px; }
 }
 
-.reveal-group.revealed .reveal-item.reveal-from-left {
-  transform: translateX(0);
+.news-tag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: $mq-accent;
+  color: $mq-on-accent;
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.reveal-group .reveal-item.reveal-from-right {
-  transform: translateX(80px);
-  transition:
-    opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+.lede {
+  max-width: 640px;
+  font-size: 18px;
+  line-height: 1.65;
+  color: $mq-text-3;
 }
 
-.reveal-group.revealed .reveal-item.reveal-from-right {
-  transform: translateX(0);
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
 }
 
-@include below($bp-laptop) {
-  main .container-fluid {
-    max-width: 100%;
-    overflow-x: hidden;
+.btn-start {
+  @include mq-btn-primary(52px, 0 24px, 12px);
+  gap: 10px;
+  font-size: 15px;
+  line-height: normal;
+  @include link-color($mq-on-accent);
+}
+
+.btn-see {
+  @include mq-btn-outline(54px, 0 22px, 12px);
+  font-size: 15px;
+  line-height: normal;
+  @include link-color($mq-text-2);
+
+  &:hover { @include link-color($mq-text); }
+}
+
+.hint {
+  font-size: 13px;
+  color: $mq-muted;
+
+  kbd {
+    padding: 1px 6px;
+    border: 1px solid $mq-line-2;
+    border-radius: 5px;
+    background: transparent;
+    color: $mq-text-3;
+    font-family: inherit;
+    font-size: inherit;
+  }
+}
+
+// ── Hero: the week picture ────────────────────────────────────────────────────
+.preview {
+  position: relative;
+  z-index: 1;
+  margin-top: 64px;
+  overflow-x: auto;
+}
+
+.preview-stage {
+  position: relative;
+  width: 1140px;
+  height: 600px;
+  margin: 0 auto;
+}
+
+.week {
+  position: absolute;
+  inset: 0 0 40px 0;
+  display: flex;
+  border-radius: 22px;
+  background: $mq-canvas;
+  border: 1px solid $mq-line-2;
+  box-shadow: 0 60px 120px mq-shadow(.55), 0 -1px 0 color-mix(in srgb, #{$mq-accent} 40%, transparent) inset;
+  overflow: hidden;
+}
+
+.week-side {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 200px;
+  padding: 18px 14px;
+  border-inline-end: 1px solid $mq-line;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.week-month {
+  font-family: $mq-serif;
+  font-size: 22px;
+}
+
+.week-sub {
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: $mq-muted;
+}
+
+.week-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.todo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 9px;
+  border-radius: 9px;
+  border: 1px solid $mq-line;
+  background: $mq-card-3;
+  text-align: start;
+}
+
+.todo-title {
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.todo-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: $mq-muted;
+}
+
+.todo-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.week-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.week-head {
+  display: flex;
+  border-bottom: 1px solid $mq-line;
+}
+
+.gutter {
+  position: relative;
+  width: 54px;
+}
+
+.week-cols {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+
+  &.grid { position: relative; }
+}
+
+.day-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 9px 10px;
+  border-inline-start: 1px solid $mq-line;
+}
+
+.day-dow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: $mq-muted;
+}
+
+.day-num {
+  font-family: $mq-serif;
+  font-size: 20px;
+  line-height: 1;
+
+  .today & { color: $mq-accent-text; }
+}
+
+.day-hijri {
+  font-size: 9.5px;
+  color: $mq-muted;
+}
+
+.week-body {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.hour {
+  position: absolute;
+  inset-inline-end: 8px;
+  font-size: 10px;
+  color: $mq-muted;
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+}
+
+.hour-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid $mq-hover;
+}
+
+.prayer-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dotted var(--lp-dotted);
+}
+
+.prayer-tag {
+  position: absolute;
+  inset-inline-end: 6px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: $mq-canvas;
+  color: $mq-accent-text;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.day-col {
+  position: relative;
+  border-inline-start: 1px solid $mq-line;
+
+  &.today { background: color-mix(in srgb, #{$mq-accent} 3%, transparent); }
+}
+
+.event {
+  box-sizing: border-box;
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--tone) 19%, #{$mq-canvas});
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+  overflow: hidden;
+  text-align: start;
+
+  &.inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
   }
 
-  .content-spacing {
-    padding-left: 2rem !important;
-    padding-right: 1rem !important;
+  &.planned {
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, #{$mq-accent} var(--lp-hatch-a), #{$mq-canvas}) 0 5px,
+      color-mix(in srgb, #{$mq-accent} var(--lp-hatch-b), #{$mq-canvas}) 5px 10px
+    );
+    border: 1px dashed var(--lp-planned-edge);
   }
+}
 
-  .content-Info {
-    font-size: 2.75rem !important;
+.event-time {
+  font-size: 10px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--tone) var(--lp-time-ink), var(--mq-ink));
+
+  .planned & { color: $mq-accent-text; }
+}
+
+.event-title {
+  max-width: 100%;
+  font-size: 11.5px;
+  font-weight: 600;
+  @include mq-ellipsis;
+}
+
+.now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 1.5px;
+  background: $mq-accent;
+}
+
+// The two cards that float over the week picture.
+.float {
+  box-sizing: content-box;
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 16px;
+  background: $mq-card-4;
+  border: 1px solid $mq-line-4;
+  box-shadow: 0 30px 60px mq-shadow(.6);
+  text-align: start;
+}
+
+.quick {
+  inset-inline-start: 150px;
+  bottom: 0;
+  width: 470px;
+  padding: 14px 16px;
+}
+
+.float-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: $mq-muted;
+}
+
+.tokens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.float-note {
+  font-size: 12px;
+  color: $mq-text-4;
+
+  &.wide { line-height: 1.5; }
+
+  strong {
+    color: $mq-accent-text;
+    font-weight: 600;
   }
+}
 
-  .calendar-container {
-    min-width: 0 !important;
-    width: 80% !important;
-    max-width: 100% !important;
-  }
+.planned-card {
+  inset-inline-end: 28px;
+  top: 120px;
+  width: 260px;
+  padding: 16px;
+}
 
-  .calendar-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 50px !important;
-    gap: 0px !important;
-    padding: 0 1.5rem 1.5rem;
-  }
+.planned-tag {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px dashed $mq-accent-text;
+  color: $mq-accent-text;
+  font-size: 10.5px;
+  font-weight: 700;
+}
 
-  .test-sizing {
-    font-size: 14px !important;
-  }
+.planned-title {
+  font-family: $mq-serif;
+  font-size: 24px;
+  line-height: 1.1;
+}
 
-  .fw-normal {
-    font-size: 18px !important;
-    font-weight: 400 !important;
-  }
+.planned-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 
-  .Service-Card {
-    width: 30% !important;
-  }
-
-  .C-white {
-    font-size: 18px;
-  }
-
-  .test-size {
-    font-size: 12px !important;
-  }
-
-  .check-marks {
-    font-size: 14px !important;
-  }
-
-  .Title {
-    font-size: 30px !important;
-    font-weight: 500 !important;
-  }
-
-  .icon {
-    width: 35px;
-    height: 35px;
-    background-color: var(--color-accent);
-    border-radius: 100%;
-    margin-right: 10px;
-    margin-top: 10px;
-    position: relative;
-  }
-
-  .icon i {
-    position: absolute;
-    left: 7%;
-    top: 25%;
-    color: white !important;
-    z-index: 1;
-  }
-
-  .h4-size {
-    font-size: 18px !important;
-    font-weight: 400 !important;
-    text-align: center;
-  }
-
-  .Card p {
-    font-size: 14px !important;
-  }
-
-  .first {
-    left: -12.5%;
-    top: -35%;
-    font-size: 325px;
-    color: white;
-  }
-
-  .second {
-    top: 25% !important;
-    left: 75%;
-    font-size: 350px !important;
-    color: white !important;
-  }
-
-  .calendar-container {
-    background: rgb(255 255 255 / 0%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 28px;
-    box-shadow:
-      0 20px 60px rgba(46, 102, 112, 0.15),
-      0 4px 20px rgba(0, 0, 0, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    max-width: 780px;
-    width: 88%;
-    min-width: min(520px, 100%);
-    z-index: 100 !important;
-    overflow: hidden;
-  }
-
-  .calendar-container .calendar-days div {
-    border: none !important;
-    border-radius: 14px;
+  span {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem;
-    font-size: 1.05rem;
-    font-weight: 500;
-    cursor: pointer;
-    position: relative;
-    background: none !important;
-    transition: all 0.45s ease;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 12px;
   }
 
-  .calendar-container .calendar-days div.selected {
-    background: var(--color-primary) !important;
-    color: #fff !important;
-    border-color: var(--color-primary) !important;
-    box-shadow: 0 4px 12px rgba(46, 102, 112, 0.35) !important;
-    transform: scale(1.02) !important;
+  .keep {
+    background: $mq-accent;
+    color: $mq-on-accent;
+    font-weight: 700;
   }
 
-  .lead {
-    font-size: 1rem !important;
-    line-height: 1.5 !important;
-    letter-spacing: 0.15px !important;
-  }
-
-  .Content-about {
-    width: 140% !important;
-    padding: 20px !important;
-  }
-
-  .test-sizing {
-    font-size: 12px !important;
-  }
-
-  .check-marks {
-    font-size: 12px !important;
-  }
-
-  .icon {
-    background-color: var(--color-accent);
-    border-radius: 100%;
-    position: relative;
-    width: 37px;
-    height: 37px;
-  }
-
-  .icon i {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  .icon-Bottoms {
-    width: 90px !important;
-    height: 90px !important;
-    position: relative;
-    margin-bottom: 10px !important;
-    border-radius: 50% !important;
-  }
-
-  .Card h4 {
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    text-align: start !important;
-  }
-
-  .C-gray {
-    font-size: 12px !important;
+  .move {
+    box-sizing: content-box;
+    border: 1px solid $mq-line-2;
+    color: $mq-text-2;
+    font-weight: 600;
   }
 }
 
-@include below($bp-grid-lg) {
-  .calendar-container {
-    min-width: 0 !important;
-    width: 60% !important;
-    max-width: 100% !important;
+// ── What Miqat holds to ───────────────────────────────────────────────────────
+.principles {
+  margin-top: 72px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 40px;
+  font-size: 14px;
+  color: $mq-text-4;
+}
+
+.principle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $mq-accent;
+}
+
+// ── Product ───────────────────────────────────────────────────────────────────
+.product {
+  padding-top: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.product-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+
+  h2 {
+    max-width: 640px;
+    font-size: 64px;
+    line-height: 1;
   }
 
-  .vh-100 {
-    height: 70vh !important;
+  p {
+    max-width: 400px;
+    font-size: 16px;
+    line-height: 1.65;
+    color: $mq-text-4;
+  }
+}
+
+.features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.feature {
+  box-sizing: border-box;
+  flex: 1 1 300px;
+  min-width: 0;
+  min-height: 300px;
+  padding: 30px;
+  border-radius: 22px;
+  background: $mq-card;
+  border: 1px solid $mq-line;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  &.wide { flex: 2 1 560px; }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: normal;
   }
 
-  .Content-about {
-    width: 100% !important;
-    padding: 20px !important;
+  > p {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: $mq-text-4;
+
+    &.narrow { max-width: 460px; }
+    &.medium { max-width: 520px; }
   }
+}
+
+.feature-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+
+  &.gap-10 { gap: 10px; }
+  &.gap-8 { gap: 8px; }
+  &.gap-7 { gap: 7px; }
+
+  &.flow {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+  }
+}
+
+.sentence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 12px;
+  background: $mq-bg;
+  border: 1px solid $mq-chip;
+  font-size: 17px;
+  font-weight: 500;
+
+  &.arabic {
+    direction: rtl;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+  }
+}
+
+.load {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.load-hours {
+  font-family: $mq-serif;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.load-of {
+  font-size: 13px;
+  color: $mq-muted;
+}
+
+.meter {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  background: $mq-line;
+  overflow: hidden;
+}
+
+.meter-meetings {
+  width: 40%;
+  background: $mq-blue;
+}
+
+.meter-tasks {
+  width: 35%;
+  background: $mq-accent;
+}
+
+.avail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avail-who {
+  width: 52px;
+  font-size: 11px;
+  color: $mq-muted;
+}
+
+.avail-track {
+  position: relative;
+  flex: 1;
+  height: 14px;
+  border-radius: 4px;
+  background: $mq-hover;
+  overflow: hidden;
+}
+
+.avail-busy {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: $mq-line-5;
+}
+
+.avail-slot {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: $mq-accent;
+  opacity: .85;
+}
+
+.avail-note {
+  padding-inline-start: 62px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $mq-accent-text;
+}
+
+.prayer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.prayer-dot {
+  box-sizing: content-box;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid $mq-accent-text;
+
+  &.next {
+    border: 0;
+    background: $mq-accent;
+  }
+}
+
+.prayer-name { flex: 1; }
+.prayer-time { color: $mq-text-4; }
+
+.prayer-date {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid $mq-line;
+  background: $mq-canvas;
+}
+
+.task-box {
+  box-sizing: content-box;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.6px solid $mq-muted;
+
+  &.due { border-color: $mq-late; }
+}
+
+.task-title {
+  flex: 1;
+  font-size: 12.5px;
+  @include mq-ellipsis;
+}
+
+.task-when {
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid $mq-line-2;
+  color: $mq-muted;
+  font-size: 11px;
+  font-weight: 600;
+
+  &.planned {
+    border: 1px dashed var(--lp-dotted);
+    color: $mq-accent-text;
+  }
+}
+
+.stickies {
+  display: flex;
+  gap: 8px;
+}
+
+.sticky {
+  box-sizing: border-box;
+  width: 78px;
+  height: 70px;
+  padding: 8px;
+  border-radius: 3px;
+  color: $sticky-ink;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sticky-green {
+  background: $sticky-green;
+  transform: rotate(-2deg);
+}
+
+.sticky-sand {
+  background: $sticky-sand;
+  transform: rotate(1.5deg);
+}
+
+.flow-arrow { color: $mq-accent-text; }
+
+.chain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node {
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, #{$mq-accent} 55%, transparent);
+  background: $mq-card-4;
+  font-size: 11.5px;
+  font-weight: 600;
+
+  &.dashed { border: 1px dashed $mq-blue; }
+
+  &.goal {
+    padding: 8px 12px;
+    border-radius: 18px;
+    border: 1px solid $mq-accent-text;
+    color: $mq-accent-text;
+    font-weight: 700;
+  }
+}
+
+.link {
+  width: 22px;
+  height: 2px;
+  background: $mq-accent;
+}
+
+// ── A day with Miqat ──────────────────────────────────────────────────────────
+.day {
+  padding-top: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.day-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+
+  h2 {
+    font-size: 64px;
+    line-height: 1;
+  }
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: $mq-accent-text;
+}
+
+.stops {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 24px;
+}
+
+.stop {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stop-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stop-dot {
+  box-sizing: content-box;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid $mq-accent-text;
+
+  &.now {
+    border: 0;
+    background: $mq-accent;
+    box-shadow: 0 0 0 5px color-mix(in srgb, #{$mq-accent} 20%, transparent);
+  }
+}
+
+.stop-line {
+  flex: 1;
+  height: 1px;
+  background: $mq-line-2;
+}
+
+.stop-time {
+  font-family: $mq-serif;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.stop-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.stop-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: $mq-text-4;
+}
+
+// ── Arabic and Hijri ──────────────────────────────────────────────────────────
+.region { padding-top: 150px; }
+
+.region-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 48px;
+  padding: 48px;
+  border-radius: 28px;
+  background: $mq-card;
+  border: 1px solid $mq-line;
+}
+
+.region-text {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  h2 {
+    font-size: 56px;
+    line-height: 1.02;
+  }
+
+  p {
+    font-size: 16px;
+    line-height: 1.65;
+    color: $mq-text-4;
+  }
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    font-size: 15px;
+    line-height: 1.5;
+
+    svg {
+      flex-shrink: 0;
+      margin-top: 2px;
+      color: $mq-accent-text;
+    }
+  }
+}
+
+.region-day {
+  box-sizing: border-box;
+  flex: 1 1 380px;
+  min-width: 0;
+  padding: 24px;
+  border-radius: 20px;
+  background: $mq-bg;
+  border: 1px solid $mq-chip;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.region-date {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.region-dow {
+  font-size: 13px;
+  color: $mq-accent-text;
+}
+
+.region-greg {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.region-hijri {
+  font-size: 13px;
+  color: $mq-muted;
+}
+
+.agenda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid $mq-hover;
+
+  &.prayer { color: $mq-accent-text; }
+}
+
+.agenda-time {
+  width: 52px;
+  font-size: 13px;
+  color: $mq-text-4;
+}
+
+.agenda-dot {
+  box-sizing: content-box;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone);
+
+  .prayer & {
+    background: transparent;
+    border: 1.5px solid var(--tone);
+  }
+}
+
+.agenda-title { font-size: 15px; }
+
+.region-input {
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid $mq-accent-text;
+  font-size: 15px;
+  color: $mq-text-2;
+}
+
+// ── Questions ─────────────────────────────────────────────────────────────────
+.faq {
+  max-width: 860px;
+  padding-top: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+
+  h2 {
+    font-size: 56px;
+    line-height: 1;
+    text-align: center;
+  }
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid $mq-line;
+}
+
+.faq-item {
+  border-bottom: 1px solid $mq-line;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 64px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: $mq-text;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: normal;
+    // As a browser draws a button's text: without the page's tabular figures.
+    font-feature-settings: normal;
+    text-align: start;
+    cursor: pointer;
+    @include mq-focus;
+  }
+
+  p {
+    max-width: 680px;
+    margin-bottom: 22px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: $mq-text-4;
+    animation: mq-rise $mq-t-change $mq-ease-calm;
+  }
+}
+
+.faq-q { flex: 1; }
+
+.faq-icon {
+  box-sizing: content-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid $mq-line-2;
+  color: $mq-accent-text;
+  font-size: 18px;
+  transition: transform $mq-t-change $mq-ease-calm;
+
+  &.open { transform: rotate(45deg); }
+}
+
+// ── Begin with today ──────────────────────────────────────────────────────────
+.closing {
+  padding-top: 150px;
+  padding-bottom: 120px;
+}
+
+.closing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: 80px 32px;
+  border-radius: 32px;
+  border: 1px solid color-mix(in srgb, #{$mq-accent} 45%, transparent);
+  background: color-mix(in srgb, #{$mq-accent} 5%, #{$mq-bg});
+  text-align: center;
+
+  > svg { color: $mq-accent-text; }
+
+  h2 {
+    font-size: 72px;
+    line-height: 1;
+  }
+
+  > p {
+    font-size: 16px;
+    color: $mq-text-4;
+  }
+}
+
+.closing-form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.closing-field {
+  box-sizing: content-box;
+  flex: 1 1 260px;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: $mq-card;
+  border: 1px solid $mq-line-2;
+  transition: border-color $mq-t-press $mq-ease-quick;
+
+  &:focus-within { border-color: $mq-accent; }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: $mq-text;
+    font: inherit;
+    font-size: 15px;
+
+    &::placeholder { color: $mq-muted; opacity: 1; }
+  }
+}
+
+.closing-btn {
+  @include mq-btn-primary(52px, 0 22px, 12px);
+  font-size: 15px;
+  line-height: normal;
+  @include link-color($mq-on-accent);
+}
+
+// ── Narrow screens ────────────────────────────────────────────────────────────
+// There is no phone design for this page: the type scales down, the cards stack,
+// and the week picture keeps its size and scrolls sideways inside its own frame.
+@include below($bp-laptop) {
+  .hero h1 { font-size: clamp(46px, 11.5vw, 96px); }
+  .product-head h2, .day-title h2 { font-size: clamp(38px, 8vw, 64px); }
+  .region-text h2, .faq h2 { font-size: clamp(36px, 7.5vw, 56px); }
+  .closing-card h2 { font-size: clamp(40px, 9vw, 72px); }
 }
 
 @include below($bp-tablet) {
-  main .container-fluid {
-    max-width: 100%;
-    overflow-x: hidden;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+  section { padding-inline: 16px; }
+
+  .hero { padding-top: 72px; }
+  .lede { font-size: 16px; }
+  .preview { margin-top: 48px; }
+  .principles { margin-top: 48px; justify-content: flex-start; }
+
+  .product { padding-top: 96px; }
+  .day, .region, .faq, .closing { padding-top: 96px; }
+  .closing { padding-bottom: 72px; }
+
+  .feature { padding: 22px; }
+  .chain { flex-wrap: wrap; }
+
+  .region-card {
+    gap: 28px;
+    padding: 22px;
+    border-radius: 22px;
   }
 
-  main .row {
-    margin-left: 0;
-    margin-right: 0;
+  .region-day { padding: 18px; }
+
+  .closing-card {
+    padding: 48px 20px;
+    border-radius: 24px;
   }
 
-  .content-spacing {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-  }
+  .hero-actions a, .closing-btn { flex: 1 1 100%; }
+}
 
-  .content-Info {
-    font-size: 2rem !important;
-  }
+// ── Arabic ────────────────────────────────────────────────────────────────────
+// The serif has no Arabic letters, so Arabic headlines are set in IBM Plex Sans
+// Arabic: a wider face whose marks reach above and below the line. They take a
+// smaller size and more room between lines; the gold accent word stands upright.
+.hero h1 { @include mq-rtl { font-size: 84px; line-height: 1.25; } }
+.product-head h2, .day-title h2 { @include mq-rtl { font-size: 54px; line-height: 1.3; } }
+.region-text h2, .faq h2 { @include mq-rtl { font-size: 48px; line-height: 1.3; } }
+.closing-card h2 { @include mq-rtl { font-size: 60px; line-height: 1.3; } }
 
-  .hero-buttons-in {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
+// The two lines of an event block in the week picture, in the height Latin gives them.
+.event-time { @include mq-rtl { line-height: 1.3; } }
+.event-title { @include mq-rtl { line-height: 1.5; } }
 
-  .hero-buttons-in .btn {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
+// An address is typed left to right in any language; in Arabic it starts at the
+// field's start edge like the hint it replaces.
+.closing-field input {
+  @include mq-rtl {
+    text-align: right;
 
-  .calendar-container {
-    min-width: 0 !important;
-    width: 65% !important;
-    max-width: 100% !important;
-  }
-
-  .calendar-container .calendar-header {
-    padding: 0.75rem 1rem;
-  }
-
-  .calendar-container .calendar-header span {
-    font-size: 1.1rem;
-  }
-
-  .calendar-container .calendar-days {
-    grid-auto-rows: 35px !important;
-    padding: 0 0.75rem 0.75rem;
-  }
-
-  .calendar-container .calendar-days div {
-    font-size: 0.85rem;
-  }
-
-  .calendar-container .calendar-weekdays {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-  }
-
-  .vh-100 {
-    min-height: auto !important;
-    height: auto !important;
-    padding-top: 3rem !important;
-    padding-bottom: 4rem !important;
-  }
-
-  .w-80,
-  .w-85 {
-    width: 95% !important;
-    max-width: 100% !important;
-  }
-
-  .bg-Custom {
-    min-height: auto !important;
-    height: 87vh !important;
-    padding-top: 2rem !important;
-    padding-bottom: 1rem !important;
-  }
-
-  .Service-Card {
-    width: 30% !important;
-  }
-
-  .C-white {
-    font-size: 18px;
-  }
-
-  .test-size {
-    font-size: 12px !important;
-  }
-
-  .check-marks {
-    font-size: 14px !important;
-  }
-
-  .Title {
-    font-size: 30px !important;
-    font-weight: 500 !important;
-  }
-
-  .icon {
-    width: 35px;
-    height: 35px;
-    background-color: var(--color-accent);
-    border-radius: 100%;
-    margin-right: 10px;
-    margin-top: 10px;
-    position: relative;
-  }
-
-  .icon i {
-    position: absolute;
-  }
-
-  .Card h4 {
-    font-size: 20px !important;
-    font-weight: 500 !important;
-  }
-
-  .Card p {
-    font-size: 14px !important;
-  }
-
-  .first {
-    left: -12.5%;
-    top: -35%;
-    font-size: 325px;
-    color: white;
-  }
-
-  .second {
-    top: 25% !important;
-    left: 75%;
-    font-size: 350px !important;
-    color: white !important;
-  }
-
-  .test-sizing {
-    font-size: 14px !important;
-  }
-
-  // Up to 455px wide, but never wider than the screen: a fixed 455px pushed this
-  // text past both edges on phones.
-  .about-sizef,
-  .about-sizes {
-    width: 100% !important;
-    max-width: 455px;
-  }
-
-  .Service-Card {
-    width: 28% !important;
-  }
-
-  .Service-Card h3 {
-    font-size: 18px !important;
-    font-weight: 600 !important;
-  }
-
-  .Service-Card p {
-    font-size: 14px !important;
-  }
-
-  .Service-Card ul li {
-    font-size: 14px !important;
-  }
-
-  .Service-Card {
-    padding: 20px 10px !important;
-    width: 30% !important;
-  }
-
-  .first {
-    left: -27.5%;
-    top: -35%;
-    font-size: 325px;
-    color: white;
-  }
-
-  .second {
-    top: 25% !important;
-    left: 71%;
-    font-size: 350px !important;
-    color: white !important;
-  }
-
-  .container-fluid {
-    padding: 0% !important;
-  }
-
-  .bg-Custom {
-    text-align: center;
-    align-self: center;
-    align-content: center;
-    align-items: center !important;
-  }
-
-  .bg-Custom h1 {
-    font-size: 60px !important;
-  }
-
-  .bg-Custom p {
-    font-size: 18px !important;
-  }
-
-  .Content-about {
-    width: 100% !important;
-    padding: 20px !important;
-  }
-
-  .justify-content-md-Center {
-    justify-content: center !important;
-  }
-
-  .Card {
-    width: 40% !important;
+    &:placeholder-shown { direction: rtl; }
   }
 }
 
-// done
-
-@include below($bp-phone-lg) {
-  .bg-Custom {
-    height: 90vh !important;
-    padding-top: 5rem !important;
-    padding-bottom: 1rem !important;
-  }
-
-  .calendar-container {
-    min-width: 0 !important;
-    width: 70% !important;
-    max-width: 100% !important;
-  }
-
-  .Service-Card {
-    padding: 20px 25px !important;
-    width: 52% !important;
-    margin: 20px 10px !important;
-  }
-
-  .icon-Bottoms {
-    width: 90px !important;
-    height: 90px !important;
-    position: relative;
-    margin-bottom: 10px !important;
-    border-radius: 50% !important;
-    margin: auto;
-  }
-
-  .Card p {
-    width: 85%;
-    font-size: 14px !important;
-    margin: auto !important;
-  }
-
-  .Card h4 {
-    font-size: 20px !important;
-    font-weight: 500 !important;
-    text-align: center !important;
-  }
-}
-
-@include below($bp-phone-lg) {
-  .container-fluid {
-    padding: 0 !important;
-  }
-
-  .calendar-container {
-    min-width: 0 !important;
-    width: 85% !important;
-    max-width: 100% !important;
-  }
-
-  .calendar-container {
-    background: rgba(255, 255, 255, 0);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-radius: 28px;
-    box-shadow:
-      0 20px 60px rgba(46, 102, 112, 0.15),
-      0 4px 20px rgba(0, 0, 0, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  }
-
-  .content-spacing {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-    height: 50vh !important;
-  }
-
-  .calendar-container .calendar-header span {
-    font-size: 1rem;
-  }
-
-  .calendar-container .calendar-days {
-    grid-auto-rows: 40px;
-  }
-
-  .calendar-container .calendar-days div {
-    font-size: 0.8rem;
-  }
-
-  .content-Info {
-    font-size: 2.5rem !important;
-    display: block !important;
-    margin-bottom: 10px !important;
-    text-align: center !important;
-    width: 100% !important;
-    padding: 0 10px !important;
-    box-sizing: border-box !important;
-    border-radius: 10px !important;
-  }
-
-  .content-Info p {
-    font-size: 10px !important;
-  }
-
-  .bg-Custom {
-    width: 100% !important;
-  }
-
-  .bg-Custom h1 {
-    font-size: 50px !important;
-  }
-
-  .bg-Custom p {
-    font-size: 12px !important;
-  }
-
-  .content-spacing {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    width: 100% !important;
-    padding: 0px 20px !important;
-    height: 77vh !important;
-  }
-
-  .hero-lead-in {
-    font-size: 14px !important;
-  }
-
-  .test-sizing {
-    width: 80% !important;
-    margin-bottom: 15px !important;
-    margin: auto;
-  }
-
-  .fw-normal {
-    font-size: 25px !important;
-    margin: 10px !important;
-  }
-
-  .imageSizing {
-    width: 65% !important;
-  }
-
-  .Animationaly::before {
-    content: "";
-    position: absolute;
-    top: 90%;
-    left: 65%;
-    width: 10%;
-    z-index: -10;
-    height: 20%;
-    background: var(--color-accent);
-    border-radius: 100%;
-  }
-
-  .Animationaly::after {
-    content: "";
-    position: absolute;
-    top: 80%;
-    left: 70%;
-    width: 17%;
-    z-index: -10;
-    height: 35%;
-    background: var(--color-primary);
-    border-radius: 100%;
-  }
-
-  .Service-Card {
-    width: 65% !important;
-    margin: 15px 5px !important;
-  }
-
-  .Cards-Bg {
-    height: 350px !important;
-  }
-
-  .Card {
-    width: 70% !important;
-  }
-
-  .icon {
-    width: 50px;
-    height: 34px;
-    background-color: var(--color-accent);
-    border-radius: 100%;
-    margin-right: 10px;
-    margin-top: 10px;
-    position: relative;
-  }
-
-  .reveal-group {
-    padding: 20px 15px !important;
-  }
-
-  .reveal-from-left {
-    width: 100% !important;
-    margin: 0 !important;
-  }
-
-  .reveal-from-left .w-90 {
-    width: 100% !important;
-  }
-
-  .reveal-from-right {
-    width: 100% !important;
-    margin: 0 !important;
-  }
-
-  .reveal-from-right .w-90 {
-    width: 100% !important;
-  }
-
-  .reveal-group {
-    width: 100% !important;
-    margin: 0 !important;
-  }
-
-  .first {
-    left: -22%;
-    top: -34%;
-    font-size: 165px;
-    color: white;
-  }
-
-  .second {
-    top: 70% !important;
-    left: 75%;
-    font-size: 145px !important;
-    color: white !important;
-  }
-
-  .styling {
-    display: flex;
-    flex-direction: column !important;
-  }
-}
-
-// Short screens (e.g. a phone held sideways): let the hero and calendar sections grow
-// with their content instead of clipping it at a fixed share of the viewport height.
-@include short-screen {
-  .vh-100 {
-    height: auto !important;
-    min-height: 91.5vh;
-    padding-top: 24px;
-    padding-bottom: 24px;
-  }
+@include below($bp-laptop) {
+  .hero h1 { @include mq-rtl { font-size: clamp(40px, 10vw, 84px); } }
+  .product-head h2, .day-title h2 { @include mq-rtl { font-size: clamp(32px, 6.8vw, 54px); } }
+  .region-text h2, .faq h2 { @include mq-rtl { font-size: clamp(30px, 6.4vw, 48px); } }
+  .closing-card h2 { @include mq-rtl { font-size: clamp(34px, 7.6vw, 60px); } }
 }

@@ -1,0 +1,142 @@
+<div class="board" cdkDropListGroup>
+  <div class="heads">
+    @for (head of heads(); track head.status) {
+      <div class="head">
+        <div class="head-row">
+          <span class="status-dot" [attr.data-status]="head.status"></span>
+          <h2>
+            <button type="button" class="head-title" aria-haspopup="dialog"
+                    [attr.aria-expanded]="limitEditor() === head.status"
+                    [title]="'Set a work-in-progress limit' | t" (click)="toggleLimitEditor(head.status)">{{ head.title }}</button>
+          </h2>
+          <span class="head-count">{{ head.count | num }}</span>
+          <span class="head-est">{{ head.est }}</span>
+        </div>
+
+        @if (head.limit) {
+          <div class="wip">
+            <span class="wip-bar"><span class="wip-fill" [class.over]="head.over" [attr.data-status]="head.status"
+                                        [style.width.%]="head.wipPercent"></span></span>
+            <span class="wip-label" [class.over]="head.over">{{ head.wipLabel }}</span>
+          </div>
+        }
+
+        @if (limitEditor() === head.status) {
+          <div class="limit-editor mq-menu" role="dialog"
+               [attr.aria-label]="'Work-in-progress limit for {column}' | t: { column: head.title }">
+            <span class="limit-title">{{ 'Work-in-progress limit' | t }}</span>
+            <span class="limit-note">{{ 'How many tasks “{column}” should hold at once. Saved in this browser.' | t: { column: head.title } }}</span>
+            <div class="limit-row">
+              <button type="button" class="limit-step" [attr.aria-label]="'One fewer' | t" [disabled]="!head.limit || head.limit <= 1"
+                      (click)="stepLimit(head.status, -1)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg>
+              </button>
+              <input [type]="arabDigits ? 'text' : 'number'" class="limit-input" min="1" max="99" inputmode="numeric" [placeholder]="'None@@limit' | t"
+                     [attr.aria-label]="'Limit for {column}' | t: { column: head.title }" [value]="head.limit | num"
+                     (change)="setLimit(head.status, textOf($event))" />
+              <button type="button" class="limit-step" [attr.aria-label]="'One more' | t" (click)="stepLimit(head.status, 1)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+              </button>
+              <button type="button" class="limit-clear" [disabled]="!head.limit" (click)="setLimit(head.status, null)">{{ 'No limit' | t }}</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  @for (row of rows(); track row.key) {
+    <div class="lane">
+      @if (row.title) {
+        <div class="lane-title">
+          <span class="lane-dot" [style.--tone]="row.color"></span><span dir="auto">{{ row.title }}</span><span class="lane-count">{{ row.count }}</span>
+        </div>
+      }
+
+      <div class="cols">
+        @for (col of row.cols; track col.status) {
+          <div class="zone" [class.short]="lanes()" cdkDropList cdkDropListSortingDisabled [cdkDropListData]="col.status"
+               [attr.aria-label]="col.label" (cdkDropListDropped)="drop($event)">
+            @for (card of col.cards; track card.task.id) {
+              <div class="tcard" cdkDrag [cdkDragData]="card.task" [class.done]="card.done"
+                   [class.on]="card.task.id === selectedId()" [class.landed]="store.justMoved() === card.task.id">
+                <div class="tcard-ghost" *cdkDragPlaceholder></div>
+
+                <div class="tcard-top">
+                  <span role="img" class="bars" [attr.aria-label]="card.priorityLabel" [attr.data-level]="card.level">
+                    <span></span><span></span><span></span>
+                  </span>
+                  @if (card.next) {
+                    <button type="button" class="tcard-move" [attr.aria-label]="card.moveLabel" [title]="card.moveLabel"
+                            (click)="moveOn(card.task)">
+                      <svg class="mq-flip" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                    </button>
+                  }
+                </div>
+
+                <button type="button" class="tcard-title" (click)="pick.emit(card.task)"><span dir="auto">{{ card.task.title }}</span></button>
+
+                @if (card.project || card.labels.length) {
+                  <span class="tcard-tags">
+                    @if (card.project) {
+                      <span class="tcard-project"><span class="project-dot" [style.--tone]="card.color"></span>{{ card.project }}</span>
+                    }
+                    @for (label of card.labels; track label) {
+                      <span class="tcard-label" dir="auto">{{ label }}</span>
+                    }
+                    @if (card.moreLabels) {
+                      <span class="tcard-label">+{{ card.moreLabels | num }}</span>
+                    }
+                  </span>
+                }
+
+                @if (card.hasSub) {
+                  <span class="tcard-sub">
+                    <span class="sub-bar"><span class="sub-fill" [class.full]="card.subPercent === 100"
+                                                [style.width.%]="card.subPercent"></span></span>
+                    <span class="sub-label">{{ card.subLabel }}</span>
+                  </span>
+                }
+
+                <span class="tcard-foot">
+                  <span class="tcard-when" [class.block]="card.isBlock" [class.late]="card.late && !card.isBlock">{{ card.when }}</span>
+                  @if (card.blocked) {
+                    <span class="tcard-blocked">{{ 'Blocked' | t }}</span>
+                  }
+                  @if (card.comments) {
+                    <span class="tcard-comments" [attr.aria-label]="card.comments | tCount: '{n} comment' : '{n} comments'">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg>{{ card.comments | num }}
+                    </span>
+                  }
+                  @if (card.who) {
+                    <span class="tcard-who" [title]="'Assigned to {name}' | t: { name: card.whoName }">{{ card.who }}</span>
+                  }
+                </span>
+              </div>
+            }
+
+            @if (!col.cards.length) {
+              <span class="zone-empty">{{ 'Drop a task here' | t }}</span>
+            }
+
+            @if (col.status === 'Completed' && olderDoneCount() && !lanes()) {
+              <button type="button" class="zone-more" (click)="openLogbook.emit()">
+                {{ olderDoneCount() | tCount: '{n} older in the Logbook' : '{n} older in the Logbook' }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <span class="foot">
+    {{ 'Drag cards between columns, or use the arrow on a card. Scheduled tasks keep their calendar block when they move.' | t }}
+    @if (leftOut()) {
+      {{ 'Cancelled tasks ({n}) are not on the board; they are in the Logbook.' | t: { n: leftOut() } }}
+    }
+    @if (olderDoneCount() && lanes()) {
+      {{ 'The Done column shows the newest {shown}; {older} older ones are in the Logbook.' | t: { shown: heads()[3].count, older: olderDoneCount() } }}
+    }
+  </span>
+</div>

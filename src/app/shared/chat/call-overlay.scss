@@ -1,53 +1,46 @@
 @use '../../../styles/tokens' as *;
 
+// The ringing pop-up and the call screen, in the language of design/miqat-2.0. The
+// name and the buttons sit on the card, above and below the picture, so they read
+// the same on both themes whatever the camera shows.
+
+:host {
+  line-height: normal;
+}
+
 // A call is on top of everything else in the app, dialogs included (1000).
 $layer: 1200;
-$accept: #1faa59;
-$decline: #e5484d;
-// The call view is dark in both themes, like a video player: text on it is light.
-$stage-bg: #101418;
-$stage-text: #f4f6f8;
 
 .round {
   flex-shrink: 0;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  color: $stage-text;
+  background: $mq-line;
+  color: $mq-text;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.12s ease, background 0.12s ease;
+  transition: transform $mq-t-press $mq-ease-quick, background $mq-t-change $mq-ease-calm, filter $mq-t-press $mq-ease-quick;
+  @include mq-focus(3px);
 
-  mat-icon { font-size: 24px; width: 24px; height: 24px; }
-
-  &:hover { transform: scale(1.07); }
-  &:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  &:hover { filter: brightness(1.08); }
+  &:active { transform: scale(.96); }
 
   // Microphone or camera switched off.
-  &.on { background: #fff; color: $stage-bg; }
-  &.accept { background: $accept; color: #fff; }
-  &.decline { background: $decline; color: #fff; }
-
-  @include reduced-motion { transition: none; }
+  &.on { background: $mq-text; color: $mq-bg; }
+  &.accept { background: $mq-green; color: $mq-bg; }
+  &.decline { background: $mq-late; color: $mq-bg; }
 }
 
 // A ring that spreads from the picture while the call is not connected yet.
-.pulse {
+.ring {
   display: inline-flex;
   border-radius: 50%;
-  animation: pulse 1.6s ease-out infinite;
-
-  @include reduced-motion { animation: none; }
-}
-
-@keyframes pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(46, 196, 160, 0.55); }
-  100% { box-shadow: 0 0 0 18px rgba(46, 196, 160, 0); }
+  animation: mq-pulse 1.6s ease-out infinite;
 }
 
 // ── A friend is calling ───────────────────────────────────────────────────────
@@ -55,25 +48,21 @@ $stage-text: #f4f6f8;
 .incoming {
   position: fixed;
   top: 20px;
-  right: 20px;
+  inset-inline-end: 20px;
   z-index: $layer;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: min(400px, calc(100vw - 24px));
   padding: 14px 16px;
   border-radius: 18px;
-  background: $stage-bg;
-  color: $stage-text;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  animation: incoming-in 0.22s ease-out;
-
-  @include reduced-motion { animation: none; }
-}
-
-@keyframes incoming-in {
-  from { opacity: 0; transform: translateY(-14px); }
-  to   { opacity: 1; transform: none; }
+  background: $mq-card-5;
+  border: 1px solid $mq-line-2;
+  color: $mq-text;
+  box-shadow: 0 24px 60px mq-shadow(.55);
+  animation: mq-settle $mq-t-arrive $mq-ease-calm;
+  --avatar-ring: #{$mq-card-5};
 }
 
 .incoming-text {
@@ -85,21 +74,17 @@ $stage-text: #f4f6f8;
 }
 
 .incoming-name {
-  font-size: 16px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 600;
+  @include mq-ellipsis;
 }
 
 .incoming-status {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  opacity: 0.8;
-
-  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  gap: 6px;
+  font-size: 12.5px;
+  color: $mq-text-4;
 }
 
 // ── The call ──────────────────────────────────────────────────────────────────
@@ -108,7 +93,8 @@ $stage-text: #f4f6f8;
   position: fixed;
   inset: 0;
   z-index: $layer;
-  background: rgba(0, 0, 0, 0.55);
+  background: color-mix(in srgb, var(--mq-bg) 72%, transparent);
+  animation: mq-fade $mq-t-change $mq-ease-calm;
 }
 
 .stage {
@@ -117,13 +103,18 @@ $stage-text: #f4f6f8;
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: $layer + 1;
+  box-sizing: border-box;
   width: min(380px, calc(100vw - 24px));
   height: min(520px, calc(100dvh - 24px));
-  border-radius: 20px;
-  background: $stage-bg;
-  color: $stage-text;
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  background: $mq-card;
+  border: 1px solid $mq-line-2;
+  color: $mq-text;
   overflow: hidden;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 40px 100px mq-shadow(.6);
+  --avatar-ring: #{$mq-canvas};
 
   // A video call gets room for the picture.
   &.video {
@@ -132,13 +123,43 @@ $stage-text: #f4f6f8;
   }
 }
 
+.top {
+  flex-shrink: 0;
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.name {
+  @include mq-serif(30px);
+}
+
+.status {
+  font-size: 13px;
+  color: $mq-text-4;
+}
+
+// Where the friend's picture goes; the avatar while there is none.
+.screen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: $mq-canvas;
+  border-block: 1px solid $mq-line;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .remote {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: $stage-bg;
   // Present for its sound even when there is no picture to show.
   visibility: hidden;
 
@@ -146,65 +167,33 @@ $stage-text: #f4f6f8;
 }
 
 .who {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.top {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 22px 20px 34px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  text-align: center;
-  // Keeps the name readable over a bright picture.
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
-}
-
-.name {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.status {
-  font-size: 14px;
-  opacity: 0.85;
-  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  border-radius: 50%;
 }
 
 .local {
   position: absolute;
-  right: 16px;
-  bottom: 96px;
+  inset-inline-end: 14px;
+  bottom: 14px;
   width: min(200px, 32%);
   aspect-ratio: 4 / 3;
   border-radius: 12px;
   object-fit: cover;
-  background: #000;
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: $mq-bg;
+  border: 1px solid $mq-line-2;
+  box-shadow: 0 12px 28px mq-shadow(.4);
   // Like a mirror, which is how people expect to see themselves.
   transform: scaleX(-1);
 
-  &.off { opacity: 0.25; }
+  &.off { opacity: .25; }
 }
 
 .controls {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 34px 20px 22px;
+  flex-shrink: 0;
+  padding: 16px 20px 20px;
   display: flex;
   justify-content: center;
-  gap: 18px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
+  gap: 16px;
 }
 
 @include below($bp-phone-lg) {
@@ -213,7 +202,9 @@ $stage-text: #f4f6f8;
     width: 100vw;
     height: 100dvh;
     border-radius: 0;
+    border: 0;
   }
 
-  .local { bottom: 110px; }
+  .round { width: 56px; height: 56px; }
+  .incoming .round { width: 48px; height: 48px; }
 }

@@ -1,78 +1,82 @@
-<div class="help-page">
-
-  <header class="help-header">
-    <div class="header-text">
-      <h1 class="greeting">Help Center</h1>
-      <p class="page-sub">Answers to common questions, with a link to the right screen.</p>
+<div class="help">
+  <aside class="side">
+    <div class="side-title">
+      <h1>{{ 'Help' | t }}</h1>
+      <!-- Phones have no rail: the account menu holds the other sections. -->
+      <app-user-menu class="phone-menu" />
     </div>
 
-    <div class="search-field">
-      <mat-icon>search</mat-icon>
-      <input type="search" placeholder="Search help…" aria-label="Search help"
-             [ngModel]="searchText()" (ngModelChange)="searchText.set($event)" />
-      <button type="button" class="search-clear" *ngIf="searchText()" (click)="clearSearch()" aria-label="Clear search">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-  </header>
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <span class="mq-sr">{{ 'Search help' | t }}</span>
+      <input type="search" dir="auto" [placeholder]="'Search help' | t" [value]="searchText()" (input)="searchText.set($any($event.target).value)" />
+      @if (searchText()) {
+        <button type="button" class="search-clear" (click)="clearSearch()" [attr.aria-label]="'Clear search' | t">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      }
+    </label>
 
-  <div class="help-body">
-
-    <!-- Topics -->
-    <nav class="topic-list" aria-label="Help topics">
-      <button type="button" class="topic-row" *ngFor="let topic of topics; trackBy: trackTopic"
-              [class.active]="!searching() && activeTopicId() === topic.id"
-              (click)="selectTopic(topic)">
-        <span class="topic-icon"><mat-icon>{{ topic.icon }}</mat-icon></span>
-        <span class="topic-text">
-          <span class="topic-title">{{ topic.title }}</span>
-          <span class="topic-summary">{{ topic.summary }}</span>
-        </span>
-      </button>
+    <nav class="nav-group" [attr.aria-label]="'Help topics' | t">
+      <span class="nav-title">{{ 'Topics' | t }}</span>
+      @for (topic of topics; track topic.id) {
+        <button type="button" class="nav-item" (click)="selectTopic(topic)"
+                [attr.aria-current]="!searching() && activeTopicId() === topic.id ? 'page' : null">{{ topic.title }}</button>
+      }
     </nav>
+  </aside>
 
-    <!-- Answers -->
-    <section class="answers">
-
-      <p class="result-line" *ngIf="searching()" role="status">
-        {{ resultCount() }} {{ resultCount() === 1 ? 'answer' : 'answers' }} for “{{ searchText().trim() }}”
-      </p>
-
-      <div class="state-card" *ngIf="searching() && !resultCount()">
-        <div class="state-icon"><mat-icon>search_off</mat-icon></div>
-        <p class="state-title">Nothing matches that</p>
-        <p class="state-sub">Try a shorter word, such as “calendar”, “friend” or “password”.</p>
-        <button type="button" class="ghost-btn" (click)="clearSearch()">Show all topics</button>
+  <main class="main">
+    <div class="main-inner">
+      <div class="main-title">
+        @if (searching()) {
+          <h2>{{ 'Search results' | t }}</h2>
+          <p role="status">{{ resultCount() | tCount: '{n} answer for “{term}”' : '{n} answers for “{term}”' : { term: searchText().trim() } }}</p>
+        } @else {
+          <h2>{{ activeTopic().title }}</h2>
+          <p>{{ activeTopic().summary }}</p>
+        }
       </div>
 
-      <article class="topic-card" *ngFor="let topic of visibleTopics(); trackBy: trackTopic">
-        <header class="topic-head">
-          <span class="topic-icon"><mat-icon>{{ topic.icon }}</mat-icon></span>
-          <div>
-            <h2>{{ topic.title }}</h2>
-            <p>{{ topic.summary }}</p>
-          </div>
-        </header>
-
-        <div class="answer" *ngFor="let answer of topic.answers; trackBy: trackAnswer"
-             [class.open]="isOpen(topic, answer)">
-          <button type="button" class="question" (click)="toggle(topic, answer)"
-                  [attr.aria-expanded]="isOpen(topic, answer)">
-            <span>{{ answer.question }}</span>
-            <mat-icon>expand_more</mat-icon>
-          </button>
-
-          <div class="answer-body" *ngIf="isOpen(topic, answer)">
-            <ol>
-              <li *ngFor="let step of answer.steps">{{ step }}</li>
-            </ol>
-            <a class="answer-link" *ngIf="answer.link as link" [routerLink]="link.route" [queryParams]="link.query">
-              {{ link.label }}
-              <mat-icon>arrow_forward</mat-icon>
-            </a>
+      @if (searching() && !resultCount()) {
+        <div class="group">
+          <div class="nothing">
+            <span>{{ 'Nothing matches that. Try a shorter word, such as “calendar”, “friend” or “password”.' | t }}</span>
+            <button type="button" class="link-btn" (click)="clearSearch()">{{ 'Show all topics' | t }}</button>
           </div>
         </div>
-      </article>
-    </section>
-  </div>
+      }
+
+      @for (topic of visibleTopics(); track topic.id) {
+        @if (searching()) { <span class="group-title">{{ topic.title }}</span> }
+
+        <div class="group">
+          @for (answer of topic.answers; track answer.question) {
+            <div class="answer" [class.open]="isOpen(topic, answer)">
+              <button type="button" class="question" (click)="toggle(topic, answer)" [attr.aria-expanded]="isOpen(topic, answer)">
+                <span>{{ answer.question }}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+              </button>
+
+              @if (isOpen(topic, answer)) {
+                <div class="answer-body">
+                  <div class="steps" role="list">
+                    @for (step of answer.steps; track $index) {
+                      <div class="step" role="listitem"><span class="step-number">{{ $index + 1 | num }}</span><span>{{ step }}</span></div>
+                    }
+                  </div>
+                  @if (answer.link; as link) {
+                    <a class="link-btn" [routerLink]="link.route" [queryParams]="link.query">
+                      {{ link.label }}
+                      <svg class="mq-flip" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </main>
 </div>

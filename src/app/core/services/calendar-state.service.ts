@@ -1,11 +1,21 @@
 import { Injectable, signal } from '@angular/core';
 
+import { CalendarItemDto, CalendarItemKind } from '../../models/api.models';
+
+/** 'agenda' is the list the page calls "Schedule". */
 export type CalendarView = 'month' | 'week' | 'day' | 'agenda';
 
+/** The event or task whose details are on show. */
+export interface CalendarSelection {
+  kind: CalendarItemKind;
+  id: string;
+  /** The date that was picked: one date of a repeating event, or a task's time block. */
+  item?: CalendarItemDto;
+}
+
 /**
- * Filter id for tasks that belong to no project. They get their own row in
- * "My Calendars"; without one they could never be switched off, so "Hide all"
- * left them on the grid and the checkboxes looked broken.
+ * Filter id for tasks that belong to no project. They get their own row under
+ * "Tasks" ("Personal"), so they can be switched off like a project's.
  */
 export const PERSONAL_CALENDAR_ID = '__personal__';
 
@@ -13,8 +23,8 @@ const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(),
 const firstOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
 
 /**
- * State shared by the calendar page's two halves (the grid and the sidebar) and by
- * anything that sends the user there, such as a day on the dashboard's mini calendar.
+ * State shared by the calendar page's parts (the views, the left column, the detail
+ * panel) and by anything that sends the user there, such as a day on another screen.
  */
 @Injectable({
   providedIn: 'root'
@@ -30,8 +40,22 @@ export class CalendarStateService {
    */
   selectedDate = signal<Date>(startOfDay(new Date()));
 
-  /** Lives here so a link from elsewhere can open the calendar straight on a day. */
-  view = signal<CalendarView>('month');
+  /**
+   * Lives here so a link from elsewhere can open the calendar straight on a day.
+   * The week is the app's home until the calendar settings or a link say otherwise.
+   */
+  view = signal<CalendarView>('week');
+
+  /** What the detail panel shows; null when nothing was picked. */
+  selection = signal<CalendarSelection | null>(null);
+
+  select(selection: CalendarSelection) {
+    this.selection.set(selection);
+  }
+
+  clearSelection() {
+    this.selection.set(null);
+  }
 
   /**
    * True once the view was picked by the user or by a link. Until then the
@@ -41,18 +65,16 @@ export class CalendarStateService {
   viewChosen = false;
 
   /**
-   * The zone the calendar shows times in, picked from the chip in its header.
+   * The zone the calendar shows times in, picked from the tag above its hour column.
    * null means "the zone in my profile".
    */
   displayZone = signal<string | null>(null);
 
   /**
-   * Projects the user has switched off in the sidebar's "My Calendars" list.
+   * Projects the user has switched off under "Tasks" in the left column.
    *
-   * This lives on the service rather than inside the sidebar because the
-   * sidebar and the grid are sibling components with no other link — the
-   * checkboxes previously toggled a signal only the sidebar could see, so
-   * unticking a project changed the tick and nothing else.
+   * This lives on the service rather than inside the column because the column
+   * and the views are sibling components with no other link.
    *
    * Stored as the *hidden* set so a newly created project is visible by
    * default without anyone having to register it here.
@@ -70,10 +92,6 @@ export class CalendarStateService {
       next.has(groupId) ? next.delete(groupId) : next.add(groupId);
       return next;
     });
-  }
-
-  setAllCalendars(groupIds: string[], visible: boolean) {
-    this.hiddenCalendarIds.set(visible ? new Set() : new Set(groupIds));
   }
 
   /**
@@ -114,14 +132,6 @@ export class CalendarStateService {
   /** The view from the calendar settings; ignored once a view was picked on purpose. */
   applyDefaultView(view: CalendarView) {
     if (!this.viewChosen) this.view.set(view);
-  }
-
-  nextMonth() {
-    this.shiftMonth(1);
-  }
-
-  prevMonth() {
-    this.shiftMonth(-1);
   }
 
   /**

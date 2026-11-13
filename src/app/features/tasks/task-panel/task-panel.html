@@ -1,0 +1,214 @@
+@if (loadError(); as message) {
+  <!-- ── Missing, or not shared with this user ───────────────────────────── -->
+  <div class="state">
+    @if (closable()) {
+      <button type="button" class="back-link" (click)="closed.emit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+        {{ 'Tasks' | t }}
+      </button>
+    }
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+    <h2 class="state-title">{{ message }}</h2>
+    @if (denied()) {
+      <p class="state-text">{{ 'Ask the owner to add you to the project, or to mention you on the task.' | t }}</p>
+    } @else {
+      <p class="state-text">{{ 'It may have been deleted, or the link is not complete.' | t }}</p>
+    }
+  </div>
+} @else if (task(); as item) {
+  @if (view(); as v) {
+    <!-- ── Project and actions ─────────────────────────────────────────── -->
+    <div class="crumb">
+      @if (closable()) {
+        <button type="button" class="icon-btn back" [attr.aria-label]="'Back to tasks' | t" [title]="'Back to tasks' | t" (click)="closed.emit()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+      }
+
+      @if (item.groupId) {
+        <span class="project-dot" [style.--tone]="v.color"></span>
+        <a class="project" dir="auto" [routerLink]="['/projects', item.groupId]" [title]="'Open the project' | t">{{ v.project || ('Project' | t) }}</a>
+      } @else {
+        <span class="project">{{ 'No project' | t }}</span>
+      }
+
+      <span class="crumb-actions">
+        <button type="button" class="icon-btn" [attr.aria-label]="'Copy link' | t" [title]="'Copy link' | t" (click)="copyLink()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg>
+        </button>
+
+        <span class="menu-holder">
+          <button type="button" class="icon-btn" [attr.aria-label]="'More actions' | t" [title]="'More actions' | t" aria-haspopup="menu"
+                  [attr.aria-expanded]="menu() === 'more'" (click)="toggleMenu('more')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="19" cy="12" r="1.7"></circle></svg>
+          </button>
+          @if (menu() === 'more') {
+            <div class="mq-menu menu end" role="menu">
+              <button type="button" class="mq-menu-item" role="menuitem" (click)="edit()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+                {{ 'Edit task' | t }}
+              </button>
+              @if (item.groupId) {
+                <a class="mq-menu-item" role="menuitem" [routerLink]="['/projects', item.groupId]">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"></path></svg>
+                  {{ 'Open project' | t }}
+                </a>
+              }
+              @if (isOwner()) {
+                <div class="mq-menu-sep"></div>
+                <button type="button" class="mq-menu-item danger" role="menuitem" (click)="remove()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg>
+                  {{ 'Delete task' | t }}
+                </button>
+              }
+            </div>
+          }
+        </span>
+      </span>
+    </div>
+
+    <h2 class="title" dir="auto">{{ item.title }}</h2>
+
+    <!-- ── Status and priority ─────────────────────────────────────────── -->
+    <div class="pills">
+      <span class="menu-holder">
+        <button type="button" class="pill" [attr.data-status]="item.status" aria-haspopup="menu"
+                [attr.aria-expanded]="menu() === 'status'" [attr.aria-label]="v.statusAria"
+                (click)="toggleMenu('status')">{{ v.status }}</button>
+        @if (menu() === 'status') {
+          <div class="mq-menu menu" role="menu">
+            @for (status of statuses; track status.value) {
+              <button type="button" class="mq-menu-item" role="menuitemradio" [attr.aria-checked]="item.status === status.value"
+                      (click)="setStatus(status.value)">
+                <span class="option-dot" [attr.data-status]="status.value"></span>{{ status.label }}
+              </button>
+            }
+          </div>
+        }
+      </span>
+
+      <span class="menu-holder">
+        <button type="button" class="pill" [attr.data-priority]="item.priority" aria-haspopup="menu"
+                [attr.aria-expanded]="menu() === 'priority'" [attr.aria-label]="v.priorityAria"
+                (click)="toggleMenu('priority')">{{ v.priority }}</button>
+        @if (menu() === 'priority') {
+          <div class="mq-menu menu" role="menu">
+            @for (priority of priorities; track priority.value) {
+              <button type="button" class="mq-menu-item" role="menuitemradio" [attr.aria-checked]="item.priority === priority.value"
+                      (click)="setPriority(priority.value)">
+                <span class="option-dot" [attr.data-priority]="priority.value"></span>{{ priority.label }}
+              </button>
+            }
+          </div>
+        }
+      </span>
+    </div>
+
+    <!-- ── Properties ──────────────────────────────────────────────────── -->
+    <dl class="props">
+      <dt>{{ 'Assignee' | t }}</dt>
+      <dd class="person">
+        @if (v.assignee) {
+          <span class="avatar">{{ v.assigneeInitials }}</span>
+          <a dir="auto" [routerLink]="['/profile', item.assignedToUserId]">{{ v.assignee }}</a>
+        } @else {
+          <span class="none">{{ 'Nobody yet' | t }}</span>
+        }
+      </dd>
+
+      <dt>{{ 'Due' | t }}</dt>
+      <dd class="due" [class.late]="v.late">
+        @if (v.due) { {{ v.due }} } @else { <span class="none">{{ 'No deadline' | t }}</span> }
+      </dd>
+
+      <dt>{{ 'Estimate' | t }}</dt>
+      <dd>
+        @if (v.estimate) { {{ v.estimate }} } @else { <span class="none">{{ 'No estimate' | t }}</span> }
+      </dd>
+
+      <dt>{{ 'On calendar' | t }}</dt>
+      <dd class="calendar">
+        @if (v.block) {
+          <a class="block" routerLink="/calendar" [queryParams]="{ date: v.blockDate }">
+            <span class="block-time">{{ v.block }}</span>
+            <span class="block-note">{{ 'Time block · open in calendar' | t }}</span>
+          </a>
+          @if (!v.closed) {
+            <button type="button" class="icon-btn" [attr.aria-label]="'Change or remove the time block' | t"
+                    [title]="'Change or remove the time block' | t" (click)="schedule($event)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+            </button>
+          }
+        } @else if (!v.closed) {
+          <button type="button" class="find-time" (click)="schedule($event)">{{ 'Find time today' | t }}</button>
+        } @else {
+          <span class="none">{{ 'Not scheduled' | t }}</span>
+        }
+      </dd>
+
+      <dt>{{ 'Cycle' | t }}</dt>
+      <dd><span class="none" [title]="'Sprints are not set up in Miqat yet' | t">{{ 'No sprint' | t }}</span></dd>
+
+      @if (v.repeats) {
+        <dt>{{ 'Repeats' | t }}</dt>
+        <dd>{{ v.repeats }}</dd>
+      }
+
+      <dt>{{ 'Labels' | t }}</dt>
+      <dd class="labels">
+        @for (label of v.labels; track label) {
+          <span class="label" dir="auto">{{ label }}</span>
+        } @empty {
+          <span class="none">{{ 'None' | t }}</span>
+        }
+      </dd>
+
+      @if (otherMembers().length) {
+        <dt>{{ 'Shared with' | t }}</dt>
+        <dd class="people">
+          @for (member of otherMembers().slice(0, 6); track member.userId) {
+            <a class="avatar" [routerLink]="['/profile', member.userId]" [title]="'{name} · project member' | t: { name: member.fullName }"
+               [attr.aria-label]="member.fullName">{{ memberInitials(member.fullName) }}</a>
+          }
+          @if (otherMembers().length > 6) {
+            <span class="more">+{{ otherMembers().length - 6 | num }}</span>
+          }
+        </dd>
+      }
+    </dl>
+
+    @if (item.description) {
+      <p class="description" dir="auto">{{ item.description }}</p>
+    } @else {
+      <p class="description none">{{ 'No description yet. “Edit task” in the menu above adds one.' | t }}</p>
+    }
+
+    <app-task-checklist [taskId]="item.id" (changed)="onChecklistChanged($event)" />
+
+    <app-task-dependencies [taskId]="item.id" (changed)="onBlockedChanged($event)" />
+
+    <app-item-reminders class="extra" kind="Task" [itemId]="item.id" />
+
+    <app-item-attachments class="extra" kind="Task" [itemId]="item.id" [canManage]="isOwner()" />
+
+    <!-- ── Activity ────────────────────────────────────────────────────── -->
+    <section class="activity">
+      <h3 class="eyebrow">{{ 'Activity' | t }}</h3>
+      @if (v.created) {
+        <div class="activity-row">
+          <a class="avatar" [routerLink]="['/profile', item.userId]" [title]="v.owner" [attr.aria-label]="v.owner">{{ v.ownerInitials }}</a>
+          <span class="activity-text">{{ 'created this task' | t }} <span class="when">· {{ v.created }}</span></span>
+        </div>
+      }
+      <app-comment-thread [taskId]="item.id" [focusCommentId]="focusCommentId()" [showHeading]="false" />
+    </section>
+  }
+} @else if (loading()) {
+  <div class="skeleton" aria-hidden="true">
+    <span class="bone short"></span>
+    <span class="bone tall"></span>
+    <span class="bone"></span>
+    <span class="bone"></span>
+    <span class="bone short"></span>
+  </div>
+}

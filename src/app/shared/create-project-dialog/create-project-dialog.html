@@ -1,128 +1,70 @@
-<div class="dialog-wrap">
-  <!-- Header -->
-  <div class="dialog-header">
-    <div class="dialog-title">
-      <div class="title-icon" [style.background]="selectedColor() + '22'">
-        <mat-icon [style.color]="selectedColor()">folder_special</mat-icon>
-      </div>
-      <div>
-        <h2>Create New Project</h2>
-        <p>Organize your work into a shared space</p>
-      </div>
+<form class="project-window" (submit)="$event.preventDefault(); create()" novalidate>
+
+  <header class="window-head">
+    <div class="head-text">
+      <span class="eyebrow"><span class="eyebrow-dot" [style.--tone]="selectedColor()"></span>{{ 'New project' | t }}</span>
+      <label class="mq-sr" for="project-name">{{ 'Project name' | t }}</label>
+      <input id="project-name" class="title-input" type="text" dir="auto" [placeholder]="'Name the project' | t"
+             maxlength="60" autocomplete="off" [value]="name()" (input)="name.set(textOf($event))" />
     </div>
-    <button class="close-btn" (click)="cancel()">
-      <mat-icon>close</mat-icon>
+    <button type="button" class="icon-btn" (click)="cancel()" [attr.aria-label]="'Close' | t">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
     </button>
-  </div>
+  </header>
 
-  <!-- Color accent bar -->
-  <div class="color-accent-bar" [style.background]="'linear-gradient(90deg, ' + selectedColor() + ', transparent)'"></div>
+  <div class="window-body">
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
 
-  <!-- Body -->
-  <div class="dialog-body">
+    <div class="field">
+      <label for="project-desc">{{ 'Description' | t }} <span class="optional">{{ '(optional)' | t }}</span></label>
+      <textarea id="project-desc" dir="auto" [placeholder]="'What is this project about?' | t" rows="3" maxlength="200"
+                [value]="description()" (input)="description.set(textOf($event))"></textarea>
+      <span class="count">{{ description().length + '/200' | num }}</span>
+    </div>
 
-    <!-- Name -->
-    <div class="field-group">
-      <label class="field-label">Project Name <span class="required">*</span></label>
-      <div class="input-wrap" [class.focused]="name().length > 0">
-        <mat-icon class="field-icon">title</mat-icon>
-        <input
-          id="project-name"
-          type="text"
-          placeholder="e.g. Website Redesign, Mobile App v2"
-          [value]="name()"
-          (input)="name.set($any($event.target).value)"
-          maxlength="60"
-          autocomplete="off"
-          (keydown.enter)="isValid() && create()"
-        />
-        <span class="char-count">{{ name().length }}/60</span>
+    <div class="field">
+      <span class="field-label" id="project-colour-label">{{ 'Colour' | t }}</span>
+      <div class="swatches" role="radiogroup" aria-labelledby="project-colour-label">
+        @for (color of colorSwatches; track color; let index = $index) {
+          <button type="button" class="swatch" role="radio" [style.--tone]="color"
+                  [attr.aria-checked]="selectedColor() === color" [attr.aria-label]="'Colour {n}' | t: { n: index + 1 }"
+                  (click)="selectColor(color)">
+            @if (selectedColor() === color) {
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+            }
+          </button>
+        }
       </div>
     </div>
 
-    <!-- Description -->
-    <div class="field-group">
-      <label class="field-label">Description</label>
-      <div class="textarea-wrap">
-        <mat-icon class="field-icon top">notes</mat-icon>
-        <textarea
-          id="project-desc"
-          placeholder="What is this project about?"
-          rows="3"
-          [value]="description()"
-          (input)="description.set($any($event.target).value)"
-          maxlength="200"
-        ></textarea>
-      </div>
-      <span class="char-hint">{{ description().length }}/200</span>
-    </div>
+    <div class="field">
+      <span class="field-label">
+        {{ 'Invite members' | t }}
+        @if (selectedUserIds().length) { <span class="optional">· {{ selectedUserIds().length | tCount: '{n} chosen' : '{n} chosen' }}</span> }
+      </span>
 
-    <!-- Color Picker -->
-    <div class="field-group">
-      <label class="field-label">Project Color</label>
-      <div class="color-swatches">
-        <button
-          class="swatch"
-          *ngFor="let color of colorSwatches"
-          [style.background]="color"
-          [class.selected]="selectedColor() === color"
-          (click)="selectColor(color)"
-          [title]="color"
-        >
-          <mat-icon *ngIf="selectedColor() === color">check</mat-icon>
-        </button>
-      </div>
-      <div class="selected-preview">
-        <div class="preview-dot" [style.background]="selectedColor()"></div>
-        <span>{{ selectedColor() }}</span>
-      </div>
-    </div>
-
-    <!-- Team Members -->
-    <div class="field-group">
-      <label class="field-label">
-        Invite Members
-        <span class="selected-count" *ngIf="selectedUserIds().length">
-          {{ selectedUserIds().length }} selected
-        </span>
-      </label>
-
-      <div class="members-list">
-        <label class="member-item" *ngFor="let user of users()"
-               [class.checked]="selectedUserIds().includes(user.id)">
-          <input type="checkbox" class="member-check"
-                 [checked]="selectedUserIds().includes(user.id)"
-                 (change)="toggleUser(user.id)" />
-          <span class="member-box"><mat-icon>check</mat-icon></span>
-          <span class="member-avatar">{{ initials(user.name) }}</span>
-          <span class="member-name">{{ user.name }}</span>
-        </label>
-
-        <p class="members-empty" *ngIf="!users().length">
-          Add friends first to invite them here.
-        </p>
-      </div>
-    </div>
-
-    <!-- Error -->
-    <div class="error-msg" *ngIf="error()">
-      <mat-icon>error_outline</mat-icon>
-      {{ error() }}
+      @if (users().length) {
+        <div class="members" role="group" [attr.aria-label]="'Invite members' | t">
+          @for (user of users(); track user.id) {
+            <label class="member">
+              <input type="checkbox" [checked]="selectedUserIds().includes(user.id)" (change)="toggleUser(user.id)" />
+              <span class="avatar">{{ initials(user.name) }}</span>
+              <span class="member-name" dir="auto">{{ user.name }}</span>
+            </label>
+          }
+        </div>
+      } @else {
+        <p class="hint">{{ 'Add friends first to invite them here. Members can also be added on the project page.' | t }}</p>
+      }
     </div>
   </div>
 
-  <!-- Footer -->
-  <div class="dialog-footer">
-    <button class="btn-cancel" (click)="cancel()">Cancel</button>
-    <button
-      class="btn-create"
-      (click)="create()"
-      [disabled]="!isValid() || loading()"
-      [style.background]="isValid() ? selectedColor() : undefined"
-    >
-      <mat-icon *ngIf="loading()">hourglass_empty</mat-icon>
-      <mat-icon *ngIf="!loading()">add</mat-icon>
-      {{ loading() ? 'Creating...' : 'Create Project' }}
+  <footer class="window-foot">
+    <button type="button" class="btn-cancel" (click)="cancel()" [disabled]="loading()">{{ 'Cancel' | t }}</button>
+    <button type="submit" class="btn-save" [disabled]="!isValid() || loading()">
+      {{ (loading() ? 'Creating…' : 'Create project') | t }}
     </button>
-  </div>
-</div>
+  </footer>
+</form>

@@ -1,0 +1,22 @@
+<div class="face">
+  <svg width="340" height="340" viewBox="0 0 340 340" aria-hidden="true">
+    <circle class="rim" cx="170" cy="170" r="166" fill="none" stroke-width="1"></circle>
+    <circle class="track" cx="170" cy="170" r="146" fill="none" stroke-width="2"></circle>
+    <circle class="passed" cx="170" cy="170" r="146" fill="none" stroke-width="2" stroke-linecap="round" [attr.stroke-dasharray]="ring().dash" transform="rotate(-90 170 170)"></circle>
+    <circle class="dot" [attr.cx]="ring().x" [attr.cy]="ring().y" r="4.5"></circle>
+  </svg>
+  <div class="reading">
+    <span class="time" role="timer" [attr.aria-label]="'Time in {city}' | t: { city: city }">{{ time() }}</span>
+    <span class="where">{{ where() }}</span>
+  </div>
+</div>
+
+<div class="dates">
+  <span class="gregorian">{{ gregorian() }}</span>
+  <span class="hijri">{{ hijri() }}</span>
+  @if (hijriArabic()) {
+    <span class="hijri-ar" lang="ar" dir="rtl">{{ hijriArabic() }}</span>
+  }
+</div>
+
+<p class="motto">{{ motto[0] }}<em>{{ motto[1] }}</em>{{ motto[2] }}</p>

@@ -1,64 +1,58 @@
-@use '../../styles/breakpoints' as *;
+@use '../../styles/tokens' as *;
+@use '../home/public' as *;
 
-// Footer logo - responsive sizing
-.footer-logo {
-  height: 56px;
-  width: auto;
-  max-width: 180px;
-  object-fit: contain;
+:host {
+  @include public-page(13.5px);
+  @include grow-with-window;
 }
 
-footer {
-  .w-85 {
-    max-width: 100%;
+.bar {
+  border-top: 1px solid $mq-hover;
+}
+
+.inner {
+  box-sizing: border-box;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 32px;
+  color: $mq-text-4;
+}
+
+.word {
+  font-family: $mq-serif;
+  font-size: 24px;
+  color: $mq-text;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+
+  a {
+    display: inline-block;
+    padding: 10px 0;
+    @include link-color($mq-text-4);
+    transition: color $mq-t-press $mq-ease-quick;
+    @include mq-focus;
+    @include touch-area(4px, 6px);
+
+    &[href]:hover { @include link-color($mq-text); }
+    &[aria-disabled='true'] { cursor: default; }
   }
 }
 
-// Mobile
+.copy {
+  margin-inline-start: auto;
+  font-size: 12.5px;
+  color: $mq-muted;
+}
+
 @include below($bp-tablet) {
-  .footer-logo {
-    height: 70px;
-    max-width: 150px;
-  }
-
-  footer {
-    padding-top: 2.5rem !important;
-    padding-bottom: 1.5rem !important;
-  }
-
-  footer .col-md-4,
-  footer .col-md-2 {
-    text-align: center;
-    margin-bottom: 1.5rem;
-  }
-
-  footer .col-md-4 div {
-    justify-content: center;
-  }
-  .row {
-    --bs-gutter-x: 1.5rem;
-    --bs-gutter-y: 0;
-    display: flex;
-    flex-wrap: wrap;
-    margin-top: calc(-1 * var(--bs-gutter-y));
-    margin-right: calc(-.5 * var(--bs-gutter-x));
-    margin-left: calc(-.5 * var(--bs-gutter-x));
-    justify-content: space-around;
-}
-}
-
-@include below($bp-phone-lg) {
-  .footer-logo {
-    height: 34px;
-    max-width: 110px;
-  }
-  .col-12 {
-    width: 45%;
-  }
-  footer .d-flex.justify-content-between {
-    flex-direction: row;
-    gap: 1rem;
-    flex-wrap: wrap;
-    text-align: center;
-  }
+  .inner { padding: 28px 16px; }
+  .copy { margin-inline-start: 0; }
 }

@@ -1,159 +1,135 @@
-<div class="task-window">
-  <div
-    class="glass-header px-4 py-3 border-bottom d-flex justify-content-between align-items-center"
-  >
-    <h3 class="m-0 title d-flex align-items-center">
-      {{ isEditMode ? 'Task Details' : 'New Task' }}
-    </h3>
-    <button
-      type="button"
-      class="btn-close shadow-none"
-      aria-label="Close"
-      (click)="onCancel()"
-    ></button>
-  </div>
+<form class="task-window" [formGroup]="taskForm" (ngSubmit)="onSubmit()" novalidate>
 
-  <div class="modal-body px-4 py-4">
-    <div
-      *ngIf="errorMessage()"
-      class="alert alert-danger px-3 py-2 text-sm rounded-3"
-    >
-      {{ errorMessage() }}
+  <header class="window-head">
+    <div class="head-text">
+      <span class="eyebrow">{{ (isEditMode ? 'Task details' : 'New task') | t }}</span>
+      <label class="mq-sr" for="task-title">{{ 'Title' | t }}</label>
+      <input id="task-title" class="title-input" type="text" formControlName="title" maxlength="200" dir="auto"
+             [placeholder]="'What needs to be done?' | t" autocomplete="off" [class.invalid]="titleInvalid" />
+      @if (titleInvalid) {
+        <span class="field-error">{{ 'Title is required.' | t }}</span>
+      }
+    </div>
+    <button type="button" class="icon-btn" (click)="onCancel()" [attr.aria-label]="'Close' | t">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+  </header>
+
+  <div class="window-body">
+    @if (errorMessage()) {
+      <p class="error" role="alert">{{ errorMessage() }}</p>
+    }
+
+    <div class="field">
+      <label for="task-description">{{ 'Description' | t }}</label>
+      <textarea id="task-description" formControlName="description" rows="3" maxlength="1000" dir="auto"
+                [placeholder]="'Add some details…' | t"></textarea>
     </div>
 
-    <form [formGroup]="taskForm" (ngSubmit)="onSubmit()">
-      <!-- Title -->
-      <div class="mb-3">
-        <label class="form-label fw-bold">Title</label>
-        <input
-          type="text"
-          class="form-control"
-          formControlName="title"
-          placeholder="What needs to be done?"
-          [ngClass]="{'is-invalid': taskForm.get('title')?.invalid && taskForm.get('title')?.touched}"
-        />
-        <div class="invalid-feedback">Title is required.</div>
+    <div class="two-col">
+      <div class="field">
+        <label for="task-project">{{ 'Project@@field' | t }}</label>
+        <select id="task-project" formControlName="groupId">
+          <option value="">{{ 'No project' | t }}</option>
+          @for (group of groups(); track group.id) {
+            <option [value]="group.id">{{ group.name }}</option>
+          }
+        </select>
       </div>
 
-      <!-- Description -->
-      <div class="mb-3">
-        <label class="form-label fw-bold">Description</label>
-        <textarea
-          class="form-control"
-          formControlName="description"
-          rows="3"
-          placeholder="Add some details..."
-        ></textarea>
+      <div class="field">
+        <label for="task-assignee">{{ 'Assignee' | t }}</label>
+        <select id="task-assignee" formControlName="assignedToUserId">
+          <option value="">{{ 'Unassigned' | t }}</option>
+          @for (user of users(); track user.id) {
+            <option [value]="user.id">{{ user.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label for="task-status">{{ 'Status' | t }}</label>
+        <select id="task-status" formControlName="status">
+          @for (status of statuses; track status.value) {
+            <option [value]="status.value">{{ status.label }}</option>
+          }
+        </select>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-bold">Project</label>
-          <select class="form-select" formControlName="groupId">
-            <option value="">No Project</option>
-            <option *ngFor="let group of groups()" [value]="group.id">{{ group.name }}</option>
-          </select>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-bold">Assignee</label>
-          <select class="form-select" formControlName="assignedToUserId">
-            <option value="">Unassigned</option>
-            <option *ngFor="let user of users()" [value]="user.id">{{ user.name }}</option>
-          </select>
-        </div>
+      <div class="field">
+        <label for="task-priority">{{ 'Priority' | t }}</label>
+        <select id="task-priority" formControlName="priority">
+          @for (priority of priorities; track priority.value) {
+            <option [value]="priority.value">{{ priority.label }}</option>
+          }
+        </select>
       </div>
+    </div>
 
-      <div class="row">
-        <!-- Status -->
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-bold">Status</label>
-          <!-- Values must match the backend TaskStatus enum exactly. "InProgress"
-               was sent here previously, which the API cannot parse. -->
-          <select class="form-select" formControlName="status">
-            <option value="Pending">Pending</option>
-            <option value="In_progress">In Progress</option>
-            <option value="Completed">Completed</option>
-            <option value="On_hold">On Hold</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-        </div>
-
-        <!-- Priority -->
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-bold">Priority</label>
-          <select class="form-select" formControlName="priority">
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Critical">Critical</option>
-          </select>
+    <div class="two-col">
+      <div class="field">
+        <label for="task-due-day">{{ 'Due' | t }}</label>
+        <div class="date-time">
+          <input id="task-due-day" type="date" formControlName="dueDay" />
+          <input type="time" formControlName="dueTime" [attr.aria-label]="'Due time' | t" />
         </div>
       </div>
 
-      <div class="row">
-        <!-- Due Date -->
-        <div class="col-md-6 mb-4">
-          <label class="form-label fw-bold">Due Date</label>
-          <input
-            type="datetime-local"
-            class="form-control"
-            formControlName="dueDate"
-          />
-        </div>
-
-        <!-- Tags -->
-        <div class="col-md-6 mb-4">
-          <label class="form-label fw-bold">Tags</label>
-          <div class="position-relative">
-            <i
-              class="fa-solid fa-tags position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
-            ></i>
-            <input
-              type="text"
-              class="form-control ps-5"
-              formControlName="tags"
-              placeholder="e.g. Design, UI"
-            />
-          </div>
+      <div class="field">
+        <label for="task-start-day">{{ 'On calendar' | t }} <span class="optional">{{ '(time block)' | t }}</span></label>
+        <div class="date-time">
+          <input id="task-start-day" type="date" formControlName="startDay" />
+          <input type="time" formControlName="startTime" step="900" [attr.aria-label]="'Block start time' | t" />
         </div>
       </div>
+    </div>
+    <p class="hint">{{ 'Times are in {zone}. The block lasts as long as the estimate.' | t: { zone: zoneLabel } }}</p>
 
-      <div class="d-flex justify-content-end mt-2 pt-3 border-top">
-        <button
-          type="button"
-          class="btn btn-light px-4 me-3 rounded-pill fw-medium"
-          (click)="onCancel()"
-          [disabled]="isLoading()"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="btn bg-image px-5 rounded-pill fw-medium shadow-sm"
-          [disabled]="isLoading()"
-        >
-          <span
-            *ngIf="isLoading()"
-            class="spinner-border spinner-border-sm me-2"
-            role="status"
-            aria-hidden="true"
-          ></span>
-          <ng-container *ngIf="!isLoading()">
-            {{ isEditMode ? 'Save Changes' : 'Create Task' }}
-          </ng-container>
-          <ng-container *ngIf="isLoading()">Saving...</ng-container>
-        </button>
+    <div class="two-col">
+      <div class="field">
+        <label for="task-estimate">{{ 'Estimate' | t }}</label>
+        <input id="task-estimate" type="text" formControlName="estimate" [placeholder]="estimateExample" autocomplete="off" />
       </div>
-    </form>
 
-    <!-- ── Discussion (existing tasks only) ─────────────────────────────── -->
-    <!-- The full task page carries the roomier version of this same thread. -->
-    <app-comment-thread *ngIf="isEditMode && taskId" [taskId]="taskId" [compact]="true">
-    </app-comment-thread>
+      <div class="field">
+        <label for="task-repeat">{{ 'Repeat' | t }}</label>
+        <select id="task-repeat" formControlName="recurrence">
+          @for (repeat of repeats; track repeat.value) {
+            <option [value]="repeat.value">{{ repeat.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
 
-    <p class="open-full" *ngIf="isEditMode && taskId">
-      <a [routerLink]="['/tasks', taskId]" (click)="onCancel()">Open the full task page →</a>
-    </p>
+    <div class="two-col">
+      @if (taskForm.value.recurrence !== 'None') {
+        <div class="field">
+          <label for="task-repeat-end">{{ 'Repeat until' | t }} <span class="optional">{{ '(optional)' | t }}</span></label>
+          <input id="task-repeat-end" type="date" formControlName="recurrenceEndDay" />
+        </div>
+      }
+
+      <div class="field">
+        <label for="task-tags">{{ 'Labels' | t }}</label>
+        <input id="task-tags" type="text" formControlName="tags" dir="auto" [placeholder]="'design, api' | t" autocomplete="off" />
+      </div>
+    </div>
+
+    <!-- ── Activity (existing tasks only) ───────────────────────────────── -->
+    @if (isEditMode && taskId) {
+      <div class="thread">
+        <app-comment-thread [taskId]="taskId" [compact]="true" />
+        <a class="open-full" [routerLink]="['/tasks', taskId]" (click)="onCancel()">{{ 'Open in Tasks' | t }}</a>
+      </div>
+    }
   </div>
-</div>
+
+  <footer class="window-foot">
+    <button type="button" class="btn-cancel" (click)="onCancel()" [disabled]="isLoading()">{{ 'Cancel' | t }}</button>
+    <button type="submit" class="btn-save" [disabled]="isLoading()">
+      {{ (isLoading() ? 'Saving…' : isEditMode ? 'Save changes' : 'Create task') | t }}
+    </button>
+  </footer>
+</form>

@@ -1,0 +1,206 @@
+<!-- Rebuilt for each item, so another pick fades in instead of jumping. -->
+@for (key of [contentKey()]; track key) {
+  <div class="details">
+
+    <div class="source">
+      <span class="dot" [style.--tone]="color()"></span>
+      <span class="source-name">{{ source() }}</span>
+      @if (isTask() && planned()) { <span class="pill">{{ 'Planned' | t }}</span> }
+
+      <span class="tools">
+        @if (event()?.isOwner) {
+          <button type="button" class="tool" (click)="edit()" [disabled]="busy()" [attr.aria-label]="'Edit event' | t" [title]="'Edit' | t">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+          </button>
+          <button type="button" class="tool danger" (click)="askDelete()" [disabled]="busy()" [attr.aria-label]="'Delete event' | t" [title]="'Delete' | t">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"></path></svg>
+          </button>
+        }
+        <button type="button" class="tool" (click)="close()" [attr.aria-label]="'Close details' | t" [title]="'Close' | t">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </span>
+    </div>
+
+    <div class="heading">
+      <h2 dir="auto">{{ title() }}</h2>
+      @if (dateLine()) { <span class="when">{{ dateLine() }}</span> }
+      @if (timeLine()) { <span class="when">{{ timeLine() }}</span> }
+      @if (place() && !join()) { <span class="when" dir="auto">{{ place() }}</span> }
+      @if (zoneLine()) { <span class="quiet">{{ zoneLine() }}</span> }
+      @if (repeats() && !join()) { <span class="quiet">{{ repeatsLine() }}</span> }
+      @if (occurrenceChanged()) {
+        <span class="quiet">
+          {{ 'This date differs from the rest of the series.' | t }}
+          @if (event()?.isOwner) {
+            <button type="button" class="text-btn" (click)="restore()" [disabled]="busy()">{{ 'Put it back' | t }}</button>
+          }
+        </span>
+      }
+    </div>
+
+    @if (loading()) {
+      <div class="skeleton" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+    }
+
+    @if (loadError()) {
+      <p class="state">{{ loadError() }}</p>
+    }
+
+    <!-- ── A question before a change ──────────────────────────────────────── -->
+    @if (prompt() === 'edit-which') {
+      <div class="ask" role="alertdialog" [attr.aria-label]="'Which dates to change' | t">
+        <span><strong>{{ 'This event repeats.' | t }}</strong> {{ 'What do you want to change?' | t }}</span>
+        <span class="ask-actions">
+          <button type="button" class="btn-fill" (click)="openEditor(true)">{{ 'Only this date' | t }}</button>
+          <button type="button" class="btn-line" (click)="openEditor(false)">{{ 'All dates' | t }}</button>
+          <button type="button" class="btn-line" (click)="cancelPrompt()">{{ 'Cancel' | t }}</button>
+        </span>
+      </div>
+    }
+    @if (prompt() === 'delete-which') {
+      <div class="ask" role="alertdialog" [attr.aria-label]="'Which dates to delete' | t">
+        <span><strong>{{ 'This event repeats.' | t }}</strong> {{ 'What do you want to remove?' | t }}</span>
+        <span class="ask-actions">
+          <button type="button" class="btn-line danger" (click)="skipThisDate()" [disabled]="busy()">{{ 'Only this date' | t }}</button>
+          <button type="button" class="btn-line danger" (click)="deleteEvent()" [disabled]="busy()">{{ 'All dates' | t }}</button>
+          <button type="button" class="btn-line" (click)="cancelPrompt()" [disabled]="busy()">{{ 'Cancel' | t }}</button>
+        </span>
+      </div>
+    }
+    @if (prompt() === 'delete') {
+      <div class="ask" role="alertdialog" [attr.aria-label]="'Delete this event' | t">
+        <span>
+          <strong>{{ 'Delete this event?' | t }}</strong>
+          @if (peopleRows().length) { {{ 'Its guests are told it was cancelled.' | t }} }
+          {{ 'This cannot be undone.' | t }}
+        </span>
+        <span class="ask-actions">
+          <button type="button" class="btn-line danger" (click)="deleteEvent()" [disabled]="busy()">{{ 'Delete event' | t }}</button>
+          <button type="button" class="btn-line" (click)="cancelPrompt()" [disabled]="busy()">{{ 'Cancel' | t }}</button>
+        </span>
+      </div>
+    }
+
+    @if (error()) { <p class="state error" role="alert">{{ error() }}</p> }
+
+    <!-- ── An event ────────────────────────────────────────────────────────── -->
+    @if (event(); as e) {
+      @if (join() || isInvited() || peopleRows().length) {
+        <div class="group">
+          @if (join(); as link) {
+            <div class="join">
+              <span class="join-text">
+                <span class="join-name"><span class="mq-ltr">{{ link.label }}</span></span>
+                <span class="join-when">{{ startsIn() }}@if (repeats()) { · {{ repeats() }} }</span>
+              </span>
+              <a class="join-btn" [href]="link.url" target="_blank" rel="noopener noreferrer">{{ 'Join' | t }}</a>
+            </div>
+          }
+
+          @if (isInvited()) {
+            <div class="answers" role="group" [attr.aria-label]="'Your response' | t">
+              @for (answer of answers; track answer.value) {
+                <button type="button" class="answer" [attr.aria-pressed]="e.myResponse === answer.value"
+                        [disabled]="busy()" (click)="respond(answer.value)">{{ answer.label }}</button>
+              }
+            </div>
+          }
+
+          @if (peopleRows().length) {
+            <div class="people">
+              <span class="eyebrow">{{ peopleLabel() }}</span>
+              @for (person of peopleRows(); track person.id) {
+                <div class="person">
+                  @if (person.picture) {
+                    <img class="avatar" [src]="person.picture" alt="" referrerpolicy="no-referrer" />
+                  } @else {
+                    <span class="avatar">{{ person.initials }}</span>
+                  }
+                  <span class="person-text">
+                    <a class="person-name" [routerLink]="['/profile', person.id]">{{ person.name }}</a>
+                    @if (person.note) { <span class="person-note">{{ person.note }}</span> }
+                  </span>
+                  @if (person.status) { <span class="person-status" [attr.data-tone]="person.tone">{{ person.status }}</span> }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+
+    <!-- ── A task: its block, or its due time ──────────────────────────────── -->
+    @if (task(); as current) {
+      <div class="plan">
+        <p class="reason">{{ taskFacts() }}</p>
+
+        @if (checklist(); as list) {
+          <div class="checklist">
+            <span class="checklist-top"><span>{{ 'Checklist' | t }}</span><span class="checklist-count">{{ '{done} of {total}' | t: { done: list.done, total: list.total } }}</span></span>
+            <span class="meter"><span [style.width.%]="list.percent"></span></span>
+          </div>
+        }
+
+        @if (moving()) {
+          <form class="move" (submit)="saveMove($event)">
+            <label class="mq-sr" for="move-date">{{ 'Day' | t }}</label>
+            <input id="move-date" type="date" [value]="moveDate()" (change)="setMoveDate($event)" />
+            <label class="mq-sr" for="move-time">{{ 'Time' | t }}</label>
+            <input id="move-time" type="time" [value]="moveTime()" (change)="setMoveTime($event)" />
+            <button type="submit" class="btn-fill">{{ (planned() ? 'Move block' : 'Block time') | t }}</button>
+            <button type="button" class="btn-line" (click)="moving.set(false)">{{ 'Cancel' | t }}</button>
+          </form>
+        } @else {
+          <div class="plan-actions" [class.two]="!planned()">
+            <a class="btn-fill" [routerLink]="['/tasks', current.id]">{{ 'Open task' | t }}</a>
+            @if (planned()) {
+              <button type="button" class="btn-line" (click)="startMoving()">{{ 'Move' | t }}</button>
+              <button type="button" class="btn-line" (click)="unplan()">{{ 'Unplan' | t }}</button>
+            } @else {
+              <button type="button" class="btn-line" (click)="startMoving()">{{ 'Block time' | t }}</button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (agenda().length) {
+      <div class="agenda">
+        <span class="eyebrow">{{ 'Agenda' | t }}</span>
+        @for (point of agenda(); track $index) {
+          <span class="point" dir="auto"><span class="dash" aria-hidden="true">—</span>{{ point }}</span>
+        }
+      </div>
+    }
+
+    @if (links().length) {
+      <div class="links">
+        <span class="eyebrow">{{ 'Linked in Miqat' | t }}</span>
+        @for (link of links(); track link.type) {
+          <a class="link" [routerLink]="link.route">
+            <span class="link-type">{{ link.type }}</span>
+            <span class="link-title">{{ link.title }}</span>
+          </a>
+        }
+      </div>
+    }
+
+    @if (event(); as e) {
+      <app-item-reminders kind="Event" [itemId]="e.id"></app-item-reminders>
+      <app-item-attachments kind="Event" [itemId]="e.id" [canManage]="e.isOwner"></app-item-attachments>
+    }
+
+    @if (suggestion(); as hint) {
+      <div class="smart">
+        <span class="smart-text">{{ hint.text }}</span>
+        <span class="smart-actions">
+          <button type="button" class="smart-go" (click)="applySuggestion(hint)" [disabled]="busy()">{{ hint.action }}</button>
+          <button type="button" class="smart-no" (click)="dismiss(hint)">{{ 'Dismiss' | t }}</button>
+        </span>
+      </div>
+    }
+  </div>
+}

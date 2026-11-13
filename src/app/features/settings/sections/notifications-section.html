@@ -1,0 +1,108 @@
+<div class="group">
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Quiet hours' | t }}</span>
+      <span class="line-hint">{{ 'Reminders wait until morning. Not available yet.' | t }}</span>
+    </span>
+    <button type="button" role="switch" class="switch" aria-checked="false" [attr.aria-label]="'Quiet hours' | t"
+            disabled [title]="'Quiet hours are not available yet' | t"><span></span></button>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Pause during prayer times' | t }}</span>
+      <span class="line-hint">{{ 'Holds notifications for a while after each prayer time. Not available yet.' | t }}</span>
+    </span>
+    <button type="button" role="switch" class="switch" aria-checked="false" [attr.aria-label]="'Pause during prayer times' | t"
+            disabled [title]="'Pausing during prayer times is not available yet' | t"><span></span></button>
+  </div>
+</div>
+
+@if (preferencesError()) {
+  <p class="problem" role="alert">
+    {{ 'Your notification settings could not be loaded.' | t }}
+    <button type="button" class="text-btn" (click)="loadPreferences()">{{ 'Try again' | t }}</button>
+  </p>
+}
+
+<div class="matrix-wrap" id="notification-matrix">
+  <div class="matrix">
+    <div class="matrix-head">
+      <span>{{ 'Tell me about' | t }}</span><span>{{ 'In Miqat' | t }}</span><span>{{ 'Email' | t }}</span><span>{{ 'Phone' | t }}</span>
+    </div>
+    @for (row of matrix(); track row.label) {
+      <div class="matrix-row">
+        <span class="matrix-what"><span>{{ row.label }}</span>@if (row.hint) { <span>{{ row.hint }}</span> }</span>
+        @for (cell of row.cells; track cell.label) {
+          <span class="matrix-cell">
+            <input type="checkbox" [attr.aria-label]="cell.label" [title]="cell.reason" [checked]="isOn(cell)"
+                   [disabled]="isDisabled(cell)" (change)="toggle(cell)" />
+          </span>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<p class="quiet">
+  {{ 'Miqat keeps one switch for live notifications (in Miqat and on your phone), one for email and one for the weekly recap, so ticking a box changes its whole column. Everything still arrives in your Inbox.' | t }}
+</p>
+
+<!-- Push to this browser while the app is closed. Hidden on servers that have no devices API at all. -->
+@if (pushState() !== 'hidden') {
+  <div class="group" id="this-device">
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'This device' | t }}</span>
+        <span class="line-hint" [attr.data-push]="pushState()">
+          @switch (pushState()) {
+            @case ('loading') { {{ 'Checking this device…' | t }} }
+            @case ('error') { {{ 'The device settings could not be loaded.' | t }} }
+            @case ('not-configured') { {{ 'Push is not set up on this server yet. Notifications still arrive in Miqat while it is open.' | t }} }
+            @case ('unsupported') { {{ 'This browser cannot receive push notifications. They still arrive in Miqat while it is open.' | t }} }
+            @default {
+              {{ (thisDeviceId()
+                ? 'Push reaches this browser even when Miqat is not open. Remove it below to switch it off.'
+                : 'Push reaches this browser even when Miqat is not open. Your browser asks for permission the first time.') | t }}
+            }
+          }
+        </span>
+      </span>
+      @if (pushState() === 'error') {
+        <button type="button" class="line-btn" (click)="loadPush()">{{ 'Try again' | t }}</button>
+      } @else if (pushState() === 'ready') {
+        @if (thisDeviceId()) {
+          <span class="tag">{{ 'On' | t }}</span>
+        } @else {
+          <button type="button" class="line-btn primary" [disabled]="enablingPush()" (click)="enablePush()">
+            {{ (enablingPush() ? 'Turning on…' : 'Turn on push') | t }}
+          </button>
+        }
+      } @else if (pushState() !== 'loading') {
+        <button type="button" class="line-btn" disabled
+                [title]="(pushState() === 'unsupported' ? 'This browser cannot receive push' : 'Push is not set up on this server yet') | t">
+          {{ 'Turn on push' | t }}
+        </button>
+      }
+      @if (pushError()) {
+        <p class="problem counter" role="alert">{{ pushError() }}</p>
+      }
+    </div>
+
+    @for (device of devices(); track device.id) {
+      <div class="line">
+        <span class="line-text">
+          <span class="line-label">
+            <span dir="auto">{{ device.name || ('Unnamed device' | t) }}</span>
+            @if (device.id === thisDeviceId()) { <span class="tag">{{ 'This device' | t }}</span> }
+          </span>
+          <span class="line-hint">{{ 'Receives push · last seen {when}' | t: { when: lastSeen(device) } }}</span>
+        </span>
+        <button type="button" class="line-btn" [disabled]="removingDeviceId() !== null" (click)="removeDevice(device)"
+                [attr.aria-label]="'Remove {name}' | t: { name: device.name || ('device' | t) }">
+          {{ (removingDeviceId() === device.id ? 'Removing…' : 'Remove') | t }}
+        </button>
+      </div>
+    }
+  </div>
+}

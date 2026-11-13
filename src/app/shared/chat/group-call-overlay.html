@@ -1,0 +1,63 @@
+@if (groupCalls.invitation(); as ring) {
+  <!-- A group call rings: an invitation, not a call yet. -->
+  <section class="incoming" [class.second]="calls.call()?.phase === 'ringing'" role="alertdialog" aria-live="assertive"
+           [attr.aria-label]="'{name} is calling {group}' | t: { name: ring.from.fullName, group: ring.groupName }">
+    <span class="ring">
+      <app-chat-avatar [name]="ring.from.fullName" [url]="ring.from.profilePictureUrl" [size]="48" />
+    </span>
+    <div class="incoming-text">
+      <span class="incoming-name"><bdi>{{ ring.from.fullName }}</bdi></span>
+      <span class="incoming-status">
+        <app-chat-icon [name]="ring.video ? 'video' : 'phone'" [size]="14" />
+        <span class="incoming-group">{{ invitationText() }}</span>
+      </span>
+    </div>
+    <span class="incoming-buttons">
+      <button type="button" class="dismiss" (click)="groupCalls.dismissInvitation()">{{ 'Dismiss@@a ringing call' | t }}</button>
+      <button type="button" class="join" (click)="groupCalls.acceptInvitation()">{{ 'Join' | t }}</button>
+    </span>
+  </section>
+}
+
+@if (groupCalls.call(); as call) {
+  <div class="backdrop"></div>
+  <section class="stage" [class.voice]="!call.video" role="dialog" aria-modal="true"
+           [attr.aria-label]="'Call in {group}' | t: { group: call.groupName }">
+    <header class="top">
+      <span class="name"><bdi>{{ call.groupName }}</bdi></span>
+      <span class="status" aria-live="polite">{{ status() }}</span>
+    </header>
+
+    <div class="grid" role="list" [attr.aria-label]="'People in the call' | t" [style.--cols]="columns()" [class.last-alone]="lastAlone()">
+      <app-call-tile [self]="true" [name]="self()?.fullName ?? ('You' | t)" [url]="self()?.profilePictureUrl"
+                     [stream]="groupCalls.localStream()" [video]="showsOwnVideo()" [muted]="call.muted"
+                     [avatarSize]="avatarSize()" />
+      @for (p of groupCalls.peers(); track p.id) {
+        <app-call-tile [name]="p.fullName" [url]="p.profilePictureUrl" [stream]="p.stream"
+                       [video]="call.video && !p.cameraOff && p.link === 'connected'" [muted]="p.muted" [speaking]="p.speaking"
+                       [note]="p.link === 'connecting' ? ('Connecting…' | t) : p.link === 'failed' ? ('Could not connect' | t) : ''"
+                       [avatarSize]="avatarSize()" />
+      }
+    </div>
+
+    <footer class="controls">
+      <button type="button" class="round" [class.on]="call.muted" (click)="groupCalls.toggleMute()"
+              [attr.aria-label]="(call.muted ? 'Unmute microphone' : 'Mute microphone') | t"
+              [attr.aria-pressed]="call.muted" [title]="(call.muted ? 'Unmute' : 'Mute') | t">
+        <app-chat-icon [name]="call.muted ? 'mic-off' : 'mic'" [size]="20" />
+      </button>
+
+      @if (call.video) {
+        <button type="button" class="round" [class.on]="call.cameraOff" (click)="groupCalls.toggleCamera()"
+                [attr.aria-label]="(call.cameraOff ? 'Turn camera on' : 'Turn camera off') | t"
+                [attr.aria-pressed]="call.cameraOff" [title]="(call.cameraOff ? 'Camera on' : 'Camera off') | t">
+          <app-chat-icon [name]="call.cameraOff ? 'video-off' : 'video'" [size]="20" />
+        </button>
+      }
+
+      <button type="button" class="round decline" (click)="groupCalls.leave()" [attr.aria-label]="'Leave call' | t" [title]="'Leave' | t">
+        <app-chat-icon name="hang-up" [size]="20" />
+      </button>
+    </footer>
+  </section>
+}

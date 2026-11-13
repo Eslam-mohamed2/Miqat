@@ -1,109 +1,327 @@
-<div class="node-flow-container" (pointermove)="onPointerMove($event)">
+<header class="head">
+  <div class="head-title">
+    <span class="head-eyebrow">{{ 'Node Flow' | t }} · {{ countLabel() }} · {{ saveLabel() }}</span>
+    <h1 class="title">
+      <!-- The hidden copy of the text sizes the field, so it is exactly as wide as the name. -->
+      <span class="title-size" [attr.data-value]="name()">
+        <input type="text" dir="auto" [value]="name()" maxlength="120" spellcheck="false" [attr.aria-label]="'Flow name' | t"
+               (input)="rename($any($event.target).value)" (blur)="commitName()"
+               (keydown.enter)="$any($event.target).blur()" />
+      </span>
+    </h1>
+  </div>
 
-  <!-- The board scrolls: the diagram is as large as its nodes need, which on a
-       phone is far wider than the screen. The toolbar below stays put. -->
-  <div class="board-scroll" (click)="onBackgroundClick($event)">
-  <div #board class="board-surface" [style.width.px]="surfaceWidth()" [style.height.px]="surfaceHeight()">
+  <div class="mode" role="group" [attr.aria-label]="'Layout' | t">
+    <button type="button" [attr.aria-pressed]="!isTime()" (click)="setView('flow')">{{ 'Flow' | t }}</button>
+    <button type="button" [attr.aria-pressed]="isTime()" (click)="setView('time')">{{ 'Timeline' | t }}</button>
+  </div>
 
-  <!-- SVG Layer for Links -->
-  <svg class="edges-layer">
-    <defs>
-      <marker id="arrowhead" markerWidth="10" markerHeight="7"
-              refX="9" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#7c8ef5" />
-      </marker>
-    </defs>
+  <button type="button" class="crit" [attr.aria-pressed]="critical()" (click)="critical.set(!critical())">
+    <span class="crit-dot" aria-hidden="true"></span>{{ 'Critical path' | t }}
+  </button>
 
-    <path *ngFor="let edge of edges(); trackBy: trackByEdgeId"
-          [attr.d]="getEdgePath(edge)"
-          fill="none"
-          stroke="#7c8ef5"
-          stroke-width="2"
-          marker-end="url(#arrowhead)"/>
+  <button type="button" class="auto" [disabled]="!nodes().length" (click)="runAutoLayout()">{{ 'Auto-layout' | t }}</button>
 
-    <path *ngIf="linkingFromNodeId()"
-          [attr.d]="getLinkingPath()"
-          fill="none"
-          stroke="#7c8ef5"
-          stroke-width="2"
-          stroke-dasharray="5,5"
-          marker-end="url(#arrowhead)"/>
-  </svg>
-
-  <!-- HTML Layer for Nodes -->
-  <div class="nodes-layer">
-    <div *ngFor="let node of nodes(); trackBy: trackByNodeId"
-         class="flow-node"
-         [class.selected]="linkingFromNodeId() === node.id"
-         [class.task]="node.type === 'task'"
-         [class.event]="node.type === 'event'"
-         [class.linkable]="tool() === 'link'"
-         [style.left.px]="node.x"
-         [style.top.px]="node.y"
-         [style.borderLeftColor]="statusColor(node.status)"
-         (pointerdown)="onNodePointerDown($event, node)"
-         (click)="onNodeClick($event, node)">
-
-      <div class="node-header">
-        <mat-icon class="type-icon">{{ node.type === 'task' ? 'check_circle' : 'event' }}</mat-icon>
-        <span class="type-label">{{ node.type | uppercase }}</span>
-        <button type="button" class="close-icon" (click)="deleteNode($event, node.id)"
-                [attr.aria-label]="'Remove ' + node.title">
-          <mat-icon>close</mat-icon>
+  <div class="add" #addWrap>
+    <button type="button" class="add-btn" aria-haspopup="menu" [attr.aria-expanded]="addMenu()"
+            (click)="addMenu.set(!addMenu())">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>{{ 'Add node' | t }}
+    </button>
+    @if (addMenu()) {
+      <div class="mq-menu add-menu" role="menu">
+        <button type="button" class="mq-menu-item" role="menuitem" (click)="addNode('task')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>
+          {{ 'Task' | t }}
+        </button>
+        <button type="button" class="mq-menu-item" role="menuitem" (click)="addNode('event')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+          {{ 'Event' | t }}
+        </button>
+        <button type="button" class="mq-menu-item" role="menuitem" (click)="addNode('milestone')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 9-9 9-9-9z"></path></svg>
+          {{ 'Milestone' | t }}
         </button>
       </div>
+    }
+  </div>
 
-      <div class="node-body">
-        <!-- Written back through the signal: [(ngModel)] mutated the node object
-             in place, which a zoneless app never picks up. -->
-        <input type="text" class="node-title-input"
-               [value]="node.title"
-               (input)="updateNodeTitle(node.id, $any($event.target).value)"
-               (pointerdown)="$event.stopPropagation()"
-               (click)="$event.stopPropagation()" />
+  <!-- Phones only: the tab bar has no room for the account menu. -->
+  <span class="phone-menu"><app-user-menu [size]="44" /></span>
+</header>
+
+<div class="body">
+  <section #canvas class="canvas" [attr.aria-label]="'Flow canvas' | t" [class.picking]="pick()">
+    <!-- The board scrolls: it is as large as its nodes need, which on a phone is
+         far wider than the screen. Left to right in every language: where a node
+         stands is a place, and a saved flow looks the same whoever opens it. -->
+    <div #scroller class="scroller" dir="ltr" [class.panning]="panning()"
+         (pointerdown)="onCanvasDown($event)" (pointermove)="onCanvasMove($event)"
+         (pointerup)="onCanvasUp($event)" (pointercancel)="onCanvasUp($event)"
+         (click)="onCanvasClick($event)">
+      <div #surface class="surface" [style.width.px]="surfaceWidth()" [style.height.px]="surfaceHeight()">
+
+        @if (isTime()) {
+          @for (column of dayColumns(); track column.day) {
+            <div class="day" [class.off]="column.off" [style.left.px]="column.left">
+              @if (column.month) { <span class="day-month">{{ column.month }}</span> }
+              <span class="day-label" [class.today]="column.today">{{ column.label }}</span>
+            </div>
+          }
+
+          <!-- Stays at the left edge while the days scroll under it. -->
+          <div class="lanes">
+            @for (lane of lanes(); track lane.id) {
+              <div [class]="'lane tone-' + lane.tone" [style.top.px]="lane.top">
+                <span class="lane-dot"></span>
+                <span class="lane-title" dir="auto">{{ lane.title }}</span>
+                <span class="lane-who">{{ lane.initials }}</span>
+              </div>
+            }
+          </div>
+
+          @if (todayLeft() !== null) {
+            <div class="today-line" [attr.aria-label]="'Today' | t" [style.left.px]="todayLeft()"><span>{{ 'Today' | t }}</span></div>
+          }
+        }
+
+        <svg [class]="isTime() ? 'edges in-time' : 'edges in-flow'" aria-hidden="true">
+          @for (line of lines(); track line.id) {
+            <g [class.critical]="line.critical">
+              <path [attr.d]="line.d"></path>
+              <path class="arrow" [attr.d]="line.arrow"></path>
+            </g>
+          }
+          @if (linkPreview(); as preview) {
+            <path class="preview" [attr.d]="preview"></path>
+          }
+        </svg>
+
+        @for (card of cards(); track card.node.id) {
+          <button type="button" [class]="'node ' + card.node.type + ' tone-' + card.tone"
+                  [class.bar]="isTime()" [class.critical]="card.critical" [class.undated]="card.undated"
+                  [class.selected]="card.node.id === selectedId()" [class.dragging]="card.node.id === draggingId()" [class.still]="card.node.id === nudgedId()"
+                  [attr.data-node]="card.node.id" [attr.aria-pressed]="card.node.id === selectedId()"
+                  [attr.aria-label]="card.aria"
+                  [style.left.px]="card.box.x" [style.top.px]="card.box.y" [style.width.px]="card.box.w"
+                  (pointerdown)="onNodeDown($event, card)" (pointermove)="onNodeMove($event)"
+                  (pointerup)="onNodeUp($event)" (pointercancel)="onNodeUp($event)"
+                  (click)="onNodeClick(card.node)" (dblclick)="focusTitle()">
+            @if (isTime()) {
+              <span class="bar-label">{{ card.barLabel }}</span>
+            } @else {
+              <span class="node-top">
+                <span class="node-kind">{{ card.kindLabel }}</span>
+                @if (card.statusLabel) { <span class="node-pill">{{ card.statusLabel }}</span> }
+                @if (card.initials) { <span class="node-who">{{ card.initials }}</span> }
+              </span>
+              <span class="node-title" dir="auto">{{ card.node.title.trim() || ('Untitled' | t) }}</span>
+              <span class="node-dates">{{ card.dates }}</span>
+            }
+          </button>
+        }
+
+        @if (port(); as handle) {
+          <button type="button" class="port" tabindex="-1" [class.live]="linkPreview()" [style.left.px]="handle.left" [style.top.px]="handle.top"
+                  [attr.aria-label]="'Drag onto the node that waits for this one' | t"
+                  [title]="'Drag onto the node that waits for this one' | t"
+                  (pointerdown)="onPortDown($event)" (pointermove)="onPortMove($event)"
+                  (pointerup)="onPortUp($event)" (pointercancel)="onPortUp($event)"></button>
+        }
+      </div>
+    </div>
+
+    @if (!loading() && !nodes().length) {
+      <p class="empty">{{ 'No nodes yet. Choose “Add node” to start mapping what depends on what.' | t }}</p>
+    }
+
+    @if (pick(); as mode) {
+      <p class="pick-hint" role="status">
+        {{ (mode === 'before' ? 'Choose the node this one waits for.' : 'Choose the node that waits for this one.') | t }}
+        <span>{{ 'Esc to cancel' | t }}</span>
+      </p>
+    }
+
+    <div class="legend">
+      <span><span class="key-line critical"></span>{{ 'Critical path' | t }}</span>
+      <span><span class="key-line"></span>{{ 'Depends on' | t }}</span>
+      <span><span class="key-box late"></span>{{ 'Late' | t }}</span>
+      <span><span class="key-box event"></span>{{ 'Calendar event' | t }}</span>
+    </div>
+  </section>
+
+  <aside class="details" [attr.aria-label]="'Node details' | t">
+    <!-- Rebuilt when another node is selected, so its details arrive with a small rise. -->
+    @for (s of selection(); track s.node.id) {
+      <div class="details-body">
+      <span class="kind-line">{{ s.kindLine }}</span>
+
+      <h2 class="name">
+        <span class="name-size" [attr.data-value]="s.node.title">
+          <textarea #titleBox rows="1" dir="auto" spellcheck="false" [placeholder]="'Untitled' | t" [attr.aria-label]="'Node title' | t"
+                    [value]="s.node.title" [readOnly]="s.linked"
+                    [attr.title]="s.linked ? ('The title comes from the linked item. Open it to rename it.' | t) : null"
+                    (input)="retitle($any($event.target).value)"
+                    (keydown.enter)="$event.preventDefault(); $any($event.target).blur()"></textarea>
+        </span>
+      </h2>
+
+      <div class="pills">
+        @if (s.ownStatus) {
+          <button type="button" [class]="'pill tone-' + s.tone" [title]="'Change status' | t" (click)="cycleStatus()">{{ s.statusLabel }}</button>
+        } @else {
+          <span [class]="'pill tone-' + s.tone">{{ s.statusLabel }}</span>
+        }
+        <span class="pill path" [class.on]="s.onPath">{{ s.pathLabel }}</span>
       </div>
 
-      <span class="open-hint" *ngIf="node.taskId && tool() === 'select'">Open task →</span>
-    </div>
-  </div>
+      <dl class="facts">
+        <dt>{{ 'Owner' | t }}</dt>
+        <dd><bdi>{{ s.owner }}</bdi></dd>
+        <dt>{{ 'Dates' | t }}</dt>
+        <dd>
+          <button type="button" class="dates" [attr.aria-expanded]="datesOpen()" [title]="'Change dates' | t"
+                  (click)="datesOpen.set(!datesOpen())">{{ s.dates }}</button>
+        </dd>
+        @if (datesOpen()) {
+          <dd class="dates-edit">
+            <label>
+              <span>{{ 'Start' | t }}</span>
+              <input type="date" [value]="s.node.start || ''" (change)="setStart($any($event.target).value)" />
+            </label>
+            @if (s.node.type !== 'milestone') {
+              <label class="narrow">
+                <span>{{ 'Days' | t }}</span>
+                <input [type]="numberField" inputmode="numeric" min="1" max="365" [value]="s.days | num" (change)="setDays($any($event.target).value)" />
+              </label>
+            }
+            @if (s.node.type === 'event') {
+              <label>
+                <span>{{ 'Time' | t }}</span>
+                <input type="time" [value]="s.node.time || ''" (change)="setTime($any($event.target).value)" />
+              </label>
+            }
+            @if (s.dated) {
+              <button type="button" class="quiet" (click)="setStart('')">{{ 'Clear dates' | t }}</button>
+            }
+          </dd>
+        }
+        <dt>{{ 'Project' | t }}</dt>
+        <dd><bdi>{{ s.project }}</bdi></dd>
+      </dl>
 
-  </div>
-  </div>
+      <div class="deps">
+        <div class="deps-head">
+          <span class="label">{{ 'Depends on' | t }}</span>
+          <button type="button" class="dep-add" [attr.aria-pressed]="pick() === 'before'"
+                  [attr.aria-label]="'Add a node this one waits for' | t" [title]="'Add a node this one waits for' | t"
+                  (click)="togglePick('before')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+        </div>
+        @for (row of s.before; track row.edgeId) {
+          <div class="dep">
+            <button type="button" class="dep-open" (click)="select(row.id)">
+              <span [class]="'dep-dot tone-' + row.tone"></span><span class="dep-title" dir="auto">{{ row.title }}</span>
+            </button>
+            <button type="button" class="dep-remove" [attr.aria-label]="'Stop waiting for {title}' | t: { title: row.title }"
+                    [title]="'Remove this dependency' | t" (click)="removeEdge(row.edgeId)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        }
+        @if (!s.before.length) {
+          <span class="none">{{ 'Nothing. This can start any time.' | t }}</span>
+        }
 
-  <p class="board-empty" *ngIf="!loading() && !nodes().length">
-    No tasks to map yet. Use the buttons below to add one.
-  </p>
+        <div class="deps-head second">
+          <span class="label">{{ 'Unblocks' | t }}</span>
+          <button type="button" class="dep-add" [attr.aria-pressed]="pick() === 'after'"
+                  [attr.aria-label]="'Add a node that waits for this one' | t" [title]="'Add a node that waits for this one' | t"
+                  (click)="togglePick('after')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+        </div>
+        @for (row of s.after; track row.edgeId) {
+          <div class="dep">
+            <button type="button" class="dep-open" (click)="select(row.id)">
+              <span [class]="'dep-dot tone-' + row.tone"></span><span class="dep-title" dir="auto">{{ row.title }}</span>
+            </button>
+            <button type="button" class="dep-remove" [attr.aria-label]="'Stop unblocking {title}' | t: { title: row.title }"
+                    [title]="'Remove this dependency' | t" (click)="removeEdge(row.edgeId)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        }
+      </div>
 
-  <!-- Autosave feedback; silent while idle so it never nags. -->
-  <div class="save-state" *ngIf="saveState() !== 'idle'" [class.saved]="saveState() === 'saved'">
-    <mat-icon>{{ saveState() === 'saved' ? 'cloud_done' : 'cloud_upload' }}</mat-icon>
-    {{ saveState() === 'saved' ? 'Saved' : 'Saving…' }}
-  </div>
+      <section class="whatif">
+        <span class="label">{{ 'What if this slips?' | t }}</span>
+        <div class="slips">
+          @for (days of slipChoices; track days) {
+            <button type="button" [attr.aria-pressed]="slip() === days" [disabled]="!s.dated"
+                    [attr.title]="s.dated ? null : ('Give this node dates first' | t)"
+                    (click)="slip.set(days)">{{ days ? (days | tCount: '+{n}d' : '+{n}d') : ('On time' | t) }}</button>
+          }
+        </div>
+        @if (impact(); as result) {
+          <span [class]="'impact ' + result.tone">{{ result.text }}</span>
+          @if (result.movedLine) {
+            <span class="moved-line">{{ result.movedLine }}</span>
+          }
+          @if (slip() && s.dated) {
+            <button type="button" class="keep" [title]="'Makes these dates the plan of this flow' | t"
+                    (click)="keepDates()">{{ 'Keep these dates' | t }}</button>
+          }
+        }
+      </section>
 
-  <!-- Toolbar -->
-  <div class="toolbar" (click)="$event.stopPropagation()">
-    <button type="button" class="tool-btn" [class.active]="tool() === 'select'"
-            (click)="setTool('select')">
-      <mat-icon>near_me</mat-icon>
-      <span class="tooltip">Select &amp; move</span>
-    </button>
-    <button type="button" class="tool-btn" [class.active]="tool() === 'link'"
-            (click)="setTool('link')">
-      <mat-icon>timeline</mat-icon>
-      <span class="tooltip">Connect nodes</span>
-    </button>
+      <div class="foot">
+        @if (linkOpen()) {
+          <div class="link-search">
+            <input type="search" dir="auto" class="link-input" [placeholder]="'Search your tasks and events' | t" [attr.aria-label]="'Search your tasks and events' | t"
+                   [value]="linkQuery()" (input)="searchLink($any($event.target).value)" (keydown.escape)="closeLink()" />
+            @if (linkResults(); as found) {
+              @for (task of found.tasks; track task.id) {
+                <button type="button" class="link-row" (click)="linkTask(task)">
+                  <span class="link-kind">{{ 'Task' | t }}</span><span class="link-title" dir="auto">{{ task.title }}</span>
+                </button>
+              }
+              @for (item of found.events ?? []; track item.id) {
+                <button type="button" class="link-row" (click)="linkEvent(item)">
+                  <span class="link-kind event">{{ 'Event' | t }}</span><span class="link-title" dir="auto">{{ item.title }}</span>
+                  <span class="link-when">{{ eventWhen(item) }}</span>
+                </button>
+              }
+              @if (linkSearched() && !found.tasks.length && !(found.events ?? []).length) {
+                <span class="none">{{ 'No task or event matches.' | t }}</span>
+              }
+            }
+          </div>
+        }
 
-    <div class="divider"></div>
-
-    <button type="button" class="tool-btn task-btn" [class.active]="tool() === 'add-task'"
-            (click)="setTool('add-task')">
-      <mat-icon>check_circle</mat-icon>
-      <span class="tooltip">Add task</span>
-    </button>
-    <button type="button" class="tool-btn event-btn" [class.active]="tool() === 'add-event'"
-            (click)="setTool('add-event')">
-      <mat-icon>event</mat-icon>
-      <span class="tooltip">Add event</span>
-    </button>
-  </div>
+        <div class="foot-row">
+          @if (s.node.taskId) {
+            <a class="open" [routerLink]="['/tasks', s.node.taskId]">{{ 'Open task' | t }}</a>
+          } @else if (s.node.eventId) {
+            <a class="open" routerLink="/calendar" [queryParams]="{ event: s.node.eventId, date: s.node.start }">{{ 'Open in calendar' | t }}</a>
+          } @else if (s.node.type !== 'milestone') {
+            <button type="button" class="open" [attr.aria-expanded]="linkOpen()"
+                    (click)="linkOpen() ? closeLink() : openLink()">{{ (linkOpen() ? 'Cancel' : 'Link a task or event') | t }}</button>
+          }
+          @if (s.linked) {
+            <button type="button" class="quiet" [title]="'Keeps the node, forgets the linked item' | t" (click)="unlink()">{{ 'Unlink' | t }}</button>
+          }
+          <button type="button" class="quiet danger" (click)="deleteSelected()">{{ 'Delete node' | t }}</button>
+        </div>
+      </div>
+      </div>
+    } @empty {
+      @if (!loading()) {
+        <div class="details-body">
+          <span class="kind-line">{{ 'Node details' | t }}</span>
+          <p class="none">{{ 'Select a node to see what it depends on.' | t }}</p>
+        </div>
+      }
+    }
+  </aside>
 </div>

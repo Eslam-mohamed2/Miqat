@@ -1,149 +1,270 @@
-<div class="notifications-page" (click)="closeMenu()">
+<div class="inbox" [class.reading]="narrow() && !!selected()">
 
-  <header class="page-header">
-    <div class="title-row">
-      <div>
-        <h1 class="greeting">Notifications</h1>
-        <p class="page-sub">Click a notification to open what it is about.</p>
+  <section class="list" [attr.aria-label]="'Inbox items' | t">
+    <header class="list-head">
+      <div class="title-row">
+        <h1>{{ 'Inbox' | t }}</h1>
+        <span class="unread-label">{{ unreadLabel() }}</span>
+        <button type="button" class="mark-all" [disabled]="!anyUnread()" (click)="markAllRead()">{{ 'Mark all read' | t }}</button>
       </div>
-      <button type="button" class="link-btn" *ngIf="unreadCount() > 0"
-              (click)="markAllRead(); $event.stopPropagation()">
-        Mark all as read
-      </button>
-    </div>
-
-    <!-- All / Unread pills, and Events when the calendar has sent something -->
-    <div class="filter-pills" role="tablist" aria-label="Filter notifications">
-      <button type="button" role="tab" [attr.aria-selected]="activeFilter() === 'all'"
-              [class.active]="activeFilter() === 'all'"
-              (click)="filter.set('all'); $event.stopPropagation()">
-        All
-      </button>
-      <button type="button" role="tab" [attr.aria-selected]="activeFilter() === 'unread'"
-              [class.active]="activeFilter() === 'unread'"
-              (click)="filter.set('unread'); $event.stopPropagation()">
-        Unread
-        <span class="pill-count" *ngIf="unreadCount() > 0">{{ unreadCount() }}</span>
-      </button>
-      <button type="button" role="tab" *ngIf="calendarCount() > 0"
-              [attr.aria-selected]="activeFilter() === 'calendar'"
-              [class.active]="activeFilter() === 'calendar'"
-              title="Event invitations, answers, changes and reminders"
-              (click)="filter.set('calendar'); $event.stopPropagation()">
-        <mat-icon>event</mat-icon> Events
-      </button>
-    </div>
-  </header>
-
-  <!-- Loading -->
-  <div class="notif-card skeleton-list" *ngIf="loading()">
-    <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5]">
-      <div class="skeleton-avatar"></div>
-      <div class="skeleton-lines">
-        <div class="skeleton-line long"></div>
-        <div class="skeleton-line short"></div>
+      <div class="tabs" role="tablist" [attr.aria-label]="'Filter' | t">
+        @for (option of tabs; track option.key) {
+          <button type="button" role="tab" [attr.aria-selected]="tab() === option.key" (click)="chooseTab(option.key)">
+            {{ option.label }}<span class="tab-count">{{ counts()[option.key] | num }}</span>
+          </button>
+        }
       </div>
-    </div>
-  </div>
+    </header>
 
-  <ng-container *ngIf="!loading()">
+    <div class="items">
+      @if (errorMessage()) {
+        <div class="list-note" role="alert">
+          <span>{{ errorMessage() }}</span>
+          <button type="button" class="quiet" (click)="load()">{{ 'Try again' | t }}</button>
+        </div>
+      }
 
-    <!-- Error -->
-    <div class="state-card" *ngIf="errorMessage()">
-      <div class="state-icon"><mat-icon>cloud_off</mat-icon></div>
-      <p class="state-title">Couldn't load notifications</p>
-      <p class="state-sub">{{ errorMessage() }}</p>
-      <button type="button" class="primary-btn"
-              (click)="loadNotifications(); $event.stopPropagation()">Try again</button>
-    </div>
-
-    <!-- Empty -->
-    <div class="state-card" *ngIf="!errorMessage() && !visible().length">
-      <div class="state-icon"><mat-icon>notifications_none</mat-icon></div>
-      <p class="state-title">
-        {{ activeFilter() === 'unread' ? 'No unread notifications' : "You're all caught up" }}
-      </p>
-      <p class="state-sub">
-        {{ activeFilter() === 'unread'
-            ? 'Everything here has been read.'
-            : 'When something happens, it will show up here.' }}
-      </p>
-      <button type="button" class="ghost-btn" *ngIf="activeFilter() === 'unread'"
-              (click)="filter.set('all'); $event.stopPropagation()">
-        Show all
-      </button>
-    </div>
-
-    <!-- Feed -->
-    <section class="notif-group" *ngFor="let group of groups()">
-      <h2 class="group-title">{{ group.title }} <span class="group-count">{{ group.items.length }}</span></h2>
-
-      <div class="notif-card" [@listAnim]="group.items.length">
-        <article class="notif-row" *ngFor="let n of group.items; trackBy: trackById"
-                 [class.unread]="!n.isRead" [class.opening]="openingId() === n.id"
-                 (click)="open(n)" tabindex="0" (keydown.enter)="open(n)"
-                 role="link" [attr.aria-label]="(n.message || n.title) + '. Open'">
-
-          <!-- Who it is from, with the kind of notification overlaid -->
-          <div class="avatar-wrap">
-            <img class="avatar" *ngIf="avatarUrl(n) as url; else initialsAvatar" [src]="url" alt=""
-                 referrerpolicy="no-referrer" (error)="onAvatarError(n)" />
-            <ng-template #initialsAvatar>
-              <div class="avatar" [style.background]="avatarColor(n)">{{ initials(n) }}</div>
-            </ng-template>
-            <span class="type-badge" [style.background]="typeColor(n.type)" aria-hidden="true">
-              <mat-icon>{{ typeIcon(n.type) }}</mat-icon>
-            </span>
+      @if (loading()) {
+        <div class="wait" role="status" [attr.aria-label]="'Loading your inbox' | t"><i></i><i></i><i></i><i></i><i></i></div>
+      } @else {
+        @for (group of groups(); track group.title) {
+          <div class="group">
+            <span class="group-title">{{ group.title }}</span>
+            @for (row of group.rows; track row.key) {
+              <button type="button" class="item" [attr.aria-pressed]="row.on" (click)="select(row.key)">
+                <span class="avatar-wrap">
+                  @if (row.picture) {
+                    <img class="avatar" [src]="row.picture" alt="" referrerpolicy="no-referrer" (error)="onPictureError(row.key)" />
+                  } @else {
+                    <span class="avatar" [class.system]="row.system">{{ row.initials }}</span>
+                  }
+                  <span class="kind-badge" [attr.data-tone]="row.tone" aria-hidden="true">{{ row.glyph }}</span>
+                </span>
+                <span class="item-text">
+                  <span class="item-top">
+                    <span class="item-title" [class.unread]="row.unread">{{ row.title }}</span>
+                    <span class="item-when">{{ row.when }}</span>
+                  </span>
+                  <span class="item-snippet">{{ row.snippet }}</span>
+                </span>
+                <span class="unread-dot" [class.on]="row.unread" [attr.aria-label]="row.unread ? ('Unread' | t) : null"></span>
+              </button>
+            }
           </div>
+        }
 
-          <div class="notif-body">
-            <p class="notif-text">
-              <strong *ngIf="n.triggeredByUserName">{{ n.triggeredByUserName }}</strong>&ngsp;<span class="msg">{{ body(n) }}</span>
-            </p>
-
-            <!-- What it is about, and so where a click goes. -->
-            <ng-container *ngIf="topic(n) as t">
-              <span class="topic-chip" [attr.data-kind]="t.kind">
-                <mat-icon>{{ t.icon }}</mat-icon>
-                <span class="topic-label">{{ t.label }}</span>
-                <span class="topic-name" *ngIf="t.name" [title]="t.name">{{ t.name }}</span>
-              </span>
-            </ng-container>
+        @if (!groups().length) {
+          <div class="empty">
+            <span class="empty-title">{{ 'All clear.' | t }}</span>
+            <span class="empty-text">{{ 'Nothing here needs you. Enjoy the quiet.' | t }}</span>
           </div>
+        }
 
-          <div class="row-end">
-            <span class="notif-time" [class.accent]="!n.isRead" [title]="fullTime(n.createdAt)">
-              {{ formatTime(n.createdAt) }}
+        @if (hasMore() && (tab() === 'all' || tab() === 'updates')) {
+          <button type="button" class="quiet more" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'Loading…' : 'Load older updates') | t }}
+          </button>
+        }
+      }
+    </div>
+
+    <div class="keys">
+      <span><kbd>J K</kbd>{{ 'Move@@through the list' | t }}</span>
+      <span><kbd>E</kbd>{{ 'Archive' | t }}</span>
+      <span><kbd>H</kbd>{{ 'Snooze' | t }}</span>
+      <span><kbd>R</kbd>{{ 'Reply' | t }}</span>
+    </div>
+  </section>
+
+  <section class="pane" [attr.aria-label]="'Selected item' | t">
+    @if (detail(); as d) {
+      <div class="pane-inner">
+        <button type="button" class="back" (click)="closePane()">
+          <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+          {{ 'Inbox' | t }}
+        </button>
+
+        <div class="pane-top">
+          <span class="kind-chip" [attr.data-tone]="d.tone">{{ d.kindLabel }}</span>
+          <span class="pane-when">{{ d.when }}</span>
+          <span class="pane-actions">
+            <span class="snooze-wrap">
+              <button type="button" class="outline" aria-haspopup="menu" [attr.aria-expanded]="snoozeOpen()" (click)="toggleSnooze()">{{ 'Snooze' | t }}</button>
+              @if (snoozeOpen()) {
+                <div #snoozeMenu class="mq-menu snooze-menu" role="menu" [attr.aria-label]="'Snooze until' | t" (keydown)="onSnoozeKey($event)">
+                  @for (choice of snoozeChoices(); track choice.label) {
+                    <button type="button" class="mq-menu-item" role="menuitem" (click)="snooze(choice.until)">{{ choice.label }}</button>
+                  }
+                </div>
+              }
             </span>
-            <span class="unread-dot" *ngIf="!n.isRead" aria-label="Unread"></span>
+            <button type="button" class="outline strong" (click)="archive()">{{ 'Archive' | t }}</button>
+          </span>
+        </div>
 
-            <div class="menu-wrap">
-              <button type="button" class="kebab" (click)="toggleMenu(n.id, $event)"
-                      [attr.aria-expanded]="openMenuId() === n.id" aria-label="More options">
-                <mat-icon>more_horiz</mat-icon>
+        <div class="pane-title">
+          @if (d.picture) {
+            <img class="avatar big" [src]="d.picture" alt="" referrerpolicy="no-referrer" (error)="onPictureError(d.key)" />
+          } @else {
+            <span class="avatar big" [class.system]="d.system">{{ d.initials }}</span>
+          }
+          <h2>{{ d.title }}</h2>
+        </div>
+
+        @if (d.isThread) {
+          @if (threadView(); as t) {
+            <div class="body">
+              <button type="button" class="context" (click)="openMention()">
+                <span class="context-dot" [style.--tone]="t.color"></span>{{ t.context }}
               </button>
 
-              <div class="menu" *ngIf="openMenuId() === n.id" (click)="$event.stopPropagation()">
-                <button type="button" *ngIf="!n.isRead" (click)="markOne(n, $event)">
-                  <mat-icon>check_circle_outline</mat-icon> Mark as read
-                </button>
-                <button type="button" class="danger" (click)="dismiss(n, $event)">
-                  <mat-icon>delete_outline</mat-icon> Remove this notification
-                </button>
+              @if (t.loading) {
+                <div class="wait lines" role="status" [attr.aria-label]="'Loading the conversation' | t"><i></i><i></i></div>
+              }
+              @if (t.earlier > 0) {
+                <span class="earlier">{{ t.earlier | tCount: '{n} earlier comment on the task' : '{n} earlier comments on the task' }}</span>
+              }
+              @for (message of t.messages; track message.id) {
+                <div class="message">
+                  <span class="avatar mini">{{ message.initials }}</span>
+                  <span class="message-body">
+                    <span class="message-head"><strong>{{ message.name }}</strong><span class="message-when">{{ message.when }}</span></span>
+                    <span class="message-text" dir="auto">{{ message.text }}</span>
+                  </span>
+                </div>
+              }
+              @if (!t.loading && !t.messages.length) {
+                <span class="earlier">{{ 'There are no comments to show for this mention.' | t }}</span>
+              }
+
+              <div class="reply">
+                <label for="inbox-reply">{{ d.replyLabel }}</label>
+                <input #replyBox id="inbox-reply" type="text" dir="auto" [attr.placeholder]="'Write a reply, @mention someone…' | t" autocomplete="off"
+                       [value]="replyText()" [disabled]="!t.canReply || busy()" [attr.title]="t.canReply ? null : t.whyNot"
+                       (input)="onReplyInput($event)" (keydown.enter)="reply()" />
+                <span class="reply-actions">
+                  <button type="button" class="accent-outline" [disabled]="busy()" (click)="makeTask()">{{ 'Make it a task' | t }}</button>
+                  <button type="button" class="primary compact" [disabled]="!t.canReply || busy()"
+                          [attr.title]="t.canReply ? null : t.whyNot" (click)="reply()">{{ 'Reply' | t }}</button>
+                </span>
               </div>
             </div>
+          }
+        }
 
-            <mat-icon class="go-icon" aria-hidden="true">chevron_right</mat-icon>
-          </div>
-        </article>
+        @if (d.isInvite) {
+          @if (inviteView(); as v) {
+            <div class="body wide-gap">
+              <dl class="facts">
+                <dt>{{ 'When' | t }}</dt><dd class="strong">{{ v.when }}</dd>
+                <dt>{{ 'Where' | t }}</dt><dd>{{ v.where }}</dd>
+                <dt>{{ 'Organizer' | t }}</dt><dd>{{ v.organizer }}</dd>
+                <dt>{{ 'Guests' | t }}</dt><dd>{{ v.guests }}</dd>
+              </dl>
+
+              @if (v.strip; as s) {
+                <div class="around">
+                  <span class="around-title">{{ 'Your {weekday} around it' | t: { weekday: s.weekday } }}</span>
+                  <div class="strip" [class.waiting]="s.waiting">
+                    @for (block of s.blocks; track $index) {
+                      <span class="strip-block" [style.inset-inline-start.%]="block.left" [style.width.%]="block.width"
+                            [style.--tone]="block.tone" [attr.title]="block.label"><span class="strip-text" dir="auto">{{ block.label }}</span></span>
+                    }
+                    @for (left of s.prayers; track $index) {
+                      <span class="strip-prayer" [style.inset-inline-start.%]="left"></span>
+                    }
+                    <span class="strip-event" [style.inset-inline-start.%]="s.event.left" [style.width.%]="s.event.width"><span class="strip-text" dir="auto">{{ s.event.title }}</span></span>
+                  </div>
+                  <span class="strip-scale">
+                    @for (label of s.labels; track $index) { <span>{{ label }}</span> }
+                  </span>
+                  <span class="around-verdict" [class.good]="s.good" [class.bad]="!s.good && !s.waiting">{{ s.verdict }}</span>
+                </div>
+              }
+
+              <div class="rsvp" role="group" [attr.aria-label]="'Your response' | t">
+                @for (option of responses; track option.status) {
+                  <button type="button" [attr.aria-pressed]="v.response === option.status" [disabled]="busy()"
+                          (click)="respond(option.status)">{{ option.label }}</button>
+                }
+              </div>
+              <a class="text-link" routerLink="/calendar/find-time" [queryParams]="v.findTime">{{ 'Propose a different time' | t }}</a>
+            </div>
+          }
+        }
+
+        @if (d.isRequest) {
+          @if (requestView(); as r) {
+            <div class="body wide-gap">
+              <div class="box person">
+                <a class="person-name" [routerLink]="['/profile', r.profileId]">{{ r.heading }}</a>
+                <span class="person-line">{{ r.facts }}</span>
+                @if (r.about) { <span class="person-line">{{ r.about }}</span> }
+              </div>
+              @if (r.open) {
+                <span class="answer">
+                  <button type="button" class="primary" [disabled]="busy()" (click)="answerRequest(true)">{{ 'Accept' | t }}</button>
+                  <button type="button" class="outline tall" [disabled]="busy()" (click)="answerRequest(false)">{{ 'Decline' | t }}</button>
+                </span>
+              } @else {
+                <span class="answer-result" role="status">{{ r.result }}</span>
+              }
+            </div>
+          }
+        }
+
+        @if (d.isUpdate) {
+          @if (updateView(); as u) {
+            <div class="body">
+              <div class="box subject">
+                <span class="subject-head"><span class="subject-kind">{{ u.eyebrow }}</span><span class="subject-title">{{ u.title }}</span></span>
+                @if (u.loading) {
+                  <span class="wait lines" role="status" [attr.aria-label]="'Loading' | t"><i></i></span>
+                } @else {
+                  <span class="subject-line">{{ u.line }}</span>
+                }
+                @if (u.chip) { <span class="subject-chip">{{ u.chip }}</span> }
+              </div>
+              <span class="answer">
+                @if (u.cta) {
+                  <button type="button" class="primary medium" [disabled]="busy()" (click)="openUpdate()">{{ u.cta }}</button>
+                }
+                <button type="button" class="outline medium" (click)="snoozeHour()">{{ 'Remind me in 1 h' | t }}</button>
+              </span>
+            </div>
+          }
+        }
+
+        @if (d.isRecap) {
+          @if (recapView(); as w) {
+            <div class="body">
+              <div class="stats">
+                @for (stat of w.stats; track stat.label) {
+                  <div class="box stat"><span class="stat-label">{{ stat.label }}</span><span class="stat-value">{{ stat.value }}</span></div>
+                }
+              </div>
+              <span class="recap-text">{{ w.sentence }}</span>
+              <a class="text-link" routerLink="/calendar" [queryParams]="{ view: 'month', date: w.monthKey }">{{ 'See {month}' | t: { month: w.month } }}</a>
+            </div>
+          }
+        }
+
+        @if (paneError()) { <p class="pane-error" role="alert">{{ paneError() }}</p> }
       </div>
-    </section>
-
-    <div class="load-more-row" *ngIf="hasMore()">
-      <button type="button" class="ghost-btn" (click)="loadMore()" [disabled]="loadingMore()">
-        {{ loadingMore() ? 'Loading…' : 'Load more (' + notifications().length + ' of ' + totalCount() + ')' }}
-      </button>
-    </div>
-
-  </ng-container>
+    } @else {
+      <div class="zero">
+        <svg width="48" height="48" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="15" stroke="currentColor" stroke-width="1"></circle><path d="M16 8.5V16l5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg>
+        @if (loading()) {
+          <span class="zero-text">{{ 'Loading your inbox…' | t }}</span>
+        } @else if (counts().all) {
+          <span class="zero-title">{{ 'Nothing open.' | t }}</span>
+          <span class="zero-text">{{ 'Pick an item from the list.' | t }}</span>
+        } @else {
+          <span class="zero-title">{{ 'Inbox zero.' | t }}</span>
+          <span class="zero-text">{{ 'Back to your day.' | t }}</span>
+        }
+        <a class="text-link" routerLink="/calendar">{{ 'Open calendar' | t }}</a>
+      </div>
+    }
+  </section>
 </div>

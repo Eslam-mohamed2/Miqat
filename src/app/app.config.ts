@@ -1,9 +1,12 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from '@angular/core';
+import {
+  ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
+import { AppearanceService } from './core/services/appearance.service';
 import { SocialAuthServiceConfig, GoogleLoginProvider, SOCIAL_AUTH_CONFIG } from '@abacritt/angularx-social-login';
 import { environment } from '../environments/environment';
 
@@ -19,6 +22,9 @@ export const appConfig: ApplicationConfig = {
     // to the build options, then restore provideClientHydration(withEventReplay()).
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
+    // The accent and "Reduce motion" chosen in Settings → Appearance apply to every
+    // page, signed in or not, so the service that applies them starts with the app.
+    provideAppInitializer(() => { inject(AppearanceService); }),
     {
       provide: SOCIAL_AUTH_CONFIG,
       useValue: {

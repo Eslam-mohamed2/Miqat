@@ -1,63 +1,49 @@
 @use 'styles/tokens' as *;
-@import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Montserrat:wght@100..900&family=Raleway:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Bungee+Spice&family=Cinzel:wght@400..900&family=Gruppo&family=Luckiest+Guy&family=Oswald:wght@200..700&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+@use 'styles/theme';
 
-:root {
-  // Font Family
-  --font-Main: "Raleway", sans-serif;
-
-  // Color Pallet
-  --color-primary: #2E6670;
-  /* teal/blue-green */
-  --color-secondary: #2F3D3B;
-  /* dark greenish charcoal */
-  --color-accent: #F8E6A0;
-  /* soft beige/yellow */
-  --color-light: #FAF9F5;
-  --color-lighter: rgb(215 216 217 / 14%);
-  --color-dark: #000000;
-  --color-gray: #807f7f;
-  --color-baby-blue: #e6fdfc;
-  // ✅ Task Background Colors
-  --task-research-bg: #e0f7f6;
-  --task-design-bg: #f1f3f5;
-  --task-development-bg: #fff4d1;
-  --task-launch-bg: #ffeede;
-
-  // ✅ Task Dot Colors
-  --task-research-dot: #0a6663; // teal
-  --task-design-dot: #807f7f; // gray
-  --task-development-dot: #ffc107; // accent yellow
-  --task-launch-dot: #454a4e; // dark gray
-}
-
+// The page base of Miqat 2.0 (design/miqat-2.0). Colours, fonts and motion values are
+// in styles/_theme.scss; the shared controls are mixins in styles/_ui.scss.
+//
+// Bootstrap's reboot (angular.json) is loaded before this file: it gives every element
+// border-box sizing and the usual form-control resets. Nothing else of Bootstrap is used.
 body {
   margin: 0%;
   padding: 0%;
+  background: $mq-bg;
+  color: $mq-text;
+  font-family: $mq-font;
+  font-size: 13px;
+  font-weight: 400;
+  // The design files set no line height of their own: text is as tall as the font says.
+  line-height: normal;
+  // Tabular figures keep times and counts aligned; cv11 (a single-storey "a", where
+  // the font file has one) is as the design files ask.
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-feature-settings: inherit;
+}
+
+// A link looks like the text around it unless its screen says otherwise, as in the
+// design files.
 a {
-  text-decoration: none !important;
+  color: inherit;
+  text-decoration: none;
 }
 
-// The marketing site's teal for links and buttons. It is limited to the pages outside
-// the app shell: forced with !important inside the app it overrode every component's
-// own colours (dark teal links on the dark theme, teal text on teal buttons).
-//
-// The :where() inside :not() adds no specificity, so these weigh exactly what the
-// plain `a` and `.btn` rules they replace did. Helpers such as .c-light and
-// .text-white must keep winning over them, or labels turn teal on a teal button.
-a:not(:where(app-app-shell *, .cdk-overlay-container *)),
-.btn:not(:where(app-app-shell *, .cdk-overlay-container *)) {
-  color: var(--color-primary) !important;
+::selection {
+  background: color-mix(in srgb, var(--mq-accent) 35%, transparent);
 }
 
-// Default link colour inside the app. :where() keeps the specificity at zero so any
-// component rule wins over it.
-:where(app-app-shell, .cdk-overlay-container) a {
-  color: var(--text-link);
-}
-
+// Lists carry no bullets or spacing anywhere in the app. A list that needs spacing of
+// its own is written as <div role="list">.
 ul {
   list-style: none !important;
   padding: 0px !important;
@@ -70,208 +56,18 @@ li {
   padding: 0px !important;
 }
 
-.Font-Title {
-  font-family: "Luckiest Guy", cursive !important;
-  font-weight: 400 !important;
-  font-style: normal !important;
-}
-
-// === GLOBAL TITLE SPACING ===
-h1, h2, h3, h4 {
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-  font-weight: 700;
-  color: var(--text-primary);
+// Headings and paragraphs carry no spacing or size of their own: each screen sets them
+// from the design. Any component rule wins over these.
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 600;
   line-height: 1.2;
+  color: inherit;
 }
 
-h1 { font-size: 2rem; margin-top: 2rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
-h4 { font-size: 1rem; }
-
-// Fixed Sizing Classes
-.w-95 {
-  width: 95% !important;
-}
-
-.w-90 {
-  width: 90% !important;
-}
-
-.w-80 {
-  width: 80% !important;
-}
-
-.w-85 {
-  width: 85% !important;
-}
-
-.w-70 {
-  width: 70% !important;
-}
-
-.w-40 {
-  width: 40%;
-}
-
-.w-35 {
-  width: 35%;
-}
-
-.w-30 {
-  width: 30%;
-}
-
-.w-20 {
-  width: 20% !important;
-}
-
-.w-10 {
-  width: 10% !important;
-}
-
-// Fixed Background Coloring Classes
-.bg--primary {
-  background-color: var(--color-primary) !important;
-}
-
-.bg--white {
-  background-color: #fff !important;
-}
-
-.bg--light {
-  background-color: var(--color-light) !important;
-}
-
-.bg--lighter {
-  background-color: var(--color-lighter) !important;
-}
-
-.bg--dark {
-  background-color: var(--color-dark) !important;
-}
-
-.bg--secondary {
-  background-color: var(--color-secondary) !important;
-}
-
-.bg--accent {
-  background-color: var(--color-accent) !important;
-}
-
-.bg-Custom {
-  background-image: url('./assets/blob-scene-haikei.png') !important;
-  background-size: cover !important;
-}
-
-.bg-baby-blue {
-  background-color: var(--color-baby-blue) !important;
-}
-
-.bg-research {
-  background-color: var(--task-research-bg) !important;
-}
-
-.bg-design {
-  background-color: var(--task-design-bg) !important;
-}
-
-.bg-development {
-  background-color: var(--task-development-bg) !important;
-}
-
-.bg-launch {
-  background-color: var(--task-launch-bg) !important;
-}
-
-// Fixed Coloring Classes
-.C-Primary {
-  color: var(--color-primary) !important;
-}
-
-.C-white {
-  color: #fff !important;
-}
-
-.c-light {
-  color: var(--color-light) !important;
-}
-
-.c-dark {
-  color: var(--color-dark) !important;
-}
-
-.c-secondary {
-  color: var(--color-secondary) !important;
-}
-
-.c-accent {
-  color: var(--color-accent) !important;
-}
-
-.C-gray {
-  color: var(--color-gray);
-}
-
-.C-research-dot {
-  color: var(--task-research-dot) !important;
-}
-
-.C-design-dot {
-  color: var(--task-design-dot) !important;
-}
-
-.C-development-dot {
-  color: var(--task-development-dot) !important;
-}
-
-.C-launch-dot {
-  color: var(--task-launch-dot) !important;
-}
-
-.border-right-c-primary {
-  border-right: 5px solid var(--color-primary) !important;
-}
-
-.border-right-c-secondary {
-  border-right: 5px solid var(--color-secondary) !important;
-}
-
-.border-right-c-dark {
-  border-right: 5px solid var(--color-dark) !important;
-}
-
-.border-right-c-light {
-  border-right: 5px solid var(--color-light) !important;
-}
-
-.border-right-c- {
-  border-right: 5px solid var(--color-lighter) !important;
-}
-
-.border-right-c-accent {
-  border-right: 5px solid var(--color-accent) !important;
-}
-
-.border-right-c-gray {
-  border-right: 5px solid var(--color-gray) !important;
-}
-
-.border-right-c-research-dot {
-  border-right: 5px solid var(--task-research-dot) !important;
-}
-
-.border-right-c-design-dot {
-  border-right: 5px solid var(--task-design-dot) !important;
-}
-
-.border-right-c-development-dot {
-  border-right: 5px solid var(--task-development-dot) !important;
-}
-
-.border-right-c-launch {
-  border-right: 5px solid #eeb682 !important;
+p {
+  margin: 0;
 }
 
 // ========== Responsive: prevent horizontal overflow ==========
@@ -287,62 +83,25 @@ h4 { font-size: 1rem; }
   }
 }
 
-@include below($bp-phone-lg) {
-  .w-30 {
-    width: 30% !important;
-  }
-}
-
-// === DASHBOARD GLOBAL STYLES ===
-
-/* Dashboard overrides to ensure it looks like the prompt */
-.dashboard-root {
-  height: 100%;
-  background-color: $bg-app;
-  font-family: $font-family;
-  font-size: $font-size-base;
-  color: $text-primary;
-  -webkit-font-smoothing: antialiased;
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: $bg-app; }
-  ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-}
-
 html, body {
-  // Add some fallbacks just in case
   height: 100%;
 }
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background-color: #0d0d0d; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-
-/* Dashboard global utilities */
-.mt-20 { margin-top: 20px; }
-.btn-ghost {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  color: $text-secondary;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 7px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: $transition-std;
-
-  &:hover {
-    color: $text-primary;
-    border-color: #333;
-  }
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mq-line-2) transparent;
 }
 
-/* Material dialog override for TaskWindow dialog panel */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background-color: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--mq-line-2);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Material dialog override for the dialogs opened with panelClass 'custom-dialog-container' */
 .cdk-overlay-pane.custom-dialog-container {
   /* Callers pass width: '600px'. On a narrow viewport that panel is wider than
      the screen, and the gutter below keeps it off both edges rather than letting
@@ -352,7 +111,11 @@ html, body {
   max-height: calc(100dvh - 32px);
 
   .mat-mdc-dialog-surface {
-    border-radius: 20px !important;
+    border-radius: 22px !important;
+    background: $mq-card !important;
+    border: 1px solid $mq-line-2;
+    color: $mq-text;
+    box-shadow: 0 40px 100px mq-shadow(.6) !important;
     overflow: hidden;
     /* The surface must not exceed the panel or the dialog's own scroll area
        never engages and the footer buttons end up off-screen. */
@@ -364,82 +127,13 @@ html, body {
   .cdk-overlay-pane.custom-dialog-container { max-height: calc(100vh - 32px); }
 }
 
-/* ── Primary action button used across the auth flow ─────────────────────────
-   Global on purpose. This was defined only inside authentication.scss (scoped),
-   so on verify-otp, forgot-password and reset-password — components without
-   that stylesheet — `bg-image` resolved to nothing and `text-white` sat on the
-   white card: the Submit button was clickable but invisible. */
-.bg-image {
-  background-image: url('./assets/stacked-waves-haikei.png') !important;
-  background-position: center !important;
-  background-size: cover !important;
-  font-weight: 600 !important;
-  font-size: 18px !important;
-  border: 1px solid #2e6670 !important;
-  // The image is dark teal, so the label is always white - also inside the app's
-  // dialogs, where buttons otherwise take the theme's text colour.
-  color: #fff !important;
-}
-
-// ── Bootstrap inside the app follows the app theme ──────────────────────────────
-// Bootstrap's colours are fixed light-theme values, so its helpers and form controls
-// (.text-muted, .form-label, .form-control, .form-select, placeholders ...) came out
-// dark-on-dark in dark mode. Inside the app shell and its dialogs they read the theme
-// tokens instead. The marketing and sign-in pages are light by design and unaffected.
-app-app-shell,
-.cdk-overlay-container {
-  color: var(--text-primary);
-  --bs-body-color: var(--text-primary);
-  --bs-body-bg: var(--bg-input);
-  --bs-secondary-color: var(--text-secondary);
-  --bs-tertiary-color: var(--text-muted);
-  --bs-secondary-bg: var(--bg-card-hover);
-  --bs-tertiary-bg: var(--bg-card-hover);
-  --bs-border-color: var(--border-input);
-  --bs-heading-color: var(--text-primary);
-  --bs-emphasis-color: var(--text-primary);
-}
-
-body.dark-mode app-app-shell,
-body.dark-mode .cdk-overlay-container {
-  // Native widgets (date-picker icon, select popup, scrollbars) render dark.
-  color-scheme: dark;
-
-  .btn-close {
-    filter: invert(1) grayscale(100%) brightness(200%);
-  }
-
-  // Bootstrap's dropdown arrow is dark grey; this is its own dark-theme arrow.
-  .form-select {
-    --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-  }
-}
-
 // ── Touch screens ────────────────────────────────────────────────────────────────
 // A finger needs a bigger target than a mouse pointer. On touch devices the small
 // icon-sized controls keep their look but get a larger invisible hit area (a centred
-// ::after), and a few text links and inputs get more height.
+// ::after), and a few text links get more height.
 @media (pointer: coarse) {
-  .btn-nav,
-  .btn-add,
-  .view-all,
   .icon-btn,
-  .header-btn,
-  .card-btn,
-  .close-btn,
-  .action-btn,
-  .color-btn,
-  .btn-close,
-  .edit-btn,
-  .link-btn,
-  .event-capsule,
-  .close-icon,
-  .note-close,
-  .day-circle,
-  .day-number,
-  .cal-day,
-  .password-toggle,
-  .position-relative > .fa-solid.position-absolute {
+  .link-btn {
     // The ::after is positioned against the control itself. (Controls that are already
     // absolutely positioned keep that: their own rules are more specific.)
     position: relative;
@@ -455,62 +149,208 @@ body.dark-mode .cdk-overlay-container {
     }
   }
 
-  // Controls packed tightly together (calendar days, delete buttons beside a text
-  // field): a smaller area, so a tap meant for one does not land on its neighbour.
-  .day-circle::after,
-  .day-number::after,
-  .cal-day::after,
-  .close-icon::after,
-  .note-close::after {
-    width: max(100%, 32px);
-    height: max(100%, 32px);
-  }
-
-  // Search fields: the visible box is 40px tall but the <input> inside was 22px.
-  .header-search input,
-  .search-bar input {
+  // Column headers that sort: taller rows for a finger.
+  .task-table th button {
     min-height: 36px;
   }
 
-  // Plain text links stacked in lists.
-  footer a,
-  .auth-container a:not(.btn) {
-    display: inline-block;
-    padding-top: 8px;
-    padding-bottom: 8px;
-  }
-
-  .view-btn {
-    min-height: 40px;
-  }
-
-  // Column headers that sort, inline status pickers, the Table / Board switch and
-  // the project's member summary: taller rows for a finger.
-  .task-table th button,
-  .status-select,
-  .view-switch button,
-  .members-meta {
-    min-height: 36px;
-  }
-
-  // Breadcrumbs and "Created by" links are single words in a line of text.
-  .crumbs a,
+  // "Created by" links are single words in a line of text.
   .head-text .sub a {
     display: inline-block;
     padding: 8px 0;
   }
 }
 
-// ── Colour-coded labels (status, priority, project) ─────────────────────────────
-// A label's colour comes from data: a status, a priority, or a colour the user chose
-// for a project. Templates pass it as the --tone custom property; the text colour is
-// then derived from it per theme (see --tone-text-mix in _tokens.scss), so an amber
-// "Pending" is amber on the dark theme and a readable dark amber on the light one.
-.tone-text {
-  color: var(--tone);
-  color: color-mix(in srgb, var(--tone) var(--tone-text-mix, 100%), #000);
+// ════════════════════════════════════════════════════════════════════════════
+// Motion and the shared control classes
+// ════════════════════════════════════════════════════════════════════════════
+
+// Things arriving, as specified in design/miqat-2.0/pages/V2-Motion.dc.html.
+@keyframes mq-settle { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes mq-rise   { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes mq-fade   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mq-pop    { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes mq-draw   { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@keyframes mq-land   { 0% { opacity: 0; transform: translateY(-6px) scale(1.03); } 60% { opacity: 1; transform: translateY(1px) scale(.99); } 100% { transform: none; } }
+@keyframes mq-pulse  { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mq-accent) 50%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--mq-accent) 0%, transparent); } }
+@keyframes mq-toast-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes mq-deplete  { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes mq-dialog-in { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+
+// Movement becomes a fade and loops stop.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-.tone-tint {
-  background: color-mix(in srgb, var(--tone) 12%, transparent);
+// The controls that templates use as plain classes. Everything else includes the
+// mixins of styles/_ui.scss in its own stylesheet.
+.mq-seg         { @include mq-seg; }
+.mq-seg > button,
+.mq-seg > a     { @include mq-seg-item; }
+.mq-switch      { @include mq-switch; }
+
+// Screen-reader-only text.
+.mq-sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Toast with an optional "Undo" (ToastService, rendered by the app shell).
+.mq-toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.mq-toast {
+  @include mq-toast;
+  pointer-events: auto;
+  animation: mq-toast-in var(--mq-t-arrive) var(--mq-ease-calm);
+
+  .mq-toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tone, #{$mq-green}); }
+
+  .mq-toast-action {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    color: $mq-accent-text;
+    cursor: pointer;
+    @include mq-focus;
+  }
+
+  .mq-toast-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: $mq-accent;
+    transform-origin: left;
+    animation: mq-deplete linear forwards;
+
+    [dir='rtl'] & { transform-origin: right; }
+  }
+}
+
+// Menus that open from a button (user menu, "more" menus): one look everywhere.
+.mq-menu {
+  box-sizing: border-box;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 14px;
+  background: $mq-card-5;
+  border: 1px solid $mq-line-2;
+  box-shadow: 0 24px 60px mq-shadow(.55);
+  color: $mq-text;
+  animation: mq-settle var(--mq-t-change) var(--mq-ease-calm);
+}
+
+.mq-menu-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: $mq-text-3;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+  @include mq-focus(-2px);
+
+  &:hover { background: $mq-hover-2; color: $mq-text; }
+  &.danger { color: $mq-late; }
+
+  svg { flex-shrink: 0; color: $mq-muted; }
+  &.danger svg { color: inherit; }
+}
+
+.mq-menu-sep {
+  height: 1px;
+  margin: 6px 4px;
+  background: $mq-line;
+}
+
+// ── Arabic and right to left ─────────────────────────────────────────────────────
+// `<html lang dir>` is set before the app starts (core/i18n). Layout mirrors through
+// logical properties; what is here is what Arabic script itself needs.
+html[lang='ar'] {
+  // Arabic letters join: spacing them apart breaks the words, and there are no capitals.
+  * {
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  // Arabic has no italic. The gold accent words keep their colour and stand upright.
+  em,
+  i,
+  cite {
+    font-style: normal;
+  }
+
+  // Tabular figures are a feature of the Latin font; the Arabic one spaces its own.
+  body {
+    font-feature-settings: normal;
+  }
+}
+
+// The sign of a horizontal offset: translateX(calc(16px * var(--mq-dir, 1))) moves
+// toward the end edge in both directions (the switch knob, panels sliding in).
+// Unset left to right, where the fallback 1 applies.
+[dir='rtl'] {
+  --mq-dir: -1;
+}
+
+[dir='rtl'] [dir='ltr'] {
+  --mq-dir: 1;
+}
+
+// A field marked dir="auto" (or .mq-ltr) is left to right while it is empty, which
+// would push its Arabic placeholder to the left edge. While the placeholder shows,
+// the field follows the page; the first typed letter gives it its own direction.
+html[dir='rtl'] input:placeholder-shown,
+html[dir='rtl'] textarea:placeholder-shown {
+  direction: rtl;
+}
+
+// An arrow or chevron that points "forward" or "back" points the other way in Arabic.
+// Put the class on the icon; icons with no direction (a plus, a clock) never take it.
+[dir='rtl'] .mq-flip {
+  transform: scaleX(-1);
+}
+
+// Text that must keep its own direction inside an Arabic page: an email address,
+// a link, a time range, code. `dir="auto"` on the element is for what a person typed.
+.mq-ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+  --mq-dir: 1;
 }

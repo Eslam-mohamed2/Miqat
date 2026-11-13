@@ -1,0 +1,79 @@
+<div class="group">
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Theme' | t }}</span>
+      <span class="line-hint">{{ 'Dark keeps the gold calm. Light is warm ivory. System follows your device.' | t }}</span>
+    </span>
+    <div class="seg" role="group" [attr.aria-label]="'Theme' | t">
+      @for (choice of themeChoices; track choice.value) {
+        <button type="button" [attr.aria-pressed]="themes.preference() === choice.value" (click)="setTheme(choice.value)">{{ choice.label }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Accent' | t }}</span>
+      <span class="line-hint">{{ 'Used for now, today and what Miqat suggests' | t }}</span>
+    </span>
+    <span class="swatches">
+      @for (swatch of swatches(); track swatch.key) {
+        <button type="button" [attr.aria-label]="swatch.label" [title]="swatch.label" [style.--swatch]="swatch.color"
+                [attr.aria-pressed]="look.accent() === swatch.key" (click)="setAccent(swatch.key)"></button>
+      }
+    </span>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Density' | t }}</span>
+      <span class="line-hint">{{ 'Compact fits more of your day on screen. Not available yet.' | t }}</span>
+    </span>
+    <div class="seg" role="group" [attr.aria-label]="'Density' | t">
+      <button type="button" aria-pressed="true">{{ 'Comfortable' | t }}</button>
+      <button type="button" aria-pressed="false" disabled [title]="'Compact density is not available yet' | t">{{ 'Compact' | t }}</button>
+    </div>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Language' | t }}</span>
+      <span class="line-hint">{{ 'Switches the whole interface, right to left for Arabic.' | t }}</span>
+    </span>
+    <div class="seg" role="group" [attr.aria-label]="'Language' | t">
+      <button type="button" lang="en" [attr.aria-pressed]="language === 'en'" (click)="setLanguage('en')">English</button>
+      <button type="button" lang="ar" [attr.aria-pressed]="language === 'ar'" (click)="setLanguage('ar')">العربية</button>
+    </div>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Numbers' | t }}</span>
+      <span class="line-hint">
+        {{ (language === 'ar' ? 'Choose how digits appear in Arabic.' : 'Choose how digits appear in Arabic. Applies when the interface is Arabic.') | t }}
+      </span>
+    </span>
+    <div class="seg" role="group" [attr.aria-label]="'Numbers' | t">
+      <button type="button" [attr.aria-pressed]="numerals() === 'latn'" (click)="setNumerals('latn')">123</button>
+      <button type="button" [attr.aria-pressed]="numerals() === 'arab'" (click)="setNumerals('arab')">١٢٣</button>
+    </div>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Reduce motion' | t }}</span>
+      <span class="line-hint">{{ 'Fewer animations across Miqat' | t }}</span>
+    </span>
+    <button type="button" role="switch" class="switch" [attr.aria-checked]="look.reduceMotion()" [attr.aria-label]="'Reduce motion' | t"
+            (click)="toggleMotion()"><span></span></button>
+  </div>
+</div>
+
+<div class="preview">
+  <span class="preview-title">{{ 'Preview' | t }}</span>
+  <div class="preview-event">
+    <span class="preview-time">{{ preview().clock }}</span>
+    <span class="preview-text"><span dir="auto">{{ preview().title }}</span><span>{{ preview().sub }}</span></span>
+    @if (preview().join) { <span class="preview-join">{{ 'Join' | t }}</span> }
+  </div>
+</div>

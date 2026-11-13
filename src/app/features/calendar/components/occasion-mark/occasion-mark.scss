@@ -1,0 +1,120 @@
+@use '../../../../../styles/tokens' as *;
+@use '../../calendar' as cal;
+
+:host {
+  display: flex;
+  min-width: 0;
+}
+
+// No block around it: a holiday is a note on the day, not something the user planned.
+.mark {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 22px;
+  padding: 4px 7px;
+  line-height: 14px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: $mq-text-4;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick, color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: $mq-hover;
+    color: $mq-text;
+  }
+}
+
+:host(.holiday) .mark {
+  color: $mq-text-3;
+
+  &:hover,
+  &[aria-expanded='true'] { color: $mq-text; }
+}
+
+// The phone's all-day row: the height of its chips, with a hairline to press.
+:host(.chip) {
+  max-width: 100%;
+
+  .mark {
+    min-height: 28px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px $mq-line-2;
+  }
+}
+
+// Over several days: the mark is as wide as they are, and a hairline shows how far it goes.
+:host(.stretch) .mark {
+  width: 100%;
+}
+
+.reach {
+  flex: 1;
+  min-width: 12px;
+  height: 1px;
+  margin-top: 7px;
+  background: $mq-line-4;
+}
+
+.glyph {
+  @include cal.occasion-glyph;
+  margin-top: 4px;
+}
+
+// A long name in a narrow day column wraps before it is cut ("Independence Day (observed)").
+.name {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+// ── The card ────────────────────────────────────────────────────────────────
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 32px));
+  padding: 12px 14px;
+}
+
+.card-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: $mq-text;
+}
+
+.card-line {
+  font-size: 12px;
+  line-height: 1.45;
+  color: $mq-text-4;
+}
+
+.card-vary {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: $mq-r-pill;
+  background: $mq-chip;
+  font-size: 11px;
+  font-weight: 600;
+  color: $mq-text-3;
+}

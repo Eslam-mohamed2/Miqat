@@ -1,0 +1,199 @@
+<main class="profile" [attr.aria-label]="'Profile' | t">
+  <button type="button" class="back" (click)="back.emit()">
+    <svg class="mq-flip" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+    {{ 'People' | t }}
+  </button>
+
+  @if (state() === 'loading') {
+    <div class="head" aria-hidden="true">
+      <span class="portrait ghost"></span>
+      <div class="who">
+        <span class="ghost-line wide"></span>
+        <span class="ghost-line"></span>
+      </div>
+    </div>
+    <p class="mq-sr" role="status">{{ 'Loading the profile…' | t }}</p>
+  } @else if (state() === 'missing') {
+    <p class="missing" role="status">{{ 'This person could not be found. They may have closed their account.' | t }}</p>
+  } @else if (person(); as p) {
+    <div class="head">
+      <span class="portrait" [style.--ring]="ringColor()">
+        @if (picture(); as url) {
+          <!-- Google's avatar hosts refuse requests that carry a referrer. -->
+          <img [src]="url" [alt]="p.fullName" referrerpolicy="no-referrer" (error)="pictureFailed.set(true)" />
+        } @else {
+          {{ initials() }}
+        }
+      </span>
+
+      <div class="who">
+        <h2 dir="auto">{{ p.fullName }}</h2>
+        <span class="role" dir="auto" [title]="roleLine()">{{ roleLine() }}</span>
+        @if (statusLine()) {
+          <span class="status">
+            @if (presence(); as tone) { <span class="dot" [class]="'dot ' + tone"></span> }
+            {{ statusLine() }}
+          </span>
+        }
+      </div>
+
+      <div class="actions">
+        @switch (status()) {
+          @case ('Blocked') {
+            <button type="button" class="outline" [disabled]="acting()" (click)="unblock()">{{ 'Unblock' | t }}</button>
+          }
+          @case ('Pending') {
+            <button type="button" class="primary" [disabled]="acting()" (click)="accept()">{{ 'Accept' | t }}</button>
+            <button type="button" class="outline" [disabled]="acting()" (click)="decline()">{{ 'Decline' | t }}</button>
+          }
+          @case ('Sent') {
+            <button type="button" class="outline" [disabled]="acting()" (click)="cancelRequest()">{{ 'Cancel request' | t }}</button>
+          }
+          @case ('Friends') {
+            <a class="primary" routerLink="/calendar/find-time" [queryParams]="{ with: p.id }">{{ 'Find a time' | t }}</a>
+            @if (chat.available()) {
+              <button type="button" class="outline" (click)="message()">{{ 'Message' | t }}</button>
+            }
+          }
+          @default {
+            <button type="button" class="primary" [disabled]="acting()" (click)="addFriend()">{{ 'Add friend' | t }}</button>
+            @if (connected()) {
+              <a class="outline" routerLink="/calendar/find-time" [queryParams]="{ with: p.id }">{{ 'Find a time' | t }}</a>
+            }
+          }
+        }
+
+        @if (!isBlocked()) {
+          <div class="more">
+            <button type="button" class="outline icon" [attr.aria-label]="'More options' | t" aria-haspopup="menu"
+                    [attr.aria-expanded]="menuOpen()" (click)="toggleMenu()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg>
+            </button>
+
+            @if (menuOpen()) {
+              <div class="mq-menu menu" role="menu">
+                @if (confirming(); as what) {
+                  <p class="ask">
+                    @if (what === 'block') {
+                      {{ 'Block {name}? They can no longer send you requests or messages, and a friendship between you ends. They aren’t told.' | t: { name: firstName() } }}
+                    } @else {
+                      {{ 'Remove {name} from your friends?' | t: { name: firstName() } }}
+                    }
+                  </p>
+                  <div class="ask-buttons">
+                    <button type="button" class="danger" [disabled]="acting()"
+                            (click)="what === 'block' ? block() : unfriend()">
+                      {{ (what === 'block' ? 'Block@@verb' : 'Remove') | t }}
+                    </button>
+                    <button type="button" class="outline" (click)="confirming.set(null)">{{ 'Cancel' | t }}</button>
+                  </div>
+                } @else {
+                  @if (isFriend()) {
+                    <button type="button" class="mq-menu-item danger" role="menuitem" (click)="confirming.set('unfriend')">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16.5 11h5"></path></svg>
+                      {{ 'Remove friend' | t }}
+                    </button>
+                  }
+                  <button type="button" class="mq-menu-item danger" role="menuitem" (click)="confirming.set('block')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M5.7 5.7l12.6 12.6"></path></svg>
+                    {{ 'Block@@verb' | t }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+
+    @if (isBlocked()) {
+      <p class="missing">
+        {{ 'You blocked {name}. They can’t send you friend requests or messages. Unblocking does not make them a friend again.' | t: { name: firstName() } }}
+      </p>
+    } @else {
+      <section class="day">
+        <div class="day-head">
+          <h3>{{ 'Your day and theirs' | t }}</h3>
+          @if (hasChart()) {
+            <span class="day-sub">{{ 'Shown in your time, {city}' | t: { city: myCity() } }} · {{ assumedNote() }}</span>
+            <span class="day-overlap">{{ overlapLabel() }}</span>
+          }
+        </div>
+
+        @if (hasChart()) {
+          <div class="bars">
+            @for (bar of bars(); track bar.kind) {
+              <div class="bar-row">
+                <span class="bar-label" [attr.dir]="bar.kind === 'them' ? 'auto' : null">{{ bar.label }}</span>
+                <span class="track">
+                  @for (part of bar.parts; track $index) {
+                    <span class="fill" [class]="'fill ' + bar.kind" [style.inset-inline-start.%]="part.left" [style.width.%]="part.width"></span>
+                  }
+                  @for (tick of prayerTicks(); track $index) {
+                    <span class="prayer-tick" [style.inset-inline-start.%]="tick"></span>
+                  }
+                  @if (nowTick() !== null) {
+                    <span class="now-tick" [style.inset-inline-start.%]="nowTick()"></span>
+                  }
+                </span>
+              </div>
+            }
+            <div class="axis" aria-hidden="true">
+              @for (label of axisLabels(); track $index) { <span>{{ label }}</span> }
+            </div>
+          </div>
+          <span class="day-text">{{ overlapText() }}</span>
+          @if (daysText()) {
+            <span class="day-days">{{ daysText() }}</span>
+          }
+        } @else {
+          <span class="day-days">{{ '{name} has no time zone on their profile, so Miqat cannot line your days up.' | t: { name: firstName() } }}</span>
+        }
+      </section>
+
+      <div class="columns">
+        <section class="block next" [style.--when.px]="whenWidth()">
+          <span class="eyebrow">{{ 'Next together' | t }}</span>
+          @for (row of together() ?? []; track row.key) {
+            <a class="item" routerLink="/calendar" [queryParams]="{ date: row.date, event: row.eventId }">
+              <span class="item-when">{{ row.when }}</span>
+              <span class="item-dot" [style.--tone]="row.color"></span>
+              <span class="item-title" dir="auto">{{ row.title }}</span>
+            </a>
+          }
+          @if (together() === null) {
+            <span class="quiet">{{ 'Looking at your calendar…' | t }}</span>
+          } @else if (!together()!.length) {
+            <span class="quiet">{{ 'Nothing scheduled together yet.' | t }}</span>
+          }
+        </section>
+
+        <section class="block side">
+          <span class="eyebrow">{{ 'Shared projects' | t }}</span>
+          @for (project of projects(); track project.id) {
+            <a class="project" [routerLink]="['/projects', project.id]">
+              <span class="project-top"><span dir="auto">{{ project.name }}</span><span class="project-pct">{{ percent(project.percent) }}</span></span>
+              <span class="project-bar"><span [style.width.%]="project.percent"></span></span>
+            </a>
+          } @empty {
+            <span class="quiet">{{ 'No shared projects yet.' | t }}</span>
+          }
+          @if (moreProjects(); as more) {
+            <span class="quiet">{{ 'and {n} more' | t: { n: more } }}</span>
+          }
+
+          @if (recent().length) {
+            <span class="eyebrow recently">{{ 'Recently' | t }}</span>
+            @for (row of recent(); track row.taskId + row.text) {
+              <a class="recent" [routerLink]="['/tasks', row.taskId]">{{ row.text }} · {{ ago(row.at) }}</a>
+            }
+          }
+        </section>
+      </div>
+    }
+  }
+</main>

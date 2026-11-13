@@ -1,56 +1,65 @@
-<h3 class="item-title">
-  <mat-icon>checklist</mat-icon> Checklist
-  <span class="count" *ngIf="list().length">{{ doneCount() }} of {{ list().length }}</span>
-</h3>
-
-<div class="steps-bar" *ngIf="list().length" role="progressbar" aria-label="Checklist progress"
-     [attr.aria-valuenow]="percent()" aria-valuemin="0" aria-valuemax="100">
-  <span class="steps-fill" [style.width.%]="percent()"></span>
+<div class="head">
+  <h3 class="eyebrow">{{ 'Subtasks' | t }}</h3>
+  @if (list().length) {
+    <span class="count">{{ '{done} of {total}' | t: { done: doneCount(), total: list().length } }}</span>
+    <span class="bar" role="progressbar" [attr.aria-label]="'Subtasks done' | t"
+          [attr.aria-valuenow]="percent()" aria-valuemin="0" aria-valuemax="100">
+      <span class="fill" [style.width.%]="percent()"></span>
+    </span>
+  }
 </div>
 
-<ul class="line-list" *ngIf="list().length">
-  <li class="line" *ngFor="let line of list(); trackBy: trackById; let first = first; let last = last"
-      [class.done]="line.isDone">
-    <button type="button" class="tick" role="checkbox" [attr.aria-checked]="line.isDone"
-            [attr.aria-label]="line.title" [disabled]="busy()" (click)="toggle(line)">
-      <mat-icon>{{ line.isDone ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
-    </button>
+@if (list().length) {
+  <div role="list" class="lines">
+    @for (line of list(); track line.id; let first = $first; let last = $last) {
+      <div role="listitem" class="line" [class.done]="line.isDone">
+        @if (editingId() === line.id) {
+          <input type="checkbox" [checked]="line.isDone" disabled aria-hidden="true" />
+          <input class="line-input" type="text" dir="auto" [value]="editText()" [attr.maxlength]="titleMaxLength"
+                 [attr.aria-label]="'Rename subtask' | t" (input)="editText.set(textOf($event))"
+                 (keydown.enter)="commitRename(line)" (keydown.escape)="cancelRename()"
+                 (blur)="commitRename(line)" />
+        } @else {
+          <label class="line-label">
+            <input type="checkbox" [checked]="line.isDone" [disabled]="busy()" (change)="toggle(line)" />
+            <span class="line-text" dir="auto">{{ line.title }}</span>
+          </label>
 
-    <input *ngIf="editingId() === line.id; else showTitle" class="line-input" type="text"
-           [value]="editText()" [attr.maxlength]="titleMaxLength" aria-label="Rename checklist line"
-           (input)="editText.set(textOf($event))" (keydown.enter)="commitRename(line)"
-           (keydown.escape)="cancelRename()" (blur)="commitRename(line)" />
-    <ng-template #showTitle>
-      <button type="button" class="line-title" [disabled]="busy()" (click)="startRename(line)"
-              title="Click to rename">{{ line.title }}</button>
-    </ng-template>
+          <span class="line-actions">
+            <button type="button" class="line-btn" [disabled]="busy()" (click)="startRename(line)"
+                    [attr.aria-label]="'Rename: {title}' | t: { title: line.title }" [title]="'Rename' | t">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"></path></svg>
+            </button>
+            <button type="button" class="line-btn" [disabled]="busy() || first" (click)="move(line, -1)"
+                    [attr.aria-label]="'Move up: {title}' | t: { title: line.title }" [title]="'Move up' | t">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"></path></svg>
+            </button>
+            <button type="button" class="line-btn" [disabled]="busy() || last" (click)="move(line, 1)"
+                    [attr.aria-label]="'Move down: {title}' | t: { title: line.title }" [title]="'Move down' | t">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
+            </button>
+            <button type="button" class="line-btn remove" [disabled]="busy()" (click)="remove(line)"
+                    [attr.aria-label]="'Remove: {title}' | t: { title: line.title }" [title]="'Remove' | t">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </span>
+        }
+      </div>
+    }
+  </div>
+}
 
-    <span class="line-actions">
-      <button type="button" class="line-btn" [disabled]="busy() || first" (click)="move(line, -1)"
-              [attr.aria-label]="'Move up: ' + line.title">
-        <mat-icon>arrow_upward</mat-icon>
-      </button>
-      <button type="button" class="line-btn" [disabled]="busy() || last" (click)="move(line, 1)"
-              [attr.aria-label]="'Move down: ' + line.title">
-        <mat-icon>arrow_downward</mat-icon>
-      </button>
-      <button type="button" class="row-remove" [disabled]="busy()" (click)="remove(line)"
-              [attr.aria-label]="'Remove: ' + line.title">
-        <mat-icon>close</mat-icon>
-      </button>
-    </span>
-  </li>
-</ul>
+@if (!loading()) {
+  <form class="add-line" (submit)="$event.preventDefault(); add()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+    <input type="text" class="add-input" dir="auto" [placeholder]="'Add a subtask' | t" [attr.aria-label]="'Add a subtask' | t"
+           [value]="draft()" [attr.maxlength]="titleMaxLength" (input)="draft.set(textOf($event))" />
+    @if (draft().trim()) {
+      <button type="submit" class="add-btn" [disabled]="busy()">{{ 'Add' | t }}</button>
+    }
+  </form>
+}
 
-<p class="item-empty" *ngIf="!loading() && !list().length">
-  Break the task into smaller steps and tick them off as you go.
-</p>
-
-<form class="add-line" *ngIf="!loading()" (submit)="$event.preventDefault(); add()">
-  <mat-icon>add</mat-icon>
-  <input type="text" class="add-input" placeholder="Add a step" aria-label="Add a checklist line"
-         [value]="draft()" [attr.maxlength]="titleMaxLength" (input)="draft.set(textOf($event))" />
-  <button type="submit" class="add-btn" [disabled]="busy() || !draft().trim()">Add</button>
-</form>
-
-<p class="item-error" *ngIf="error()" role="alert">{{ error() }}</p>
+@if (error()) {
+  <p class="item-error" role="alert">{{ error() }}</p>
+}

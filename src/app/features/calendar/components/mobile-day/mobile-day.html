@@ -1,0 +1,106 @@
+<div class="top">
+  <div class="head">
+    <div class="head-text">
+      <span class="dayname">{{ dayName() }}</span>
+      <h1>
+        <!-- The date opens what a wide page keeps in its header and left column. -->
+        <button type="button" class="date-btn" (click)="options.emit()" aria-haspopup="dialog"
+                [attr.aria-label]="'{date}: views, calendars and layers' | t: { date: dateTitle() }">
+          {{ dateTitle() }}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+      </h1>
+      <span class="summary">{{ summary() }}</span>
+    </div>
+    <app-user-menu [size]="42" />
+  </div>
+
+  <div class="strip" role="group" [attr.aria-label]="'This week' | t">
+    @for (cell of strip(); track cell.day.key) {
+      <button type="button" class="strip-day" [class.off]="!cell.day.isWorkDay" [class.today]="cell.day.isToday"
+              [class.holiday]="cell.day.isHoliday"
+              [attr.aria-pressed]="cell.day.isSelected" [attr.aria-label]="cell.day.label"
+              (click)="selectDay(cell.day)">
+        <span class="strip-dow">{{ cell.letter }}</span>
+        <span class="strip-num">{{ cell.day.number | num }}</span>
+        <span class="strip-load" [style.width.px]="cell.load"></span>
+      </button>
+    }
+  </div>
+
+  @if (next(); as up) {
+    <div class="next">
+      <button type="button" class="next-text" (click)="pick(up.chip)">
+        <span class="next-title">{{ up.title }}</span>
+        <span class="next-detail">{{ up.detail }}</span>
+      </button>
+      @if (up.link; as link) {
+        <a class="next-btn" [href]="link.url" target="_blank" rel="noopener noreferrer">{{ 'Join' | t }}</a>
+      } @else {
+        <button type="button" class="next-btn" (click)="pick(up.chip)">{{ 'Details' | t }}</button>
+      }
+    </div>
+  }
+
+  @if (allDay().length || day().occasions.length) {
+    <div class="allday" role="group" [attr.aria-label]="'All day' | t">
+      @for (mark of day().occasions; track mark.occasion.id) {
+        <app-occasion-mark [chip]="true" [occasion]="mark.occasion" [dayNumber]="mark.dayNumber" />
+      }
+      @for (chip of allDay(); track chip.key) {
+        <button type="button" class="allday-chip" [class.task]="chip.kind === 'Task'" [style.--tone]="chip.color" (click)="pick(chip)">
+          @if (chip.kind === 'Task') { <span class="ring" [class.done]="chip.done"></span> }
+          <span dir="auto">{{ chip.title }}</span>
+        </button>
+      }
+    </div>
+  }
+</div>
+
+<div class="timeline" #timeline>
+  <div class="hours" [style.height.px]="gridHeight">
+    @for (hour of hours(); track hour.top) {
+      <div class="hour" [style.top.px]="hour.top" aria-hidden="true">
+        <span class="hour-label">{{ hour.label }}</span>
+        <span class="hour-rule"></span>
+      </div>
+    }
+
+    @for (prayer of prayers(); track prayer.name) {
+      <span class="prayer-line" [style.top.px]="prayer.top"></span>
+      <span class="prayer-tag" [style.top.px]="prayer.top - 9">{{ prayer.label }}</span>
+    }
+
+    <div class="lane">
+      @for (block of blocks(); track block.chip.key) {
+        <button type="button" class="ev"
+                [class.planned]="block.chip.planned"
+                [class.due]="block.chip.kind === 'Task' && !block.chip.planned"
+                [class.done]="block.chip.done"
+                [class.pending]="block.chip.pending"
+                [class.declined]="block.chip.declined"
+                [class.compact]="block.compact"
+                [class.stacked]="block.stacked"
+                [attr.aria-label]="block.label"
+                [style.top.px]="block.top" [style.height.px]="block.height"
+                [style.inset-inline-start]="block.left" [style.width]="block.width"
+                [style.--tone]="block.chip.color"
+                (click)="pick(block.chip)">
+          @if (block.chip.kind === 'Task' && !block.chip.planned) {
+            <span class="ring" [class.done]="block.chip.done"></span>
+          } @else {
+            <span class="ev-time">{{ block.chip.time }}</span>
+          }
+          <span class="ev-title" dir="auto">{{ block.chip.title }}</span>
+        </button>
+      }
+    </div>
+
+    @if (day().isToday) {
+      <div class="now" role="img" [attr.aria-label]="nowLabel()" [style.top.px]="nowTop()">
+        <span class="now-dot"></span>
+        <span class="now-rule"></span>
+      </div>
+    }
+  </div>
+</div>

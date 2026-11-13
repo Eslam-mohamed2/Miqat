@@ -1,0 +1,75 @@
+<button type="button" class="avatar" (click)="toggle()"
+        aria-haspopup="menu" [attr.aria-expanded]="open()"
+        [attr.aria-label]="name() ? ('Account menu for {name}' | t: { name: name() }) : ('Account menu' | t)">
+  @if (picture(); as url) {
+    <!-- Google's avatar hosts refuse requests that carry a referrer. -->
+    <img [src]="url" alt="" referrerpolicy="no-referrer" (error)="pictureFailed.set(true)" />
+  } @else {
+    <span aria-hidden="true">{{ initials() }}</span>
+  }
+</button>
+
+@if (open()) {
+  <div class="mq-menu menu" role="menu">
+    <div class="who">
+      <strong dir="auto">{{ name() }}</strong>
+      @if (user()?.email; as email) { <small class="mq-ltr">{{ email }}</small> }
+    </div>
+
+    <div class="mq-menu-sep"></div>
+
+    @if (user(); as me) {
+      <a class="mq-menu-item" role="menuitem" [routerLink]="['/profile', me.id]" (click)="close()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg>
+        {{ 'Your profile' | t }}
+      </a>
+    }
+    <a class="mq-menu-item" role="menuitem" routerLink="/dashboard" (click)="close()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"></path></svg>
+      {{ 'Plan my day' | t }}
+    </a>
+    <a class="mq-menu-item" role="menuitem" routerLink="/settings" (click)="close()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg>
+      {{ 'Settings' | t }}
+    </a>
+
+    <!-- Phones: the sections the tab bar has no room for. -->
+    <div class="phone-only">
+      <a class="mq-menu-item" role="menuitem" routerLink="/whiteboard" (click)="close()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+        {{ 'Whiteboard' | t }}
+      </a>
+      <a class="mq-menu-item" role="menuitem" routerLink="/node-flow" (click)="close()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="18" cy="6" r="2.5"></circle><circle cx="18" cy="18" r="2.5"></circle><path d="M8.5 6h7M6 8.5v4a3 3 0 0 0 3 3h6.5"></path></svg>
+        {{ 'Node Flow' | t }}
+      </a>
+      <a class="mq-menu-item" role="menuitem" routerLink="/friends" (click)="close()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"></path></svg>
+        {{ 'People' | t }}
+      </a>
+    </div>
+
+    <div class="mq-menu-sep"></div>
+
+    <div class="theme-row">
+      <span id="user-menu-theme">{{ 'Theme' | t }}</span>
+      <div class="mq-seg" role="group" aria-labelledby="user-menu-theme">
+        @for (choice of themeChoices; track choice.value) {
+          <button type="button" [attr.aria-pressed]="themes.preference() === choice.value"
+                  (click)="setTheme(choice.value)">{{ choice.label }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="mq-menu-sep"></div>
+
+    <a class="mq-menu-item" role="menuitem" routerLink="/help" (click)="close()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8"></path><path d="M12 17h.01"></path></svg>
+      {{ 'Help Center' | t }}
+    </a>
+    <button type="button" class="mq-menu-item danger" role="menuitem" (click)="signOut()">
+      <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"></path><path d="M10 16l-4-4 4-4M6 12h10"></path></svg>
+      {{ 'Log out' | t }}
+    </button>
+  </div>
+}

@@ -1,0 +1,98 @@
+<app-auth-shell [step]="2" [panelLabel]="'Preview of your week' | t">
+  <div class="step">
+    <div class="head">
+      <h1>{{ 'Set up your week.' | t }}</h1>
+      <p>{{ 'You can change any of this later in Settings.' | t }}</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="notice error" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <label class="field">{{ 'Time zone' | t }}
+      <select class="zone" [value]="zone()" (change)="pickZone($any($event.target).value)">
+        @for (option of zones(); track option.value) {
+          <option [value]="option.value" [selected]="option.value === zone()">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="field">
+      <span>{{ 'Work week' | t }}</span>
+      <div class="choices three" role="group" [attr.aria-label]="'Work week' | t">
+        @for (option of weeks; track option.id) {
+          <button type="button" [attr.aria-pressed]="week() === option.id" (click)="pickWeek(option.id)">{{ option.label }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="layers">
+      <div class="layer">
+        <span class="layer-text"><span class="layer-name">{{ 'Prayer times' | t }}</span><span class="layer-hint">{{ 'Shown on your calendar. Miqat plans around them.' | t }}</span></span>
+        <button type="button" class="toggle" role="switch" data-layer="prayer" [attr.aria-label]="'Prayer times' | t" [attr.aria-checked]="prayer()" (click)="prayer.set(!prayer())"><span></span></button>
+      </div>
+      <div class="layer">
+        <span class="layer-text"><span class="layer-name">{{ 'Hijri dates' | t }}</span><span class="layer-hint">{{ 'Next to every Gregorian date' | t }}</span></span>
+        <button type="button" class="toggle" role="switch" data-layer="hijri" [attr.aria-label]="'Hijri dates' | t" [attr.aria-checked]="hijri()" (click)="hijri.set(!hijri())"><span></span></button>
+      </div>
+      @if (prayer()) {
+        <label class="method">{{ 'Method@@prayer times' | t }}
+          <select [value]="method()" (change)="pickMethod($any($event.target).value)">
+            @for (option of methods; track option.value) {
+              <option [value]="option.value" [selected]="option.value === method()">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+      }
+    </div>
+
+    <div class="field">
+      <span>{{ 'Language' | t }}</span>
+      <div class="choices two" role="group" [attr.aria-label]="'Language' | t">
+        @for (option of languages; track option.id) {
+          <button type="button" [class.arabic]="option.id === 'ar'" [attr.lang]="option.id" [attr.aria-pressed]="language === option.id"
+            (click)="pickLanguage(option.id)">{{ option.label }}</button>
+        }
+      </div>
+    </div>
+
+    <button type="button" class="submit enter" [disabled]="isLoading() || isSaving()" (click)="start()">
+      {{ (isSaving() ? 'Saving…' : 'Start with today') | t }}
+      @if (!isSaving()) {
+        <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+      }
+    </button>
+  </div>
+
+  <div authPanel class="preview">
+    <span class="preview-title">{{ 'Your week' | t }}</span>
+    <div class="preview-days">
+      @for (day of previewDays(); track $index) {
+        <span class="preview-day" [class.today]="day.today" [class.work]="day.work">
+          <span class="preview-dow">{{ day.dow }}</span>
+          <span class="preview-num">{{ day.day }}</span>
+          @if (hijri()) {
+            <span class="preview-hijri">{{ day.hijri }}</span>
+          }
+        </span>
+      }
+    </div>
+    @if (previewHours()) {
+      <span class="preview-hours">{{ previewHours() }}</span>
+    }
+    @if (prayer()) {
+      <div class="preview-prayers">
+        @for (row of previewPrayers(); track row.name) {
+          <span class="preview-prayer">
+            <span class="preview-dot" [class.next]="row.next"></span>
+            <span class="preview-name">{{ row.name }}</span>
+            <span class="preview-time">{{ row.time }}</span>
+          </span>
+        } @empty {
+          <span class="preview-none">{{ 'Miqat has no prayer times for {city} yet.' | t: { city: previewCity() } }}</span>
+        }
+      </div>
+    }
+    <span class="preview-note">{{ 'Dashed days are your weekend. Miqat won’t suggest work there.' | t }}</span>
+  </div>
+</app-auth-shell>

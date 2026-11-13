@@ -1,0 +1,347 @@
+@use '../../../../styles/tokens' as *;
+@use '../tasks-shared' as shared;
+
+
+// The right column of design/miqat-2.0 V2-Tasks. The page gives it its width,
+// its hairline and its scrolling.
+:host {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  padding: 18px 22px 24px;
+  color: $mq-text;
+  font-size: 13px;
+}
+
+// Room for the chat button, so it never lies on the comment box.
+:host(.clear-chat) {
+  padding-bottom: 92px;
+}
+
+// The colour of a status or a priority, for its pill and the dots in the menus.
+@include shared.status-tones;
+@include shared.priority-tones;
+
+// ── Project and actions ─────────────────────────────────────────────────────
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.project-dot {
+  @include mq-dot(8px, 2px);
+}
+
+.project {
+  min-width: 0;
+  color: $mq-muted;
+  @include mq-ellipsis;
+}
+
+a.project {
+  border-radius: 4px;
+  @include mq-focus;
+
+  &:hover { color: $mq-text; }
+}
+
+.crumb-actions {
+  display: flex;
+  margin-inline-start: auto;
+}
+
+.icon-btn {
+  @include mq-icon-btn(30px, 8px);
+  color: $mq-muted;
+
+  &.back { margin-inline-start: -8px; }
+
+  :host-context([dir='rtl']) &.back svg { transform: scaleX(-1); }
+}
+
+.menu-holder {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-start: 0;
+  z-index: 40;
+
+  &.end {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+  }
+}
+
+a.mq-menu-item { text-decoration: none; }
+
+.option-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.mq-menu-item[aria-checked='true'] {
+  color: $mq-text;
+  font-weight: 600;
+}
+
+// ── Title, status, priority ─────────────────────────────────────────────────
+.title {
+  @include mq-serif(30px, 1.1);
+  overflow-wrap: anywhere;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  @include shared.tone-pill;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: color-mix(in srgb, var(--tone) 22%, transparent); }
+}
+
+// ── Properties ──────────────────────────────────────────────────────────────
+.props {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  row-gap: 12px;
+  column-gap: 12px;
+  align-items: center;
+  font-size: 13px;
+
+  dt {
+    font-weight: 400;
+    color: $mq-muted;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+  }
+
+  a:not(.block):not(.avatar) {
+    color: inherit;
+    border-radius: 4px;
+    @include mq-focus;
+
+    &:hover { text-decoration: underline !important; }
+  }
+}
+
+.none {
+  color: $mq-muted;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar {
+  @include mq-avatar(22px);
+  font-size: 9.5px;
+  color: $mq-text;
+}
+
+a.avatar {
+  @include mq-focus;
+}
+
+.due {
+  font-weight: 600;
+
+  &.late { color: $mq-late; }
+  .none { font-weight: 400; }
+}
+
+.calendar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// The task's block, drawn as the calendar draws a planned block.
+.block {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, #{$mq-accent} 60%, transparent);
+  background: color-mix(in srgb, #{$mq-accent} 7%, transparent);
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: color-mix(in srgb, #{$mq-accent} 13%, transparent); }
+}
+
+.block-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: $mq-accent-text;
+}
+
+.block-note {
+  font-size: 11px;
+  color: $mq-text-4;
+}
+
+.find-time {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid $mq-accent-line;
+  background: transparent;
+  color: $mq-accent-text;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: color-mix(in srgb, #{$mq-accent} 12%, transparent); }
+}
+
+.labels,
+.people {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.label {
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid $mq-line-2;
+  font-size: 11.5px;
+  color: $mq-text-3;
+}
+
+.more {
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+.description {
+  font-size: 13px;
+  line-height: 1.65;
+  color: $mq-text-3;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+
+  &.none { color: $mq-muted; }
+}
+
+// Reminders and files (drawn by their own components).
+.extra {
+  display: block;
+}
+
+// ── Activity ────────────────────────────────────────────────────────────────
+.activity {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eyebrow {
+  @include mq-eyebrow;
+}
+
+.activity-row {
+  display: flex;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.activity-text {
+  color: $mq-text-3;
+}
+
+.when {
+  color: $mq-muted;
+}
+
+// ── Loading and "not yours" ─────────────────────────────────────────────────
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bone {
+  height: 14px;
+  border-radius: 7px;
+  background: $mq-line;
+  animation: mq-fade 900ms $mq-ease-calm infinite alternate;
+
+  &.short { width: 45%; }
+  &.tall { height: 34px; width: 85%; }
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  color: $mq-muted;
+}
+
+.state-title {
+  @include mq-serif(26px, 1.15);
+}
+
+.state-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: $mq-text-4;
+}
+
+.back-link {
+  @include mq-btn-outline(34px, 0 12px 0 8px);
+  margin-bottom: 8px;
+
+  :host-context([dir='rtl']) & { padding: 0 8px 0 12px; }
+  :host-context([dir='rtl']) & svg { transform: scaleX(-1); }
+}
+
+@include touch {
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .pill {
+    min-height: 32px;
+    padding-inline: 12px;
+  }
+
+  .find-time { height: 40px; }
+}

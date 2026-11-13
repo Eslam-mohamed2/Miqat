@@ -1,0 +1,386 @@
+@use '../../../styles/tokens' as *;
+@use '../../home/public' as *;
+
+// A day with no open times is written between the muted text and the hairline.
+$dim: color-mix(in srgb, #{$mq-muted} 52%, #{$mq-line-7});
+
+:host {
+  @include public-page(13px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 40px 24px;
+}
+
+h1, h2, p { margin: 0; }
+
+.sheet {
+  // The design gives the card a 1120px content width; its hairline is outside that.
+  width: 100%;
+  max-width: 1122px;
+  display: flex;
+  flex-wrap: wrap;
+  border-radius: 28px;
+  background: $mq-card;
+  border: 1px solid $mq-chip;
+  box-shadow: 0 40px 100px mq-shadow(.45);
+  overflow: hidden;
+  animation: mq-rise $mq-t-arrive $mq-ease-calm;
+}
+
+section {
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Who and what ──────────────────────────────────────────────────────────────
+.about {
+  flex: 1 1 300px;
+  gap: 22px;
+  padding: 36px 32px;
+  border-inline-end: 1px solid $mq-line;
+}
+
+.avatar {
+  // The design sizes the circle without its hairline.
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid $mq-accent-text;
+  color: $mq-accent-text;
+  font-family: $mq-serif;
+  font-size: 26px;
+
+  &.quiet {
+    border-color: $mq-line-4;
+    color: $mq-text-4;
+  }
+}
+
+.about-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  h1 {
+    font-family: $mq-serif;
+    font-weight: 400;
+    font-size: 44px;
+    line-height: 1;
+
+    // Arabic is set in IBM Plex Sans Arabic (the serif has no Arabic letters): a
+    // wider face whose marks need room between two lines.
+    @include mq-rtl {
+      font-size: 40px;
+      line-height: 1.25;
+    }
+  }
+}
+
+.host {
+  font-size: 13px;
+  color: $mq-text-4;
+  overflow-wrap: anywhere;
+}
+
+.about-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: $mq-text-3;
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  color: $mq-text-2;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  svg {
+    flex-shrink: 0;
+    color: $mq-accent-text;
+  }
+}
+
+.about-foot {
+  margin-top: auto;
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+// ── The month ─────────────────────────────────────────────────────────────────
+.days {
+  flex: 1 1 360px;
+  gap: 18px;
+  padding: 36px 32px;
+  border-inline-end: 1px solid $mq-line;
+}
+
+.days-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    font-family: $mq-serif;
+    font-weight: 400;
+    font-size: 28px;
+    line-height: normal;
+  }
+}
+
+.days-nav {
+  display: flex;
+  gap: 4px;
+
+  button {
+    @include mq-btn-outline(36px, 0, 9px);
+    width: 36px;
+    color: $mq-text-4;
+  }
+}
+
+.month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  text-align: center;
+}
+
+.weekday {
+  padding-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  color: $mq-muted;
+}
+
+.date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 48px;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: $dim;
+  font-family: inherit;
+  font-size: 14px;
+  font-feature-settings: normal;
+  line-height: normal;
+  cursor: default;
+  transition:
+    background $mq-t-change $mq-ease-calm,
+    border-color $mq-t-press $mq-ease-quick,
+    color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &.today { color: $mq-text-3; }
+
+  &.has {
+    border-color: $mq-line-3;
+    background: $mq-card-5;
+    color: $mq-text;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover { border-color: $mq-line-7; }
+    .date-dot { background: $mq-accent; }
+  }
+
+  &[aria-pressed='true'] {
+    border: 0;
+    background: $mq-accent;
+    color: $mq-on-accent;
+    font-weight: 700;
+
+    .date-dot { background: $mq-on-accent; }
+  }
+}
+
+.date-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.days-note {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+// ── The times of the chosen day ───────────────────────────────────────────────
+.times {
+  flex: 1 1 300px;
+  gap: 16px;
+  padding: 36px 28px;
+}
+
+.times-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  h2 {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: normal;
+  }
+
+  span {
+    font-size: 12px;
+    color: $mq-muted;
+  }
+}
+
+.zones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 3px;
+  border-radius: 10px;
+  background: $mq-bg;
+  border: 1px solid $mq-line-2;
+
+  button {
+    @include mq-seg-item(32px, 0 6px, 7px);
+    color: $mq-muted;
+    font-size: 12px;
+    font-weight: 600;
+    font-feature-settings: normal;
+    @include touch-area(6px, 0px);
+  }
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slot-row {
+  display: flex;
+  gap: 8px;
+}
+
+.slot {
+  @include mq-btn-outline(46px, 0 12px, 11px);
+  flex: 1;
+  border-color: $mq-line-3;
+  font-size: 13.5px;
+  line-height: normal;
+  font-feature-settings: normal;
+
+  &:hover:not(:disabled) {
+    border-color: $mq-line-7;
+    background: transparent;
+  }
+
+  &[aria-pressed='true'] {
+    flex: 0 0 52%;
+    border-color: $mq-accent-text;
+    background: $mq-card-5;
+    color: $mq-text;
+  }
+}
+
+.confirm {
+  @include mq-btn-primary(46px, 0 12px, 11px);
+  flex: 1;
+  font-size: 13.5px;
+  line-height: normal;
+  font-feature-settings: normal;
+  @include link-color($mq-on-accent);
+}
+
+// ── No link behind this address ───────────────────────────────────────────────
+.missing {
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 22px;
+  padding: 64px 32px;
+  text-align: center;
+
+  .avatar { margin-bottom: 4px; }
+  .about-head { align-items: center; }
+  .about-text { max-width: 480px; }
+  .about-foot { margin-top: 0; }
+}
+
+.missing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+
+  .slot { @include link-color($mq-text-2); }
+}
+
+.made-with {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  @include link-color($mq-muted);
+  transition: color $mq-t-press $mq-ease-quick;
+  @include mq-focus(4px);
+  @include touch-area(14px, 8px);
+
+  &:hover { @include link-color($mq-text-3); }
+
+  svg { color: $mq-accent-text; }
+}
+
+// The three parts no longer fit side by side: they stack, divided by a line.
+@include below(1010px) {
+  .about, .days {
+    border-inline-end: 0;
+    border-bottom: 1px solid $mq-line;
+  }
+}
+
+@include below($bp-tablet) {
+  :host {
+    justify-content: flex-start;
+    padding: 20px 16px 32px;
+  }
+
+  .sheet { border-radius: 22px; }
+  .about, .days, .times { padding: 28px 20px; }
+  .missing { padding: 44px 20px; }
+  .about-head h1 {
+    font-size: 38px;
+
+    @include mq-rtl { font-size: 34px; }
+  }
+
+}
+
+// Fingers need more than 36px.
+@include touch {
+  .days-nav button {
+    width: 44px;
+    height: 44px;
+  }
+}

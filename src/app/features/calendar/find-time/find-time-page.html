@@ -1,0 +1,197 @@
+<header class="head">
+  <a class="back" routerLink="/calendar" [attr.aria-label]="'Back to the calendar' | t">
+    <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+  </a>
+  <div class="heading">
+    <span class="eyebrow">{{ 'Find a time' | t }}</span>
+    <label class="mq-sr" for="meeting-title">{{ 'What the meeting is called' | t }}</label>
+    <input id="meeting-title" #titleInput class="title" type="text" maxlength="200" autocomplete="off" dir="auto"
+           [placeholder]="'Name the meeting' | t" [value]="title()" (input)="setTitle($event)" />
+  </div>
+  <div class="durations" role="group" [attr.aria-label]="'Duration' | t">
+    @for (choice of durations; track choice.minutes) {
+      <button type="button" [attr.aria-pressed]="duration() === choice.minutes" (click)="setDuration(choice.minutes)">{{ choice.label }}</button>
+    }
+  </div>
+  <span class="head-note">{{ dayTabs().length | tCount: 'Shown in {city} time · next {n} working days' : 'Shown in {city} time · next {n} working days' : { city: zoneCity() } }}</span>
+</header>
+
+<div class="body">
+  <main class="main">
+    <div class="days" role="tablist" [attr.aria-label]="'Day' | t">
+      @for (day of dayTabs(); track day.key) {
+        <button type="button" class="day" role="tab" [attr.aria-selected]="$index === dayIndex()"
+                [attr.aria-label]="day.label" (click)="pickDay($index)">
+          <span class="day-dow">{{ day.dow }}</span>
+          <span class="day-num">{{ day.number | num }}</span>
+          @if (loading()) {
+            <span class="day-count quiet">{{ 'Looking…' | t }}</span>
+          } @else {
+            <span class="day-count" [class.quiet]="!day.count">
+              {{ day.count ? (day.count | tCount: '{n} slot' : '{n} slots') : ('No shared time' | t) }}
+            </span>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="board" [class.loading]="loading()">
+      <div class="board-inner">
+        <div class="track-row">
+          <span class="who"></span>
+          <div class="ticks" aria-hidden="true">
+            @for (tick of ticks(); track tick.left) {
+              <span class="tick" [style.inset-inline-start.%]="tick.left">{{ tick.label }}</span>
+            }
+          </div>
+        </div>
+
+        @for (person of rows().people; track person.id) {
+          <div class="track-row">
+            <div class="who">
+              @if (person.picture) {
+                <img class="avatar" [src]="person.picture" alt="" referrerpolicy="no-referrer" />
+              } @else {
+                <span class="avatar">{{ person.initials }}</span>
+              }
+              <span class="who-text">
+                <span class="who-name">{{ person.name }}</span>
+                <span class="who-note">{{ person.note }}</span>
+              </span>
+              @if (!person.mine) {
+                <button type="button" class="remove" (click)="removeGuest(person.id)" [attr.aria-label]="'Remove {name}' | t: { name: person.name }">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+              }
+            </div>
+            <div class="track" role="img" [attr.aria-label]="trackLabel(person.name, person.busy.length, rows().day.label)">
+              @for (bar of person.off; track bar.left) {
+                <span class="off" [style.inset-inline-start.%]="bar.left" [style.width.%]="bar.width"></span>
+              }
+              @for (bar of person.busy; track bar.left) {
+                <span class="busy" [style.inset-inline-start.%]="bar.left" [style.width]="'calc(' + bar.width + '% - 2px)'"></span>
+              }
+              @for (prayer of prayerLines(); track prayer.name) {
+                <span class="prayer" [style.inset-inline-start.%]="prayer.left"></span>
+              }
+              @if (band(); as chosen) {
+                <span class="band" [style.inset-inline-start.%]="chosen.left" [style.width.%]="chosen.width"></span>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="track-row everyone">
+          <div class="who who-all">
+            <span class="all-name">{{ (guests().length ? 'Everyone free' : 'You are free') | t }}</span>
+            <span class="who-note">{{ 'Inside your working hours' | t }}</span>
+          </div>
+          <div class="track">
+            @for (bar of freeBars(); track bar.left) {
+              <span class="free" [style.inset-inline-start.%]="bar.left" [style.width]="'calc(' + bar.width + '% - 2px)'"></span>
+            }
+            @for (prayer of prayerLines(); track prayer.name) {
+              <span class="prayer" [style.inset-inline-start.%]="prayer.left" [title]="prayer.name"></span>
+            }
+            @if (band(); as chosen) {
+              <span class="chip" [style.inset-inline-start.%]="chosen.left" [style.width.%]="chosen.width">{{ chosen.label }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="legend">
+          <span><span class="key key-busy"></span>{{ 'Busy' | t }}</span>
+          <span><span class="key key-off"></span>{{ 'Outside your working hours' | t }}</span>
+          @if (board.prayerOn()) { <span><span class="key key-prayer"></span>{{ 'Prayer time' | t }}</span> }
+        </div>
+      </div>
+    </div>
+
+    <div class="add">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      <label class="mq-sr" for="add-person">{{ 'Add a person' | t }}</label>
+      <input id="add-person" #personInput type="text" autocomplete="off" dir="auto" [placeholder]="'Add a friend or a teammate…' | t"
+             (input)="search($event)" (focus)="listOpen.set(true)" (blur)="closeList()" />
+      <span class="add-note">{{ 'Free time is shared between friends and teammates.' | t }}</span>
+
+      @if (listOpen() && matches().length) {
+        <div class="mq-menu people-list" role="list">
+          @for (contact of matches(); track contact.id) {
+            <div role="listitem">
+              <!-- mousedown, not click: the input's blur would close the list first. -->
+              <button type="button" class="mq-menu-item person-option"
+                      (mousedown)="$event.preventDefault(); addGuest(contact, personInput)">
+                @if (contact.profilePictureUrl) {
+                  <img class="avatar" [src]="contact.profilePictureUrl" alt="" referrerpolicy="no-referrer" />
+                } @else {
+                  <span class="avatar">{{ initials(contact.fullName) }}</span>
+                }
+                <span class="who-text">
+                  <span class="who-name">{{ contact.fullName }}</span>
+                  @if (contact.relationship) {
+                    <span class="who-note">{{ contact.relationship | t }}</span>
+                  } @else {
+                    <span class="who-note mq-ltr">{{ contact.email }}</span>
+                  }
+                </span>
+              </button>
+            </div>
+          }
+        </div>
+      }
+      @if (listOpen() && !matches().length && query().trim()) {
+        <p class="add-none">{{ 'Nobody by that name among your friends and teammates.' | t }}</p>
+      }
+    </div>
+  </main>
+
+  <aside class="side" [attr.aria-label]="'Best times' | t">
+    <h2>{{ 'Best times' | t }}</h2>
+
+    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+
+    @if (loading()) {
+      <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+    } @else {
+      @for (time of best(); track time.slot.start) {
+        <button type="button" class="option" [attr.aria-pressed]="chosen() === time" (click)="pickTime($index)">
+          <span class="option-top">
+            <span class="option-when">{{ time.when }}</span>
+            <span class="rank" [class.best]="$index === 0">{{ time.badge }}</span>
+          </span>
+          <span class="option-why">{{ time.why }}</span>
+        </button>
+      }
+      @if (!best().length && !error()) {
+        <p class="none">
+          {{ (guests().length
+            ? 'No time is free for everyone inside working hours on these days. Try a shorter meeting.'
+            : 'You have no free time inside working hours on these days. Try a shorter meeting.') | t }}
+        </p>
+      }
+    }
+
+    <button type="button" class="send" [disabled]="!chosen() || sending()" (click)="send(titleInput)">
+      {{ sendLabel() }}
+    </button>
+
+    @if (shareText()) {
+      <div class="share">
+        <span class="share-top">
+          <span class="share-title">{{ 'Share as text' | t }}</span>
+          <button type="button" class="copy" (click)="copy()">{{ 'Copy' | t }}</button>
+        </span>
+        <p class="share-text">{{ shareText() }}</p>
+      </div>
+    }
+
+    <!-- The design links to a public booking page here. The API has none yet. -->
+    <div class="booking" role="group" [attr.aria-label]="'Booking link' | t">
+      <span class="booking-text">
+        <span class="booking-title">{{ 'Or send a booking link' | t }}</span>
+        <span class="booking-state">{{ 'Not set up yet: booking pages are not part of this server.' | t }}</span>
+      </span>
+      <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"></path></svg>
+    </div>
+  </aside>
+</div>

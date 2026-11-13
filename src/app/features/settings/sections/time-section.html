@@ -1,0 +1,263 @@
+@if (state() === 'unavailable') {
+  <p class="quiet" role="status">
+    {{ 'Week, hours and clock settings are not available on this server yet. The calendar uses its defaults: weeks start on Sunday, with a {n}-hour clock.' | t: { n: 12 } }}
+  </p>
+}
+@if (state() === 'error') {
+  <p class="problem" role="alert">
+    {{ 'Your calendar settings could not be loaded.' | t }}
+    <button type="button" class="text-btn" (click)="load()">{{ 'Try again' | t }}</button>
+  </p>
+}
+
+<div class="group">
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Time zone' | t }}</span>
+      <span class="line-hint">{{ zoneHint() }}</span>
+    </span>
+    <label class="pick">
+      <select [attr.aria-label]="'Time zone' | t" (change)="setZone($any($event.target).value)">
+        @if (!zoneKnown()) {
+          <option value="" selected>{{ zone() || ('Not set' | t) }}</option>
+        }
+        @for (group of zoneGroups; track group.region) {
+          <optgroup [label]="group.label">
+            @for (z of group.zones; track z.id) {
+              <option [value]="z.id" [selected]="zone() === z.id">{{ z.label }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+      <ng-container *ngTemplateOutlet="chevrons" />
+    </label>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Second time zone' | t }}</span>
+      <span class="line-hint">{{ 'Shown next to the hours in day and week views' | t }}</span>
+    </span>
+    <label class="pick">
+      <select [attr.aria-label]="'Second time zone' | t" (change)="setSecondZone($any($event.target).value)">
+        <option value="" [selected]="!secondZone()">{{ 'None@@option' | t }}</option>
+        @for (group of zoneGroups; track group.region) {
+          <optgroup [label]="group.label">
+            @for (z of group.zones; track z.id) {
+              <option [value]="z.id" [selected]="secondZone() === z.id">{{ z.label }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+      <ng-container *ngTemplateOutlet="chevrons" />
+    </label>
+  </div>
+
+  @if (settings(); as s) {
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Work week' | t }}</span>
+        <span class="line-hint">{{ 'Miqat won’t suggest work on your weekend' | t }}</span>
+      </span>
+      <div class="seg" role="group" [attr.aria-label]="'Work week' | t">
+        @for (w of workWeeks; track w.key) {
+          <button type="button" [attr.aria-pressed]="!customWeek() && week() === w.key" (click)="setWeek(w.days)">{{ w.label }}</button>
+        }
+        <button type="button" [attr.aria-pressed]="customWeek()" (click)="customWeek.set(true)"
+                [title]="'Choose your working days one by one' | t">{{ 'Custom' | t }}</button>
+      </div>
+      @if (customWeek()) {
+        <div class="days" role="group" [attr.aria-label]="'Working days' | t">
+          @for (day of orderedDays(); track day) {
+            <button type="button" [attr.aria-pressed]="isWorkDay(day)" [attr.aria-label]="dayName(day)" (click)="toggleWorkDay(day)">
+              {{ dayName(day, 'short') }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Working hours' | t }}</span>
+        <span class="line-hint">{{ 'Used when people find a time with you' | t }}</span>
+      </span>
+      <span class="pick range">
+        <select #from [attr.aria-label]="'Working day starts' | t" (change)="setHours(from, to)">
+          @for (h of hourChoices(); track h.value) {
+            <option [value]="h.value" [selected]="s.workDayStart === h.value">{{ h.label }}</option>
+          }
+        </select>
+        <span aria-hidden="true">–</span>
+        <select #to [attr.aria-label]="'Working day ends' | t" (change)="setHours(from, to)">
+          @for (h of hourChoices(); track h.value) {
+            <option [value]="h.value" [selected]="s.workDayEnd === h.value">{{ h.label }}</option>
+          }
+        </select>
+        <ng-container *ngTemplateOutlet="chevrons" />
+      </span>
+    </div>
+
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Week starts on' | t }}</span>
+        <span class="line-hint">{{ 'First column of week and month views' | t }}</span>
+      </span>
+      <div class="seg" role="group" [attr.aria-label]="'Week starts on' | t">
+        @for (day of weekStarts(); track day) {
+          <button type="button" [attr.aria-pressed]="s.weekStartsOn === day" (click)="patch({ weekStartsOn: day })">{{ dayName(day) }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Time format' | t }}</span>
+      </span>
+      <div class="seg" role="group" [attr.aria-label]="'Time format' | t">
+        <button type="button" [attr.aria-pressed]="s.use24HourClock" (click)="patch({ use24HourClock: true })">{{ '{n}-hour' | t: { n: 24 } }}</button>
+        <button type="button" [attr.aria-pressed]="!s.use24HourClock" (click)="patch({ use24HourClock: false })">{{ '{n}-hour' | t: { n: 12 } }}</button>
+      </div>
+    </div>
+  } @else if (state() === 'loading') {
+    <div class="line" aria-hidden="true"><span class="line-text"><span class="ghost"></span></span></div>
+  }
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Prayer times' | t }}</span>
+      <span class="line-hint">{{ 'Shown as a quiet layer on your calendar' | t }}</span>
+    </span>
+    <button type="button" role="switch" class="switch" [attr.aria-checked]="prefs.prayerTimes()" [attr.aria-label]="'Prayer times' | t"
+            (click)="togglePrayer()"><span></span></button>
+  </div>
+
+  <div class="line" [class.dim]="!prefs.prayerTimes() || !hasPlace()">
+    <span class="line-text">
+      <span class="line-label">{{ 'Calculation method' | t }}</span>
+      <span class="line-hint">{{ methodHint() }}</span>
+    </span>
+    <label class="pick">
+      <select [attr.aria-label]="'Calculation method' | t" [disabled]="!prefs.prayerTimes() || !hasPlace()"
+              (change)="setMethod($any($event.target).value)">
+        @for (m of methods; track m.key) {
+          <option [value]="m.key" [selected]="method() === m.key">{{ m.label }}</option>
+        }
+      </select>
+      <ng-container *ngTemplateOutlet="chevrons" />
+    </label>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Hijri dates' | t }}</span>
+      <span class="line-hint">{{ 'Next to every Gregorian date' | t }}</span>
+    </span>
+    <button type="button" role="switch" class="switch" [attr.aria-checked]="prefs.hijriDates()" [attr.aria-label]="'Hijri dates' | t"
+            (click)="toggleHijri()"><span></span></button>
+  </div>
+
+  <div class="line" [class.dim]="!prefs.hijriDates()">
+    <span class="line-text">
+      <span class="line-label">{{ 'Hijri calendar' | t }}</span>
+      <span class="line-hint">{{ hijriHint() }}</span>
+    </span>
+    <label class="pick">
+      <select [attr.aria-label]="'Hijri calendar' | t" [disabled]="!prefs.hijriDates()" (change)="setHijriCalendar($any($event.target).value)">
+        @for (c of hijriCalendars; track c.value) {
+          <option [value]="c.value" [selected]="prefs.hijriCalendar() === c.value">{{ c.label }}</option>
+        }
+      </select>
+      <ng-container *ngTemplateOutlet="chevrons" />
+    </label>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Holidays and occasions' | t }}</span>
+      <span class="line-hint">{{ 'Public holidays and special days, as a quiet layer on your calendar' | t }}</span>
+    </span>
+    <button type="button" role="switch" class="switch" [attr.aria-checked]="prefs.occasions()"
+            [attr.aria-label]="'Holidays and occasions' | t" (click)="toggleOccasions()"><span></span></button>
+  </div>
+
+  <div class="line" [class.dim]="!prefs.occasions()">
+    <span class="line-text">
+      <span class="line-label">{{ 'Holidays for' | t }}</span>
+      <span class="line-hint">{{ occasionsHint() }}</span>
+    </span>
+    <label class="pick">
+      <select [attr.aria-label]="'Holidays for' | t" [disabled]="!prefs.occasions()" (change)="setOccasionsCountry($any($event.target).value)">
+        <option value="" [selected]="!prefs.occasionsCountry()">{{ followLabel() }}</option>
+        @for (c of occasionCountries; track c.code) {
+          <option [value]="c.code" [selected]="prefs.occasionsCountry() === c.code">{{ c.name }}</option>
+        }
+      </select>
+      <ng-container *ngTemplateOutlet="chevrons" />
+    </label>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Ramadan working hours' | t }}</span>
+      <span class="line-hint">{{ 'Shorter days during Ramadan. Not available yet.' | t }}</span>
+    </span>
+    <button type="button" role="switch" class="switch" aria-checked="false" [attr.aria-label]="'Ramadan working hours' | t"
+            disabled [title]="'Ramadan working hours are not available yet' | t"><span></span></button>
+  </div>
+</div>
+
+<!-- What a new event starts with: not in the design file, kept from the calendar settings. -->
+@if (settings(); as s) {
+  <div class="group">
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Calendar opens in' | t }}</span>
+        <span class="line-hint">{{ 'The view you see first' | t }}</span>
+      </span>
+      <label class="pick">
+        <select [attr.aria-label]="'Calendar opens in' | t" (change)="patch({ defaultView: $any($event.target).value })">
+          @for (view of views; track view.value) {
+            <option [value]="view.value" [selected]="s.defaultView === view.value">{{ view.label }}</option>
+          }
+        </select>
+        <ng-container *ngTemplateOutlet="chevrons" />
+      </label>
+    </div>
+
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'New events last' | t }}</span>
+        <span class="line-hint">{{ 'The length a new event starts with' | t }}</span>
+      </span>
+      <label class="pick">
+        <select [attr.aria-label]="'New events last' | t" (change)="patch({ defaultEventMinutes: +$any($event.target).value })">
+          @for (length of eventLengths(); track length.minutes) {
+            <option [value]="length.minutes" [selected]="s.defaultEventMinutes === length.minutes">{{ length.label }}</option>
+          }
+        </select>
+        <ng-container *ngTemplateOutlet="chevrons" />
+      </label>
+    </div>
+
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Default reminder' | t }}</span>
+        <span class="line-hint">{{ 'Added to every new event' | t }}</span>
+      </span>
+      <label class="pick">
+        <select [attr.aria-label]="'Default reminder' | t" (change)="setReminder($any($event.target).value)">
+          <option value="" [selected]="s.defaultReminderMinutes === null">{{ 'No reminder' | t }}</option>
+          @for (choice of reminderChoices(); track choice.minutes) {
+            <option [value]="choice.minutes" [selected]="s.defaultReminderMinutes === choice.minutes">{{ choice.label }}</option>
+          }
+        </select>
+        <ng-container *ngTemplateOutlet="chevrons" />
+      </label>
+    </div>
+  </div>
+}
+
+<ng-template #chevrons>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9l5-5 5 5M7 15l5 5 5-5"></path></svg>
+</ng-template>

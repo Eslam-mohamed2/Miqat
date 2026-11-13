@@ -1,0 +1,188 @@
+// ============================================================================
+// Miqat 2.0 theme values (design/miqat-2.0). Loaded once, by src/styles.scss.
+//
+// Dark is the default and the reference design; light is the same layout with
+// the second column. Components never use these hexes directly: they use the
+// `$mq-*` variables from _tokens.scss, which point here.
+//
+//   design hex (dark)   token              light value
+//   ─────────────────   ─────────────────  ───────────
+//   #0B0B0A             --mq-bg            #F6F3EC   app background
+//   #0D0D0C             --mq-bg-2          #F3EFE7   recessed strip
+//   #0E0E0D             --mq-bg-3          #F0ECE3   recessed well
+//   #0F0F0E             --mq-canvas        #FFFDF8   calendar / canvas surface
+//   #111110             --mq-card          #FFFFFF   card
+//   #121211             --mq-card-2        #FFFFFF   card, row hover on a card
+//   #131312             --mq-card-3        #FFFFFF
+//   #141412             --mq-field         #FFFFFF   inputs, search, segmented track
+//   #151413             --mq-card-4        #FFFFFF
+//   #171614             --mq-card-5        #FFFFFF   raised card
+//   #161513             --mq-row-hover     #F1ECE3   row hover on the page
+//   #1A1917             --mq-hover         #EFEAE0   hover surface (ghost buttons)
+//   #1C1B18             --mq-hover-2       #ECE6DB   option hover in dialogs
+//   #1F1E1B             --mq-line          #E4DDD0   hairline border / selected surface
+//   #22211E             --mq-line-b        #E4DDD0
+//   #24231F             --mq-chip          #E4DDD0   quiet chip, kbd
+//   #232220             --mq-chip-2        #DDD6C8
+//   #26241F             --mq-seg-on        #E8E1D3   selected segment
+//   #2A2925             --mq-line-2        #DAD3C4   control border
+//   #2E2C27             --mq-line-3        #D6CEBF
+//   #33312C             --mq-line-4        #D6CEBF
+//   #3A3833             --mq-line-5        #CFC6B5   card border on hover
+//   #4A4740             --mq-line-6        #B8AF9E   empty checkbox border
+//   #55514A             --mq-line-7        #B5AD9E
+//   #F2EFE8             --mq-text          #1A1814   primary text
+//   #E6E1D6             --mq-text-2        #2B2822
+//   #C9C3B6             --mq-text-3        #4A453C   secondary text
+//   #A9A397             --mq-text-4        #5C564B   secondary text, quieter
+//   #8A8478             --mq-muted         #6F695E   muted text
+//   #857F73             --mq-placeholder   #6E685B
+//   #CDAE72             --mq-accent        #C9A35F   accent fill (buttons, today)
+//   #CDAE72 as text     --mq-accent-text   48% accent in #1A1814
+//   #15120B             --mq-on-accent     #1A1814   text on an accent fill
+//   #E3907F             --mq-late          #A8402A   late / over capacity
+//   #8FBF9F             --mq-green         #346B4B   calendar colour: backend
+//   #8FB0E0             --mq-blue          #3A5A8C   calendar colour: product
+//   #D99AA8             --mq-rose          #9A4A60   calendar colour: devops
+//   #B9A7E6             --mq-violet        #6350A8   calendar colour: leadership
+//   #D9B26A             --mq-amber         #8A6820
+//   rgba(0,0,0,a)       mq-shadow(a)       rgba(26,24,20, a × 0.3)
+// ============================================================================
+
+:root {
+  // ── Surfaces ──────────────────────────────────────────────────────────────
+  --mq-bg:          #0B0B0A;
+  --mq-bg-2:        #0D0D0C;
+  --mq-bg-3:        #0E0E0D;
+  --mq-canvas:      #0F0F0E;
+  --mq-card:        #111110;
+  --mq-card-2:      #121211;
+  --mq-card-3:      #131312;
+  --mq-field:       #141412;
+  --mq-card-4:      #151413;
+  --mq-card-5:      #171614;
+  --mq-row-hover:   #161513;
+  --mq-hover:       #1A1917;
+  --mq-hover-2:     #1C1B18;
+
+  // ── Lines and quiet fills ─────────────────────────────────────────────────
+  --mq-line:        #1F1E1B;
+  --mq-line-b:      #22211E;
+  --mq-chip:        #24231F;
+  --mq-chip-2:      #232220;
+  --mq-seg-on:      #26241F;
+  --mq-line-2:      #2A2925;
+  --mq-line-3:      #2E2C27;
+  --mq-line-4:      #33312C;
+  --mq-line-5:      #3A3833;
+  --mq-line-6:      #4A4740;
+  --mq-line-7:      #55514A;
+
+  // ── Text ──────────────────────────────────────────────────────────────────
+  --mq-text:        #F2EFE8;
+  --mq-text-2:      #E6E1D6;
+  --mq-text-3:      #C9C3B6;
+  --mq-text-4:      #A9A397;
+  --mq-muted:       #8A8478;
+  --mq-placeholder: #857F73;
+
+  // ── Accent ────────────────────────────────────────────────────────────────
+  --mq-accent:      #CDAE72;
+  --mq-accent-text: #CDAE72;
+  --mq-on-accent:   #15120B;
+  // The hand of the logo, the only coloured part of it (design/miqat-2.0/logo).
+  --mq-logo-hand:   #CDAE72;
+  --mq-late:        #E3907F;
+
+  // ── Calendar colours ──────────────────────────────────────────────────────
+  --mq-green:       #8FBF9F;
+  --mq-blue:        #8FB0E0;
+  --mq-rose:        #D99AA8;
+  --mq-violet:      #B9A7E6;
+  --mq-amber:       #D9B26A;
+
+  // A colour that comes from data (a project or calendar the user coloured) is
+  // mixed toward this ink when it is used as text, so it stays readable on the
+  // light theme. 100% keeps the colour as it is.
+  --mq-tone-mix:    100%;
+  --mq-ink:         #F2EFE8;
+
+  // What an event block's colour is mixed into (see the mq-event mixin).
+  --mq-event-base:  #111110;
+
+  // Shadows: black on dark, warm ink at 30% strength on light.
+  --mq-shade:       0 0 0;
+  --mq-shade-k:     1;
+
+  // ── Type ──────────────────────────────────────────────────────────────────
+  --mq-font:        'Inter', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --mq-serif:       'Instrument Serif', 'IBM Plex Sans Arabic', serif;
+
+  // ── Motion (design/miqat-2.0/pages/V2-Motion.dc.html) ─────────────────────
+  --mq-t-press:     120ms;   // hover and press
+  --mq-t-change:    200ms;   // most changes
+  --mq-t-arrive:    320ms;   // things arriving
+  --mq-t-view:      450ms;   // view changes; nothing is slower
+  --mq-ease-calm:   cubic-bezier(.2, .8, .2, 1);
+  --mq-ease-quick:  cubic-bezier(.3, 0, .2, 1);
+  --mq-ease-spring: cubic-bezier(.34, 1.56, .64, 1);   // only when a dragged card lands
+
+  color-scheme: dark;
+}
+
+html[data-theme='light'],
+body.light-mode {
+  --mq-bg:          #F6F3EC;
+  --mq-bg-2:        #F3EFE7;
+  --mq-bg-3:        #F0ECE3;
+  --mq-canvas:      #FFFDF8;
+  --mq-card:        #FFFFFF;
+  --mq-card-2:      #FFFFFF;
+  --mq-card-3:      #FFFFFF;
+  --mq-field:       #FFFFFF;
+  --mq-card-4:      #FFFFFF;
+  --mq-card-5:      #FFFFFF;
+  --mq-row-hover:   #F1ECE3;
+  --mq-hover:       #EFEAE0;
+  --mq-hover-2:     #ECE6DB;
+
+  --mq-line:        #E4DDD0;
+  --mq-line-b:      #E4DDD0;
+  --mq-chip:        #E4DDD0;
+  --mq-chip-2:      #DDD6C8;
+  --mq-seg-on:      #E8E1D3;
+  --mq-line-2:      #DAD3C4;
+  --mq-line-3:      #D6CEBF;
+  --mq-line-4:      #D6CEBF;
+  --mq-line-5:      #CFC6B5;
+  --mq-line-6:      #B8AF9E;
+  --mq-line-7:      #B5AD9E;
+
+  --mq-text:        #1A1814;
+  --mq-text-2:      #2B2822;
+  --mq-text-3:      #4A453C;
+  --mq-text-4:      #5C564B;
+  --mq-muted:       #6F695E;
+  --mq-placeholder: #6E685B;
+
+  --mq-accent:      #C9A35F;
+  --mq-accent-text: color-mix(in srgb, #C9A35F 48%, #1A1814);
+  --mq-on-accent:   #1A1814;
+  --mq-logo-hand:   #A8843F;
+  --mq-late:        #A8402A;
+
+  --mq-green:       #346B4B;
+  --mq-blue:        #3A5A8C;
+  --mq-rose:        #9A4A60;
+  --mq-violet:      #6350A8;
+  --mq-amber:       #8A6820;
+
+  --mq-tone-mix:    55%;
+  --mq-ink:         #1A1814;
+  --mq-event-base:  #FFFFFF;
+
+  --mq-shade:       26 24 20;
+  --mq-shade-k:     .3;
+
+  color-scheme: light;
+}

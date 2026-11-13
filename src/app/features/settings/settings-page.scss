@@ -1,932 +1,210 @@
 @use '../../../styles/tokens' as *;
 
-// NOTE: profile-page.scss does `@extend .settings-container`, so this container
-// is shared. It used to be `height: 100%` with `overflow: hidden` on the content
-// row, which clipped the profile page instead of letting it scroll — hence the
-// squashed layout there on narrow screens.
-.settings-container {
-  position: relative;
-  // No outer padding here: the app shell's .page-content is the one place that sets
-  // the page gutter, so every page starts at the same distance from the sidebar.
-  max-width: 1100px;
-  margin: 0 auto;
-  padding-bottom: 2rem;
+// Settings (design/miqat-2.0, V2-Settings): sections on the left, the open one on the right.
+:host {
+  display: block;
+  height: 100%;
+  // The design files use the font's own line height, not Bootstrap's 1.5.
+  line-height: normal;
 }
 
-// ── Header ──────────────────────────────────────────────────────────────────
-.settings-header {
-  margin-bottom: 1.5rem;
-
-  h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    color: $text-primary;
-    margin: 0;
-
-    @include below($bp-tablet-sm) { font-size: 1.5rem; }
-  }
-
-  .page-sub {
-    margin: 0.25rem 0 0;
-    font-size: 0.9rem;
-    color: $text-secondary;
-  }
+// Bootstrap gives paragraphs and headings a bottom margin; nothing here wants one.
+p, h1, h2, h3 {
+  margin: 0;
 }
 
-// ── Layout ──────────────────────────────────────────────────────────────────
-.settings-content {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-
-  // Below laptop the nav becomes a horizontal strip above the content rather
-  // than a column squeezed against it.
-  @include below($bp-laptop) {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1rem;
-  }
+.settings {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
 }
 
-.settings-sidebar {
+// ── Sections ─────────────────────────────────────────────────────────────────
+.side {
+  box-sizing: border-box;
+  flex: 0 0 240px;
+  min-height: 0;
+  overflow-y: auto;
+  border-inline-end: 1px solid $mq-line;
+  padding: 22px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  position: sticky;
-  top: 1rem;
+  gap: 18px;
+  @include mq-scroll;
+}
 
-  @include below($bp-laptop) {
-    position: static;
+.side-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 4px;
+  margin-inline-start: 10px;
+
+  h1 { @include mq-serif(36px); }
+}
+
+.phone-menu {
+  display: none;
+}
+
+.side-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-title {
+  @include mq-eyebrow;
+  padding: 0 10px 6px;
+}
+
+.nav-item {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: $mq-text-3;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: start;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick, color $mq-t-press $mq-ease-quick;
+  @include mq-focus(-2px);
+
+  &:hover { background: $mq-field; color: $mq-text; }
+
+  &[aria-current='page'] {
+    background: $mq-selected;
+    color: $mq-text;
+    font-weight: 600;
+  }
+}
+
+// ── The open section ─────────────────────────────────────────────────────────
+.main {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 30px 40px 48px;
+  @include mq-scroll;
+}
+
+// The section fills the page beside the list at every window width (the owner's
+// choice; the design file stops at 760px).
+.main-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.main-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.main-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  h2 { @include mq-serif(40px); }
+  p { font-size: 14px; color: $mq-text-4; }
+}
+
+.pill {
+  margin-inline-start: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $mq-muted;
+  white-space: nowrap;
+  transition: color $mq-t-change $mq-ease-calm, background $mq-t-change $mq-ease-calm;
+
+  &.saved {
+    color: $mq-green;
+    background: color-mix(in srgb, var(--mq-green) 12%, transparent);
+  }
+
+  &.failed {
+    color: $mq-late;
+    background: color-mix(in srgb, var(--mq-late) 12%, transparent);
+  }
+}
+
+// ── Tablets and phones: the sections become one scrolling row ───────────────
+@include below($bp-laptop) {
+  :host { height: auto; }
+
+  .settings {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .side {
+    flex: 0 0 auto;
+    overflow: visible;
+    border-inline-end: 0;
+    border-bottom: 1px solid $mq-line;
+    padding: 18px 0 12px;
+    gap: 12px;
+  }
+
+  .side-title { margin: 0 16px; }
+
+  .side-groups {
     flex-direction: row;
+    gap: 6px;
+    padding: 0 16px;
     overflow-x: auto;
     scrollbar-width: none;
-    border-bottom: 1px solid $border-card;
-    padding-bottom: 2px;
 
     &::-webkit-scrollbar { display: none; }
   }
-}
 
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  background: transparent;
-  border: 0;
-  border-radius: $radius-btn;
-  color: $text-secondary;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 10px 14px;
-  cursor: pointer;
-  text-align: left;
-  transition: $transition-std;
-  white-space: nowrap;
-
-  mat-icon { font-size: 19px; width: 19px; height: 19px; }
-
-  &:hover { background: $bg-card-hover; color: $text-primary; }
-
-  &.active {
-    background: $bg-active-nav;
-    color: $text-active;
+  .nav-group {
+    flex-direction: row;
+    gap: 6px;
   }
 
-  @include below($bp-laptop) {
-    width: auto;
-    border-radius: 0;
-    border-bottom: 2px solid transparent;
-
-    &.active {
-      background: transparent;
-      border-bottom-color: $teal-primary;
-    }
-  }
-}
-
-.main-content { min-width: 0; }
-
-// ── Cards ───────────────────────────────────────────────────────────────────
-.settings-card {
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-  padding: 1.5rem;
-
-  & + .settings-card { margin-top: 1rem; }
-
-  @include below($bp-tablet-sm) { padding: 1rem; }
-
-  h3 {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: $text-primary;
-    margin: 0 0 0.25rem;
-  }
-
-  .section-desc {
-    font-size: 0.875rem;
-    color: $text-secondary;
-    margin: 0 0 1.25rem;
-  }
-}
-
-// ── Identity ────────────────────────────────────────────────────────────────
-.identity-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-  padding-bottom: 1.25rem;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid $border-subtle;
-
-  // Stacked and centred on phones; side-by-side leaves neither part enough room.
-  @include below($bp-phone-lg) {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-}
-
-.avatar-large {
-  position: relative;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: $bg-card-hover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  img { width: 100%; height: 100%; object-fit: cover; }
-
-  .initials {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: $text-secondary;
-  }
-
-  .avatar-busy {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  @include below($bp-phone-lg) { width: 76px; height: 76px; }
-}
-
-.identity-text {
-  flex: 1;
-  min-width: 0;
-
-  h2 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: $text-primary;
-    margin: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .muted { color: $text-secondary; font-size: 0.875rem; margin: 2px 0 0; overflow-wrap: anywhere; }
-  .muted.small { font-size: 0.8rem; color: $text-muted; }
-}
-
-.avatar-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 0.85rem;
-
-  .hint { font-size: 0.78rem; color: $text-muted; }
-
-  @include below($bp-phone-lg) { justify-content: center; }
-}
-
-// ── Forms ───────────────────────────────────────────────────────────────────
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-
-  // One column once a half-width field would be too narrow to type in.
-  @include below($bp-tablet-sm) { grid-template-columns: minmax(0, 1fr); }
-
-  .full { grid-column: 1 / -1; }
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-
-  label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: $text-secondary;
-    margin-bottom: 6px;
-  }
-
-  input,
-  select,
-  textarea {
-    width: 100%;
-    background: $bg-input;
-    border: 1px solid $border-input;
-    border-radius: $radius-input;
-    color: $text-primary;
-    font-size: 0.9rem;
-    font-family: inherit;
-    padding: 10px 12px;
-    outline: none;
-    transition: $transition-std;
-
-    &:focus {
-      border-color: $teal-primary;
-      box-shadow: 0 0 0 3px $teal-glow;
-    }
-
-    &:disabled { opacity: 0.65; cursor: not-allowed; }
-    &::placeholder { color: $text-muted; }
-  }
-
-  // Native option lists are painted by the OS and do not inherit the field's
-  // background, so they need their own or they render unreadable in dark mode.
-  select option { background: $bg-card; color: $text-primary; }
-
-  textarea {
-    resize: vertical;
-    min-height: 84px;
-    line-height: 1.5;
-  }
-
-  .field-hint  { font-size: 0.75rem; color: $text-muted; margin: 5px 0 0; }
-  .field-hint.counter { text-align: right; }
-  .field-error { font-size: 0.75rem; color: #ef4444; margin: 5px 0 0; }
-}
-
-.password-field {
-  position: relative;
-
-  input { padding-right: 42px; }
-
-  .reveal {
-    position: absolute;
-    right: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
-    color: $text-muted;
-    cursor: pointer;
-
-    mat-icon { font-size: 18px; width: 18px; height: 18px; }
-
-    &:hover { color: $text-primary; background: $bg-card-hover; }
-  }
-}
-
-.card-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid $border-subtle;
-
-  // Full-width stacked buttons on phones, primary action on top.
-  @include below($bp-phone-lg) {
-    flex-direction: column-reverse;
-
-    button { width: 100%; justify-content: center; }
-  }
-}
-
-// ── Buttons ─────────────────────────────────────────────────────────────────
-.btn-save,
-.btn-cancel,
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: $radius-btn;
-  font-size: 0.875rem;
-  font-weight: 700;
-  padding: 10px 18px;
-  cursor: pointer;
-  transition: $transition-std;
-  white-space: nowrap;
-
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
-}
-
-.btn-save {
-  background: $btn-quick-add-bg;
-  color: $btn-quick-add-text;
-  border: 0;
-
-  &:hover:not(:disabled) { background: $btn-quick-add-hover; }
-}
-
-.btn-cancel,
-.btn-ghost {
-  background: transparent;
-  border: 1px solid $border-card;
-  color: $text-primary;
-
-  &:hover:not(:disabled) { background: $bg-card-hover; }
-}
-
-// Destructive secondary action ("Remove" picture).
-.btn-ghost.danger {
-  color: $text-danger;
-
-  &:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: #ef4444;
-  }
-}
-
-// ── Notifications ───────────────────────────────────────────────────────────
-.pref-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid $border-subtle;
-}
-
-.pref-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.pref-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: $text-primary;
-}
-
-.pref-desc {
-  font-size: 0.8rem;
-  color: $text-secondary;
-}
-
-.pref-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid $border-card;
-  border-left: 4px solid #ef4444;
-  border-radius: $radius-btn;
-  font-size: 0.85rem;
-  color: $text-primary;
-}
-
-// On/off switch. A real button with role="switch", so it works from the keyboard.
-.toggle-switch {
-  position: relative;
-  flex-shrink: 0;
-  width: 46px;
-  height: 26px;
-  padding: 0;
-  border: 1px solid $border-input;
-  border-radius: 999px;
-  background: $bg-input;
-  cursor: pointer;
-  transition: $transition-std;
-
-  .switch-handle {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: $text-secondary;
-    transition: $transition-std;
-  }
-
-  &.on {
-    background: $teal-primary;
-    border-color: $teal-primary;
-
-    .switch-handle {
-      left: 22px;
-      background: #ffffff;
-    }
-  }
-
-  &:focus-visible {
-    outline: 2px solid $teal-primary;
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    cursor: progress;
-    opacity: 0.7;
-  }
-}
-
-// ── Theme picker ────────────────────────────────────────────────────────────
-.theme-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-
-  @include below($bp-phone-lg) { grid-template-columns: minmax(0, 1fr); }
-}
-
-.theme-card {
-  position: relative;
-  background: transparent;
-  border: 2px solid $border-card;
-  border-radius: $radius-card;
-  padding: 0.75rem;
-  cursor: pointer;
-  text-align: left;
-  transition: $transition-std;
-
-  &:hover { border-color: $text-muted; }
-  &.selected { border-color: $teal-primary; }
-
-  .theme-name {
-    display: block;
-    margin-top: 8px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: $text-primary;
-  }
-
-  .check {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: $teal-primary;
-  }
-}
-
-.theme-preview {
-  height: 72px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid $border-subtle;
-
-  .preview-header { height: 30%; }
-  .preview-content { height: 70%; }
-
-  &.light {
-    .preview-header  { background: #ffffff; }
-    .preview-content { background: #f3f4f6; }
-  }
-
-  &.dark {
-    .preview-header  { background: #161616; }
-    .preview-content { background: #0d0d0d; }
-  }
-
-  // Split down the middle: the point of "system" is that it is both.
-  &.system {
-    .preview-header  { background: linear-gradient(90deg, #ffffff 50%, #161616 50%); }
-    .preview-content { background: linear-gradient(90deg, #f3f4f6 50%, #0d0d0d 50%); }
-  }
-}
-
-.resolved-note {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 1rem 0 0;
-  font-size: 0.82rem;
-  color: $text-secondary;
-
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
-  strong { color: $text-primary; text-transform: capitalize; }
-}
-
-// ── Toast ───────────────────────────────────────────────────────────────────
-.toast-notification {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 1050;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: calc(100% - 32px);
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-left: 4px solid $teal-primary;
-  border-radius: $radius-btn;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
-  color: $text-primary;
-  font-size: 0.875rem;
-  padding: 0.85rem 1rem;
-
-  // Kept non-interactive when hidden so it cannot swallow clicks.
-  opacity: 0;
-  transform: translateY(-8px);
-  pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-
-  mat-icon { font-size: 19px; width: 19px; height: 19px; color: $teal-primary; }
-
-  &.error {
-    border-left-color: #ef4444;
-    mat-icon { color: #ef4444; }
-  }
-
-  &.show {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  // Spans the width on phones rather than hanging off the right edge.
-  @include below($bp-phone-lg) {
-    left: 12px;
-    right: 12px;
-    top: 12px;
-    max-width: none;
-  }
-
-  @include reduced-motion { transition: none; }
-}
-
-// ── Spinner + skeleton ──────────────────────────────────────────────────────
-.spinner {
-  width: 22px;
-  height: 22px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: settings-spin 0.7s linear infinite;
-  display: inline-block;
-
-  &.sm {
-    width: 14px;
-    height: 14px;
-    border-color: rgba(0, 0, 0, 0.25);
-    border-top-color: currentColor;
-  }
-
-  @include reduced-motion { animation: none; }
-}
-
-@keyframes settings-spin { to { transform: rotate(360deg); } }
-
-.skeleton-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  .sk-line {
-    height: 14px;
-    border-radius: 6px;
-    width: 60%;
-    background: linear-gradient(90deg, $bg-card 25%, $bg-card-hover 37%, $bg-card 63%);
-    background-size: 400% 100%;
-    animation: settings-shimmer 1.4s ease infinite;
-
-    &.wide  { width: 90%; }
-    &.short { width: 35%; }
-
-    @include reduced-motion { animation: none; }
-  }
-}
-
-@keyframes settings-shimmer {
-  0%   { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
-}
-
-// ── Shared small pieces of the newer sections ───────────────────────────────
-// A text button that reads as a link, for "change it over there" pointers.
-.link-btn {
-  display: inline;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: $text-link;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:hover:not(:disabled) { text-decoration: underline; }
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  &:focus-visible {
-    outline: 2px solid $teal-primary;
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  // Inline links sit inside sentences, so the hit area grows without moving the text.
-  @include touch {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -12px -6px;
-    }
-  }
-}
-
-.sub-heading {
-  margin: 1.5rem 0 0.25rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: $text-muted;
-}
-
-.sub-desc {
-  margin: 0 0 0.9rem;
-  font-size: 0.8rem;
-  color: $text-secondary;
-}
-
-.sub-heading + .form-grid,
-.sub-heading + .device-list { margin-top: 0.75rem; }
-
-.field-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: $text-secondary;
-  margin-bottom: 6px;
-}
-
-.inline-error {
-  margin: 10px 0 0;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: $text-danger;
-}
-
-.resolved-note.flush { margin-top: 0; }
-
-// A statement about the server or the browser, not an error of the user's.
-.note-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid $border-card;
-  border-radius: $radius-btn;
-  background: $bg-input;
-
-  > mat-icon {
-    flex-shrink: 0;
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: $text-secondary;
-  }
-
-  > div {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-  }
-
-  strong { font-size: 0.9rem; font-weight: 600; color: $text-primary; }
-  span   { font-size: 0.82rem; color: $text-secondary; }
-}
-
-// ── This device (push) ──────────────────────────────────────────────────────
-.on-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: $teal-glow;
-  color: $text-active;
-  font-size: 0.8rem;
-  font-weight: 700;
-
-  mat-icon { font-size: 15px; width: 15px; height: 15px; }
-}
-
-.device-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.device-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid $border-subtle;
-
-  &:last-child { border-bottom: 0; padding-bottom: 0; }
-
-  .device-icon { flex-shrink: 0; color: $text-secondary; }
-
-  .device-text {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-
-    strong {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: $text-primary;
-      overflow-wrap: anywhere;
-    }
-
-    small { font-size: 0.8rem; color: $text-secondary; }
-  }
-
-  .here-tag {
-    padding: 2px 8px;
+  .nav-title { display: none; }
+
+  .nav-item {
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid $mq-line-2;
     border-radius: 999px;
-    background: $teal-glow;
-    color: $text-active;
-    font-size: 0.7rem;
-    font-weight: 700;
-    white-space: nowrap;
+
+    &[aria-current='page'] { border-color: transparent; }
   }
 
-  .btn-ghost { padding: 7px 14px; }
-
-  @include touch {
-    .btn-ghost { min-height: 40px; }
+  .main {
+    overflow: visible;
+    padding: 22px 16px 32px;
   }
 }
 
-// A switch row with a wide button beside it: stack them on phones.
-@include below($bp-phone-lg) {
-  .pref-row:has(.btn-save) {
-    flex-direction: column;
-    align-items: stretch;
-
-    .btn-save { justify-content: center; }
-  }
-}
-
-// ── Calendar preferences ────────────────────────────────────────────────────
-.settings-card form > .pref-row { margin-top: 0.5rem; }
-
-.days-field { margin-top: 1rem; }
-
-.day-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.day-chip {
-  min-width: 52px;
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid $border-card;
-  background: transparent;
-  color: $text-secondary;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: $transition-std;
-
-  &:hover { border-color: $teal-primary; color: $text-primary; }
-
-  &.on {
-    border-color: transparent;
-    background: $teal-glow;
-    color: $text-active;
-  }
-
-  &:focus-visible {
-    outline: 2px solid $teal-primary;
-    outline-offset: 2px;
-  }
-
-  @include touch { min-height: 42px; }
-
-  // Seven chips fit one row on a phone when they share it evenly.
-  @include below($bp-phone) {
-    flex: 1 1 calc(25% - 8px);
-    min-width: 0;
-  }
-}
-
-.readonly-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px dashed $border-card;
-  border-radius: $radius-input;
-  font-size: 0.9rem;
-
-  mat-icon { font-size: 18px; width: 18px; height: 18px; color: $text-secondary; }
-
-  .readonly-value {
-    flex: 1;
-    min-width: 0;
-    color: $text-primary;
-    overflow-wrap: anywhere;
-  }
-}
-
-// ── Email address ───────────────────────────────────────────────────────────
-.email-current {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.email-current-text {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-
-  mat-icon { flex-shrink: 0; color: $text-secondary; }
-
-  .email-value {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: $text-primary;
-    overflow-wrap: anywhere;
-  }
-}
-
-.step-label {
-  margin: 0 0 1rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: $text-muted;
-  overflow-wrap: anywhere;
-}
-
-.code-intro {
-  margin: 0 0 1rem;
-  font-size: 0.9rem;
-  color: $text-secondary;
-
-  strong { color: $text-primary; overflow-wrap: anywhere; }
-}
-
-.code-field { max-width: 220px; }
-
-.form-field .code-input {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: 0.35em;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-
-  &::placeholder { letter-spacing: 0.35em; font-weight: 500; }
-}
-
-.code-help {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 1rem 0 0;
-  font-size: 0.82rem;
-  color: $text-secondary;
+@include below($bp-tablet) {
+  .phone-menu { display: inline-flex; }
+  .main-title h2 { font-size: 34px; }
+  .nav-item { height: 44px; }
 }

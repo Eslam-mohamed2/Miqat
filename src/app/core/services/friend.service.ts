@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, FriendshipDto, FriendshipStatusDto, UserDto } from '../../models/api.models';
 import { unwrapApi, unwrapApiList, unwrapNamedList } from '../http/api-response';
+import { t } from '../i18n/i18n';
 
 @Injectable({
   providedIn: 'root'
@@ -75,7 +76,7 @@ export class FriendService {
           id: useSender ? row.senderId : row.receiverId,
           name: (useSender ? row.senderName : row.receiverName)
             || (useSender ? row.sender?.fullName : row.receiver?.fullName)
-            || 'Unknown'
+            || t('Unknown@@person')
         };
       }))
     );

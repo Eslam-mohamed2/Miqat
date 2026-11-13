@@ -1,54 +1,47 @@
 @use '../../../styles/tokens' as *;
-@use '../item-extras' as extras;
 
+
+// The "Blocked by" section of the task panel (design/miqat-2.0: V2-Tasks).
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 :host(.unavailable) {
   display: none;
 }
 
-@include extras.item-section;
-
-.item-title .count.blocked {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  color: $text-danger;
-  background: color-mix(in srgb, var(--text-danger) 12%, transparent);
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 24px;
 }
 
-.group-title {
-  margin: 0 0 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: $text-secondary;
+.eyebrow {
+  @include mq-eyebrow;
 
-  &.spaced { margin-top: 18px; }
+  &.spaced { margin-top: 10px; }
 }
 
-.link-list {
-  margin: 0 0 10px;
-  padding: 0;
-  list-style: none;
+.add-link {
+  @include mq-icon-btn(24px, 7px);
+  color: $mq-muted;
+
+  @include touch { width: 36px; height: 36px; }
 }
 
 .link-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  border-bottom: 1px solid $border-card;
+  border-radius: 10px;
+  border: 1px solid $mq-line-2;
+  transition: background $mq-t-press $mq-ease-quick;
 
-  &:last-child { border-bottom: 0; }
-
-  .state { color: var(--orange-accent); }
-
-  &.done {
-    .state { color: $teal-primary; }
-    strong { color: $text-muted; text-decoration: line-through; }
-  }
+  &:hover,
+  &:focus-within { background: $mq-hover; }
 }
 
 .link-open {
@@ -57,130 +50,136 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 6px;
-  margin: 0 -6px;
-  border-radius: 8px;
-  color: inherit;
-  text-decoration: none;
-
-  &:hover { background: $bg-card-hover; }
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: $mq-text;
+  @include mq-focus(-2px);
 }
 
-.state {
-  flex: 0 0 auto;
-  font-size: 19px;
-  width: 19px;
-  height: 19px;
-}
-
-.link-text,
-.picker-option {
+.link-title {
+  flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  strong {
-    font-size: 13.5px;
-    font-weight: 600;
-    color: $text-primary;
-    overflow-wrap: anywhere;
-  }
-
-  small {
-    font-size: 12px;
-    color: $text-muted;
-  }
+  font-size: 12.5px;
+  @include mq-ellipsis;
+  // A title keeps its own reading direction (dir="auto", so a long one is cut at
+  // its end) but starts at the row's start edge like the rows around it, whatever
+  // language it is written in.
+  text-align: left;
+  @include mq-rtl { text-align: right; }
 }
 
-.link-text { flex: 1; }
+.link-row.done .link-title {
+  color: $mq-muted;
+  text-decoration: line-through;
+  text-decoration-color: $mq-line-6;
+}
 
-.add-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px dashed $border-card;
-  background: transparent;
-  color: $text-secondary;
-  font-size: 13px;
+.link-state {
+  flex-shrink: 0;
+  font-size: 11px;
   font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  color: $mq-muted;
+  white-space: nowrap;
 
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
-
-  &:hover { border-color: $teal-primary; color: $text-primary; background: $bg-card-hover; }
-
-  @include touch { min-height: 42px; }
+  &.late { color: $mq-late; }
+  &.finished { color: $mq-green; }
 }
 
-// ── Picker ───────────────────────────────────────────────────────────────────
+// Shown when the row is pointed at, so the row reads as in the design at rest.
+.row-remove {
+  @include mq-icon-btn(24px, 6px);
+  display: none;
+  margin-inline-end: 6px;
+  color: $mq-muted;
+
+  .link-row:hover &,
+  .link-row:focus-within &,
+  &.shown { display: inline-flex; }
+
+  &:hover:not(:disabled) { color: $mq-late; }
+
+  @include touch {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.item-empty {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $mq-muted;
+}
+
+.item-error {
+  font-size: 12px;
+  font-weight: 600;
+  color: $mq-late;
+}
+
+// ── Picker ──────────────────────────────────────────────────────────────────
 .picker {
-  border: 1px solid $border-card;
   border-radius: 10px;
-  background: $bg-input;
+  border: 1px solid $mq-line-2;
+  background: $mq-field;
   overflow: hidden;
 }
 
 .picker-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 6px 4px 10px;
-  border-bottom: 1px solid $border-card;
-
-  > mat-icon {
-    flex: 0 0 auto;
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    color: $text-muted;
-  }
+  gap: 8px;
+  height: 38px;
+  padding: 0 4px;
+  padding-inline-start: 12px;
+  border-bottom: 1px solid $mq-line;
+  color: $mq-muted;
 }
 
 .picker-input {
   flex: 1;
   min-width: 0;
-  height: 34px;
   border: 0;
   background: transparent;
-  color: $text-primary;
-  font-size: 14px;
+  color: $mq-text;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
 
-  &::placeholder { color: $text-muted; }
-  &:focus { outline: none; }
-
-  @include touch { height: 42px; }
+  &::placeholder { color: $mq-muted; opacity: 1; }
 }
 
 .picker-list {
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 232px;
   padding: 4px;
-  list-style: none;
-  max-height: 260px;
   overflow-y: auto;
+  @include mq-scroll;
 }
 
 .picker-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  min-height: 32px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 7px;
   background: transparent;
-  text-align: left;
+  color: $mq-text-2;
+  font: inherit;
+  text-align: start;
   cursor: pointer;
+  @include mq-focus(-2px);
 
-  &:hover:not(:disabled),
-  &:focus-visible { background: $bg-card-hover; outline: none; }
-  &:disabled { opacity: 0.6; cursor: default; }
+  &:hover:not(:disabled) { background: $mq-hover-2; color: $mq-text; }
+  &:disabled { opacity: .5; cursor: default; }
 
   @include touch { min-height: 44px; }
 }
 
 .picker-note {
-  margin: 0;
-  padding: 12px;
+  padding: 10px 12px;
 }

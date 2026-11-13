@@ -1,51 +1,44 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject, signal
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
 
-import { UserService } from '../../../../core/services/user.service';
 import { CalendarService } from '../../../../core/services/calendar.service';
 import { CalendarDataService } from '../../../../core/services/calendar-data.service';
-import { EventService } from '../../../../core/services/event.service';
-import { ReminderService } from '../../../../core/services/reminder.service';
-import { RealtimeService } from '../../../../core/services/realtime.service';
 import { CalendarStateService, PERSONAL_CALENDAR_ID } from '../../../../core/services/calendar-state.service';
-import {
-  AttendeeStatus, CalendarItemDto, EventDto, ReminderDto, UserCalendarDto
-} from '../../../../models/api.models';
+import { EventService } from '../../../../core/services/event.service';
+import { LocalPrefsService } from '../../../../core/services/local-prefs.service';
+import { RealtimeService } from '../../../../core/services/realtime.service';
+import { ReminderService } from '../../../../core/services/reminder.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { apiErrorMessage } from '../../../../core/http/api-error';
-import {
-  dayKey, dayKeyInZone, dayKeyOfCell, formatTimeInZone
-} from '../../../../core/utils/time-zone';
-import { DEFAULT_EVENT_COLOR, DEFAULT_TASK_COLOR, timeRangeLabel } from '../../calendar-chips';
+import { t, tCount } from '../../../../core/i18n/i18n';
+import { NumPipe, TCountPipe, TPipe } from '../../../../core/i18n/t.pipe';
+import { AttendeeStatus, EventDto, ReminderDto, UserCalendarDto } from '../../../../models/api.models';
+import { isValidTimeZone, timeZoneLabel } from '../../../../core/utils/time-zone';
+import { BoardDay, CalendarBoard, PlanTask } from '../../calendar-board.service';
+import { DEFAULT_TASK_COLOR } from '../../calendar-chips';
+import { isolate, listOf, loadLevel, monthAndYear, monthName, weekdayName } from '../../calendar-layout';
+import { EventActions } from '../../event-actions.service';
+import { openGoogleImport } from '../google-import/google-import';
+import { CALENDAR_COLORS } from './calendar-colors';
 
 interface MiniDay {
-  date: Date;
-  day: number;
-  /** Days spilling in from the neighbouring month are dimmed. */
-  inMonth: boolean;
-  isToday: boolean;
-  /** The day the main grid is focused on. */
-  isSelected: boolean;
+  day: BoardDay;
+  /** 0 to 3: the mark under the date. */
+  load: number;
+  /** In the week (or the day) the main view is on. */
+  inView: boolean;
+  /** "Eid al-Fitr": the day's public holidays and occasions, or ''. */
+  occasions: string;
 }
 
 /** A project (or "Personal") whose tasks can be switched on and off. */
 interface ProjectFilter {
   id: string;
   name: string;
-  color: string;
-  /** Tasks due in the month on screen - what ticking this row shows or hides. */
-  taskCount: number;
-}
-
-interface UpcomingRow {
-  item: CalendarItemDto;
-  dayLabel: string;
-  time: string;
-  title: string;
-  subtitle: string;
-  icon: string;
   color: string;
 }
 
@@ -57,167 +50,145 @@ interface CalendarDraft {
   color: string;
 }
 
-const DAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+interface Layer {
+  id: 'prayer' | 'hijri' | 'occasions' | 'zone';
+  label: string;
+  hint: string;
+  on: boolean;
+  /** Why the switch cannot be used, when it cannot. */
+  disabled: string;
+}
 
-/** Colours offered for a calendar. All have enough contrast to carry white or dark text. */
-const CALENDAR_COLORS = ['#4F46E5', '#0EA5E9', '#10B981', '#F59E0B', '#F97316', '#EF4444', '#EC4899', '#8B5CF6'];
+/** How many tasks "To plan" lists before "Show all". */
+const PLAN_LIMIT = 6;
+
+/** The API's limit for an .ics file, checked here first. */
+const IMPORT_MAX_BYTES = 2 * 1024 * 1024;
 
 const SNOOZES = [
-  { minutes: 10, label: '10 minutes' },
-  { minutes: 60, label: '1 hour' },
-  { minutes: 1440, label: 'Tomorrow' }
+  { minutes: 10, label: t('{n} minutes@@ring again in', { n: 10 }) },
+  { minutes: 60, label: t('1 hour@@ring again in') },
+  { minutes: 1440, label: t('Tomorrow') }
 ];
 
+/**
+ * The calendar's left column (design/miqat-2.0: Main): the month at a glance with
+ * how full each day is, the tasks that wait for a time block, the calendars and
+ * projects that can be switched off, and the layers. Invitations and the next
+ * reminders join it when there are any.
+ */
 @Component({
   selector: 'app-calendar-sidebar',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [RouterLink, TPipe, TCountPipe, NumPipe],
   templateUrl: './calendar-sidebar.html',
   styleUrl: './calendar-sidebar.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CalendarSidebar implements OnInit {
-  private userService = inject(UserService);
   private calendarApi = inject(CalendarService);
   private eventApi = inject(EventService);
   private reminderApi = inject(ReminderService);
   private realtime = inject(RealtimeService);
-  private router = inject(Router);
+  private prefs = inject(LocalPrefsService);
+  private toasts = inject(ToastService);
+  private actions = inject(EventActions);
+  private dialog = inject(MatDialog);
   private destroyRef = inject(DestroyRef);
-  public calendarState = inject(CalendarStateService);
-  public data = inject(CalendarDataService);
+  readonly state = inject(CalendarStateService);
+  readonly data = inject(CalendarDataService);
+  readonly board = inject(CalendarBoard);
 
   readonly calendarColors = CALENDAR_COLORS;
   readonly snoozes = SNOOZES;
 
   /** The calendar form, when it is open. */
-  draft = signal<CalendarDraft | null>(null);
-  savingCalendar = signal(false);
+  readonly draft = signal<CalendarDraft | null>(null);
+  readonly savingCalendar = signal(false);
   /** Id of the invitation being answered, so its buttons can wait. */
-  answering = signal<string | null>(null);
-  reminders = signal<ReminderDto[]>([]);
+  readonly answering = signal<string | null>(null);
+  readonly reminders = signal<ReminderDto[]>([]);
   /** Id of the reminder whose snooze choices are open. */
-  snoozeOpenFor = signal<string | null>(null);
-  error = signal<string | null>(null);
+  readonly snoozeOpenFor = signal<string | null>(null);
+  readonly menuOpen = signal(false);
+  readonly importing = signal(false);
+  readonly showAllPlan = signal(false);
+  readonly error = signal<string | null>(null);
 
-  /** The zone the calendar is shown in: picked from the chip, otherwise the profile's. */
-  readonly timeZone = computed(() => this.calendarState.displayZone() ?? this.userService.timeZone());
+  readonly monthName = computed(() => monthName(this.state.currentMonth()));
+  readonly monthLabel = computed(() => monthAndYear(this.state.currentMonth()));
 
   readonly dayInitials = computed(() => {
     const start = this.data.weekStart();
-    return DAY_INITIALS.map((_, index) => DAY_INITIALS[(start + index) % 7]);
+    return Array.from({ length: 7 }, (_, index) => weekdayName((start + index) % 7, 'narrow'));
   });
 
-  readonly todayLabel = computed(() => {
-    const label = new Intl.DateTimeFormat(undefined, {
-      timeZone: this.timeZone(), day: 'numeric', month: 'short'
-    }).format(new Date());
-    return `TODAY, ${label.toUpperCase()}`;
+  /** The month on screen, each day with its load mark. */
+  readonly miniDays = computed<MiniDay[]>(() => {
+    const view = this.state.view();
+    const week = new Set(this.board.week().map(day => day.key));
+    return this.board.monthWeeks().flat().map(day => ({
+      day,
+      load: day.inMonth ? loadLevel(day.count) : 0,
+      inView: view === 'week' ? week.has(day.key) : day.isSelected,
+      occasions: listOf(day.occasions.map(mark => mark.occasion.name))
+    }));
   });
 
-  /** Six weeks from the start of the week that holds the 1st. */
-  readonly miniCalendarWeeks = computed<MiniDay[][]>(() => {
-    const monthDate = this.calendarState.currentMonth();
-    const selectedKey = dayKeyOfCell(this.calendarState.selectedDate());
-    const todayKey = dayKeyInZone(new Date(), this.timeZone());
+  // ── To plan ────────────────────────────────────────────────────────────────
 
-    const first = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-    const back = (first.getDay() - this.data.weekStart() + 7) % 7;
-    const cursor = new Date(first.getFullYear(), first.getMonth(), 1 - back);
-
-    const weeks: MiniDay[][] = [];
-    for (let week = 0; week < 6; week++) {
-      const days: MiniDay[] = [];
-      for (let day = 0; day < 7; day++) {
-        const date = new Date(cursor);
-        const key = dayKeyOfCell(date);
-        days.push({
-          date,
-          day: date.getDate(),
-          inMonth: date.getMonth() === monthDate.getMonth(),
-          isToday: key === todayKey,
-          isSelected: key === selectedKey
-        });
-        cursor.setDate(cursor.getDate() + 1);
-      }
-      weeks.push(days);
-    }
-    return weeks;
+  readonly planRows = computed<PlanTask[]>(() => {
+    const all = this.board.toPlan();
+    return this.showAllPlan() ? all : all.slice(0, PLAN_LIMIT);
   });
 
-  /**
-   * One row per project, plus "Personal" when there are tasks that belong to no
-   * project. The number is how many of its tasks fall in the month on screen.
-   */
+  readonly planHidden = computed(() => Math.max(0, this.board.toPlan().length - PLAN_LIMIT));
+
+  // ── Projects (tasks) ───────────────────────────────────────────────────────
+
+  /** One row per project, plus "Personal" when there are tasks that belong to no project. */
   readonly projects = computed<ProjectFilter[]>(() => {
-    const month = this.calendarState.currentMonth();
-    const zone = this.timeZone();
-    const monthPrefix = dayKey(month.getFullYear(), month.getMonth() + 1, 1).slice(0, 7);
-
-    const dueThisMonth = new Map<string, number>();
-    let hasPersonalTasks = false;
-
-    for (const item of this.data.items()) {
-      if (item.kind !== 'Task') continue;
-      const key = item.groupId || PERSONAL_CALENDAR_ID;
-      if (!item.groupId) hasPersonalTasks = true;
-      if (dayKeyInZone(new Date(item.start), zone).startsWith(monthPrefix)) {
-        dueThisMonth.set(key, (dueThisMonth.get(key) ?? 0) + 1);
-      }
-    }
-
     const rows: ProjectFilter[] = this.data.groups().map(group => ({
       id: group.id,
       name: group.name,
-      color: group.color || DEFAULT_TASK_COLOR,
-      taskCount: dueThisMonth.get(group.id) ?? 0
+      color: group.color || DEFAULT_TASK_COLOR
     }));
 
-    if (hasPersonalTasks) {
-      rows.push({
-        id: PERSONAL_CALENDAR_ID,
-        name: 'Personal',
-        color: DEFAULT_TASK_COLOR,
-        taskCount: dueThisMonth.get(PERSONAL_CALENDAR_ID) ?? 0
-      });
-    }
+    const hasPersonal = this.data.tasks().some(task => !task.groupId)
+      || this.data.items().some(item => item.kind === 'Task' && !item.groupId);
+    if (hasPersonal) rows.push({ id: PERSONAL_CALENDAR_ID, name: t('Personal'), color: DEFAULT_TASK_COLOR });
     return rows;
   });
 
-  readonly allProjectsShown = computed(() =>
-    this.projects().every(project => this.calendarState.isCalendarVisible(project.id)));
+  // ── Layers ─────────────────────────────────────────────────────────────────
 
-  /** What is next, from now on: events and tasks, minus what is switched off. */
-  readonly upcomingRows = computed<UpcomingRow[]>(() => {
-    const zone = this.timeZone();
-    const hour24 = this.data.use24HourClock();
-    const hiddenProjects = this.calendarState.hiddenCalendarIds();
-    const hiddenCalendars = new Set(this.data.calendars().filter(c => !c.isVisible).map(c => c.id));
-    const groupColors = new Map(this.data.groups().map(group => [group.id, group.color || DEFAULT_TASK_COLOR]));
-    const now = Date.now();
-
-    return this.data.upcoming()
-      .filter(item => item.kind === 'Task'
-        ? !hiddenProjects.has(item.groupId || PERSONAL_CALENDAR_ID) && item.status !== 'Completed'
-        : !hiddenCalendars.has(item.calendarId ?? '') && item.myResponse !== 'Declined')
-      // Still ahead, or going on right now.
-      .filter(item => new Date(item.kind === 'Task' ? item.start : item.end).getTime() >= now)
-      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
-      .slice(0, 6)
-      .map(item => {
-        const isTask = item.kind === 'Task';
-        return {
-          item,
-          dayLabel: this.formatDay(item.start),
-          time: isTask ? `Due ${formatTimeInZone(new Date(item.start), zone, hour24)}` : timeRangeLabel(item, zone, hour24),
-          title: item.title,
-          subtitle: isTask
-            ? item.groupName || 'Personal task'
-            : item.myResponse === 'Pending' ? 'Invitation · not answered' : item.location || item.calendarName || 'Event',
-          icon: isTask ? 'task_alt' : item.myResponse === 'Pending' ? 'mail' : item.location ? 'place' : 'event',
-          color: isTask ? groupColors.get(item.groupId ?? '') ?? DEFAULT_TASK_COLOR : item.color || DEFAULT_EVENT_COLOR
-        };
-      });
+  readonly layers = computed<Layer[]>(() => {
+    const secondZone = this.prefs.secondZoneId();
+    const secondValid = isValidTimeZone(secondZone);
+    return [
+      {
+        id: 'prayer', label: t('Prayer times'), hint: this.board.prayerHint(),
+        on: this.board.prayerOn(),
+        disabled: this.board.place()
+          ? ''
+          : t('Prayer times need a city, and none is known for the time zone in your profile.')
+      },
+      {
+        id: 'hijri', label: t('Hijri dates'), hint: t('Shown under each day'),
+        on: this.prefs.hijriDates(), disabled: ''
+      },
+      {
+        id: 'occasions', label: t('Holidays and occasions'), hint: this.board.occasionsHint(),
+        on: this.prefs.occasions(), disabled: ''
+      },
+      {
+        id: 'zone', label: t('Second time zone'),
+        hint: !secondValid ? t('Pick one in Settings')
+          : secondZone === this.board.zone() ? t('Same as the calendar’s zone') : timeZoneLabel(secondZone),
+        on: this.prefs.secondZone() && secondValid,
+        disabled: secondValid ? '' : t('No second time zone is chosen yet. Pick one in Settings.')
+      }
+    ];
   });
 
   ngOnInit() {
@@ -228,9 +199,48 @@ export class CalendarSidebar implements OnInit {
       .subscribe(() => this.loadReminders());
   }
 
-  /** Jump the main grid to a day. */
-  selectDay(day: MiniDay) {
-    this.calendarState.selectDate(day.date);
+  // ── Mini month ─────────────────────────────────────────────────────────────
+
+  /** "Thursday, 12 November 2026, Eid al-Fitr, 3 items" */
+  dayLabel(cell: MiniDay): string {
+    return listOf([
+      cell.day.label, cell.occasions, cell.day.count ? tCount(cell.day.count, '{n} item', '{n} items') : ''
+    ]);
+  }
+
+  /** Jump the main view to a day. */
+  selectDay(day: BoardDay) {
+    this.state.selectDate(day.date);
+  }
+
+  /** A task dropped on a date gets a block that day. */
+  overDay(event: DragEvent) {
+    if (this.board.dragging()) event.preventDefault();
+  }
+
+  dropOnDay(event: DragEvent, day: BoardDay) {
+    const task = this.board.dragging();
+    if (!task) return;
+    event.preventDefault();
+    this.board.dragging.set(null);
+    this.board.planTaskOnDay(task, day.date);
+  }
+
+  // ── To plan ────────────────────────────────────────────────────────────────
+
+  startDrag(event: DragEvent, row: PlanTask) {
+    event.dataTransfer?.setData('text/plain', row.task.title);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+    this.board.dragging.set(row.task);
+  }
+
+  endDrag() {
+    this.board.dragging.set(null);
+  }
+
+  /** Opens the task in the detail panel, where it can be given a time without dragging. */
+  openPlan(row: PlanTask) {
+    this.state.select({ kind: 'Task', id: row.task.id });
   }
 
   // ── Invitations ────────────────────────────────────────────────────────────
@@ -247,28 +257,31 @@ export class CalendarSidebar implements OnInit {
       },
       error: err => {
         this.answering.set(null);
-        this.error.set(apiErrorMessage(err, 'Your answer was not saved.'));
+        this.error.set(apiErrorMessage(err, t('Your answer was not saved.')));
       }
     });
   }
 
-  /** Opens the event in its window; the grid component listens for this address. */
   openEvent(eventId: string) {
-    this.router.navigate([], { queryParams: { event: eventId }, queryParamsHandling: 'merge' });
+    this.state.select({ kind: 'Event', id: eventId });
+  }
+
+  /** "from Mariam Adel" */
+  invitationFrom(event: EventDto): string {
+    return t('from {name}', { name: event.ownerName ? isolate(event.ownerName) : t('someone') });
   }
 
   invitationWhen(event: EventDto): string {
     const start = new Date(event.startsAt);
     if (Number.isNaN(start.getTime())) return '';
-    const zone = this.timeZone();
-    const day = this.formatDay(event.startsAt);
-    if (event.isAllDay) return `${day} · All day`;
-    return `${day} · ${formatTimeInZone(start, zone, this.data.use24HourClock())}`;
+    // An all-day event keeps the date it was given, in whatever zone it was made.
+    if (event.isAllDay) return `${this.board.shortAllDay(start, new Date(event.endsAt))} · ${t('All day')}`;
+    return `${this.board.shortDay(start)} · ${this.board.time(start)}`;
   }
 
   // ── My calendars ───────────────────────────────────────────────────────────
 
-  /** Shows or hides a calendar. The switch moves at once; the server is told behind it. */
+  /** Shows or hides a calendar. The row changes at once; the server is told behind it. */
   toggleCalendar(calendar: UserCalendarDto) {
     const isVisible = !calendar.isVisible;
     this.patchCalendar(calendar.id, { isVisible });
@@ -279,7 +292,7 @@ export class CalendarSidebar implements OnInit {
       next: () => this.data.reloadItems(),
       error: err => {
         this.patchCalendar(calendar.id, { isVisible: !isVisible });
-        this.error.set(apiErrorMessage(err, 'That calendar could not be changed.'));
+        this.error.set(apiErrorMessage(err, t('That calendar could not be changed.')));
       }
     });
   }
@@ -289,13 +302,13 @@ export class CalendarSidebar implements OnInit {
   }
 
   startAdding() {
+    this.menuOpen.set(false);
     const used = new Set(this.data.calendars().map(calendar => calendar.color.toUpperCase()));
     const color = CALENDAR_COLORS.find(candidate => !used.has(candidate.toUpperCase())) ?? CALENDAR_COLORS[0];
     this.draft.set({ id: null, name: '', color });
   }
 
-  startEditing(event: Event, calendar: UserCalendarDto) {
-    event.stopPropagation();
+  startEditing(calendar: UserCalendarDto) {
     this.draft.set({ id: calendar.id, name: calendar.name, color: calendar.color });
   }
 
@@ -308,6 +321,10 @@ export class CalendarSidebar implements OnInit {
     this.draft.update(draft => draft ? { ...draft, color } : draft);
   }
 
+  isDraftColor(color: string): boolean {
+    return this.draft()?.color.toUpperCase() === color.toUpperCase();
+  }
+
   cancelDraft() {
     this.draft.set(null);
   }
@@ -318,7 +335,7 @@ export class CalendarSidebar implements OnInit {
     const name = draft?.name.trim();
     if (!draft || this.savingCalendar()) return;
     if (!name) {
-      this.error.set('Give the calendar a name.');
+      this.error.set(t('Give the calendar a name.'));
       return;
     }
 
@@ -336,7 +353,7 @@ export class CalendarSidebar implements OnInit {
       },
       error: err => {
         this.savingCalendar.set(false);
-        this.error.set(apiErrorMessage(err, 'The calendar was not saved.'));
+        this.error.set(apiErrorMessage(err, t('The calendar was not saved.')));
       }
     });
   }
@@ -346,10 +363,12 @@ export class CalendarSidebar implements OnInit {
     const calendar = this.data.calendars().find(candidate => candidate.id === draft?.id);
     if (!calendar || calendar.isDefault || this.savingCalendar()) return;
 
-    const events = calendar.eventCount
-      ? ` Its ${calendar.eventCount} ${calendar.eventCount === 1 ? 'event moves' : 'events move'} to your default calendar.`
-      : '';
-    if (!confirm(`Delete the calendar "${calendar.name}"?${events}`)) return;
+    const question = calendar.eventCount
+      ? tCount(calendar.eventCount,
+        'Delete the calendar "{name}"? Its {n} event moves to your default calendar.',
+        'Delete the calendar "{name}"? Its {n} events move to your default calendar.', { name: isolate(calendar.name) })
+      : t('Delete the calendar "{name}"?', { name: isolate(calendar.name) });
+    if (!confirm(question)) return;
 
     this.savingCalendar.set(true);
     this.error.set(null);
@@ -361,7 +380,7 @@ export class CalendarSidebar implements OnInit {
       },
       error: err => {
         this.savingCalendar.set(false);
-        this.error.set(apiErrorMessage(err, 'The calendar was not deleted.'));
+        this.error.set(apiErrorMessage(err, t('The calendar was not deleted.')));
       }
     });
   }
@@ -374,22 +393,95 @@ export class CalendarSidebar implements OnInit {
   // ── Projects (tasks) ───────────────────────────────────────────────────────
 
   toggleProject(id: string) {
-    this.calendarState.toggleCalendar(id);
+    this.state.toggleCalendar(id);
   }
 
   isProjectVisible(id: string): boolean {
-    return this.calendarState.isCalendarVisible(id);
+    return this.state.isCalendarVisible(id);
   }
 
-  setAllProjects(visible: boolean) {
-    this.calendarState.setAllCalendars(this.projects().map(project => project.id), visible);
+  // ── Layers ─────────────────────────────────────────────────────────────────
+
+  toggleLayer(layer: Layer) {
+    if (layer.disabled) return;
+    const pref = layer.id === 'prayer' ? this.prefs.prayerTimes
+      : layer.id === 'hijri' ? this.prefs.hijriDates
+      : layer.id === 'occasions' ? this.prefs.occasions
+      : this.prefs.secondZone;
+    pref.set(!pref());
   }
 
-  // ── Upcoming ───────────────────────────────────────────────────────────────
+  // ── New event, .ics files, settings ────────────────────────────────────────
 
-  openUpcoming(row: UpcomingRow) {
-    if (row.item.kind === 'Task') this.router.navigate(['/tasks', row.item.id]);
-    else this.openEvent(row.item.id);
+  toggleMenu(event: Event) {
+    event.stopPropagation();
+    this.menuOpen.update(open => !open);
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  closeMenu() {
+    if (this.menuOpen()) this.menuOpen.set(false);
+  }
+
+  newEvent() {
+    this.menuOpen.set(false);
+    this.actions.newEvent();
+  }
+
+  exportIcs() {
+    this.menuOpen.set(false);
+    this.calendarApi.exportIcs().subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'miqat.ics';
+        link.click();
+        URL.revokeObjectURL(url);
+        this.toasts.show(t('Your events were saved as miqat.ics.'));
+      },
+      error: err => this.fail(apiErrorMessage(err, t('The calendar could not be exported.')))
+    });
+  }
+
+  importIcs(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    this.menuOpen.set(false);
+    if (!file || this.importing()) return;
+
+    if (file.size > IMPORT_MAX_BYTES) {
+      this.fail(t('That file is too large ({n} MB at most).', { n: IMPORT_MAX_BYTES / (1024 * 1024) }));
+      return;
+    }
+
+    this.importing.set(true);
+    this.calendarApi.importIcs(file).subscribe({
+      next: result => {
+        this.importing.set(false);
+        const parts = [t('{n} added', { n: result.imported })];
+        if (result.updated) parts.push(t('{n} updated', { n: result.updated }));
+        if (result.skipped) parts.push(t('{n} could not be read', { n: result.skipped }));
+        this.toasts.show(t('Import finished: {summary}.', { summary: listOf(parts) }));
+        this.data.reload();
+      },
+      error: err => {
+        this.importing.set(false);
+        this.fail(apiErrorMessage(err, t('That file could not be imported.')));
+      }
+    });
+  }
+
+  /** The chooser tells its own story and reloads the calendar when events came in. */
+  importFromGoogle() {
+    this.menuOpen.set(false);
+    openGoogleImport(this.dialog);
+  }
+
+  private fail(text: string) {
+    this.toasts.show(text, { tone: 'var(--mq-late)' });
   }
 
   // ── Reminders ──────────────────────────────────────────────────────────────
@@ -414,7 +506,7 @@ export class CalendarSidebar implements OnInit {
     this.error.set(null);
     this.reminderApi.snooze(reminder.id, minutes).subscribe({
       next: () => this.loadReminders(),
-      error: err => this.error.set(apiErrorMessage(err, 'That reminder was not snoozed.'))
+      error: err => this.error.set(apiErrorMessage(err, t('That reminder was not snoozed.')))
     });
   }
 
@@ -422,38 +514,17 @@ export class CalendarSidebar implements OnInit {
     this.error.set(null);
     this.reminderApi.delete(reminder.id).subscribe({
       next: () => this.reminders.update(list => list.filter(other => other.id !== reminder.id)),
-      error: err => this.error.set(apiErrorMessage(err, 'That reminder was not removed.'))
+      error: err => this.error.set(apiErrorMessage(err, t('That reminder was not removed.')))
     });
   }
 
   openReminder(reminder: ReminderDto) {
-    if (reminder.itemKind === 'Task') this.router.navigate(['/tasks', reminder.itemId]);
-    else this.openEvent(reminder.itemId);
+    this.state.select({ kind: reminder.itemKind, id: reminder.itemId });
   }
 
   ringsAt(reminder: ReminderDto): string {
     if (!reminder.remindAt) return '';
     const date = new Date(reminder.remindAt);
-    return `${this.formatDay(reminder.remindAt)} · ${formatTimeInZone(date, this.timeZone(), this.data.use24HourClock())}`;
+    return `${this.board.shortDay(date)} · ${this.board.time(date)}`;
   }
-
-  // ── Formatting, all in the calendar's zone ─────────────────────────────────
-
-  formatDay(dateStr: string): string {
-    const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return '';
-
-    const zone = this.timeZone();
-    const key = dayKeyInZone(date, zone);
-    if (key === dayKeyInZone(new Date(), zone)) return 'Today';
-    if (key === dayKeyInZone(new Date(Date.now() + 86_400_000), zone)) return 'Tomorrow';
-
-    return new Intl.DateTimeFormat(undefined, {
-      timeZone: zone, weekday: 'short', day: 'numeric', month: 'short'
-    }).format(date);
-  }
-
-  trackByDay = (_: number, day: MiniDay) => day.date.getTime();
-  trackById = (_: number, row: { id: string }) => row.id;
-  trackByUpcoming = (_: number, row: UpcomingRow) => `${row.item.kind}:${row.item.id}:${row.item.start}`;
 }

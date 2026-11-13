@@ -1,0 +1,39 @@
+@if (task(); as chosen) {
+  <div class="backdrop" (click)="close()"></div>
+
+  <div class="pop" role="dialog" [attr.aria-label]="'Schedule on calendar' | t"
+       [style.left.px]="place()?.left" [style.top.px]="place()?.top" [style.bottom.px]="place()?.bottom">
+    <div class="head">
+      <span class="eyebrow">{{ 'Schedule on calendar' | t }}</span>
+      <span class="length">{{ lengthLabel() }}</span>
+    </div>
+    <p class="title" dir="auto">{{ chosen.title }}</p>
+
+    @if (slot()) {
+      <button type="button" class="suggest" (click)="useSlot()">
+        <span class="when">{{ slotLabel() }}</span>
+        <span class="note">{{ 'Next free slot in your working hours' | t }}</span>
+      </button>
+    } @else {
+      <p class="none">{{ 'No free slot is left in your working hours today or tomorrow. Pick a time below.' | t }}</p>
+    }
+
+    <form class="pick" (submit)="$event.preventDefault(); usePicked()">
+      <span class="eyebrow">{{ 'Or pick a time' | t }}</span>
+      <div class="pick-row">
+        <input type="date" class="field" [attr.aria-label]="'Day' | t" [value]="dateValue()" (input)="dateValue.set(textOf($event))" />
+        <input type="time" class="field time" step="900" [attr.aria-label]="'Start time' | t" [value]="timeValue()"
+               (input)="timeValue.set(textOf($event))" />
+        <button type="submit" class="set" [disabled]="!picked()">{{ 'Set@@time' | t }}</button>
+      </div>
+    </form>
+
+    @if (deadlineMoves()) {
+      <p class="warn">{{ 'The deadline is before this time, so it moves to the end of the block.' | t }}</p>
+    }
+
+    @if (chosen.startDate) {
+      <button type="button" class="remove" (click)="clear()">{{ 'Remove from calendar' | t }}</button>
+    }
+  </div>
+}

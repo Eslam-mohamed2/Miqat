@@ -46,6 +46,14 @@ describe('notificationTarget', () => {
     expect(target).toEqual({ commands: ['/tasks', 't1'], queryParams: { comment: 'c9' } });
   });
 
+  it('opens a project, and its discussion when the notification is about a comment there', () => {
+    expect(notificationTarget(notification({ linkedEntityType: 'Group', linkedEntityId: 'p1' })))
+      .toEqual({ commands: ['/projects', 'p1'] });
+
+    expect(notificationTarget(notification({ linkedEntityType: 'Group', linkedEntityId: 'p1', linkedCommentId: 'c4' })))
+      .toEqual({ commands: ['/projects', 'p1', 'discussion'], queryParams: { comment: 'c4' } });
+  });
+
   it('sends a waiting friend request to the Requests list', () => {
     const target = notificationTarget(notification({
       type: 'FriendRequestSent', linkedEntityType: 'Friendship', triggeredByUserId: 'u1'

@@ -1,0 +1,215 @@
+@use '../../../styles/tokens' as *;
+
+// The invitation and the screen of a group call, drawn like the call between
+// two people (call-overlay.scss): the name and the buttons sit on the card,
+// above and below the pictures, so they read the same on both themes.
+
+:host {
+  line-height: normal;
+}
+
+// A call is on top of everything else in the app, dialogs included (1000).
+$layer: 1200;
+
+.round {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: $mq-line;
+  color: $mq-text;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform $mq-t-press $mq-ease-quick, background $mq-t-change $mq-ease-calm, filter $mq-t-press $mq-ease-quick;
+  @include mq-focus(3px);
+
+  &:hover { filter: brightness(1.08); }
+  &:active { transform: scale(.96); }
+
+  // Microphone or camera switched off.
+  &.on { background: $mq-text; color: $mq-bg; }
+  &.decline { background: $mq-late; color: $mq-bg; }
+}
+
+// ── A group call rings ────────────────────────────────────────────────────────
+
+.incoming {
+  position: fixed;
+  top: 20px;
+  inset-inline-end: 20px;
+  z-index: $layer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, calc(100vw - 24px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: $mq-card-5;
+  border: 1px solid $mq-line-2;
+  color: $mq-text;
+  box-shadow: 0 24px 60px mq-shadow(.55);
+  animation: mq-settle $mq-t-arrive $mq-ease-calm;
+  --avatar-ring: #{$mq-card-5};
+
+  // A friend is calling at the same moment: this one goes under that one.
+  &.second { top: 116px; }
+}
+
+// A ring that spreads from the picture while it rings.
+.ring {
+  display: inline-flex;
+  border-radius: 50%;
+  animation: mq-pulse 1.6s ease-out infinite;
+}
+
+.incoming-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.incoming-name {
+  font-size: 14px;
+  font-weight: 600;
+  @include mq-ellipsis;
+}
+
+.incoming-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: $mq-text-4;
+}
+
+.incoming-group {
+  @include mq-ellipsis;
+}
+
+.incoming-buttons {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+}
+
+.dismiss { @include mq-btn-outline(36px, 0 12px, 999px); }
+
+.join {
+  @include mq-btn-base(36px, 0 16px, 999px);
+  background: $mq-green;
+  color: $mq-bg;
+  font-weight: 700;
+
+  &:hover { filter: brightness(1.08); }
+  &:active { transform: scale(.98); }
+}
+
+// ── The call ──────────────────────────────────────────────────────────────────
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: $layer;
+  background: color-mix(in srgb, var(--mq-bg) 72%, transparent);
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+}
+
+.stage {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: $layer + 1;
+  box-sizing: border-box;
+  width: min(980px, calc(100vw - 24px));
+  height: min(680px, calc(100dvh - 24px));
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  background: $mq-card;
+  border: 1px solid $mq-line-2;
+  color: $mq-text;
+  overflow: hidden;
+  box-shadow: 0 40px 100px mq-shadow(.6);
+
+  // A voice call shows avatars only and needs less room.
+  &.voice {
+    width: min(660px, calc(100vw - 24px));
+    height: min(560px, calc(100dvh - 24px));
+  }
+}
+
+.top {
+  flex-shrink: 0;
+  padding: 18px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.name {
+  @include mq-serif(30px);
+  max-width: 100%;
+  @include mq-ellipsis;
+}
+
+.status {
+  font-size: 13px;
+  color: $mq-text-4;
+}
+
+// One tile per person, the user first. Rows share the height evenly.
+.grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: $mq-canvas;
+  border-block: 1px solid $mq-line;
+
+  // A tile alone on the last row sits in the middle, as wide as the others.
+  &.last-alone app-call-tile:last-child {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc((100% - (var(--cols) - 1) * 8px) / var(--cols));
+  }
+}
+
+.controls {
+  flex-shrink: 0;
+  padding: 14px 20px 18px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+@include below($bp-phone-lg) {
+  .stage,
+  .stage.voice {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    border: 0;
+  }
+
+  .top { padding: 14px 16px 10px; }
+  .round { width: 56px; height: 56px; }
+
+  // The text over the two buttons.
+  .incoming { flex-wrap: wrap; }
+  .incoming-buttons { flex-basis: 100%; justify-content: flex-end; }
+  .dismiss, .join { height: 44px; }
+}

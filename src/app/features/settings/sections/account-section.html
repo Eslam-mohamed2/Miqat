@@ -1,0 +1,145 @@
+<div class="group">
+  <!-- The sign-in address, changed in two steps: ask for a code at the new address, then confirm it. -->
+  <div class="line" id="email-row">
+    <span class="line-text">
+      <span class="line-label">{{ 'Email' | t }}</span>
+      <span class="line-hint">{{ 'Used to sign in and for reminders' | t }}</span>
+    </span>
+    <span class="value-wrap">
+      <span class="value mq-ltr">{{ user()?.email }}</span>
+      @if (emailStep() === 'idle') {
+        <button type="button" class="line-btn" (click)="startEmailChange()">{{ 'Change' | t }}</button>
+      }
+    </span>
+
+    @if (emailStep() === 'request') {
+      <form class="panel" (submit)="$event.preventDefault(); requestEmailChange()">
+        <p class="panel-note">{{ 'Step {step} of {total}. We send a {digits}-digit code to the new address. Nothing changes until you enter it.' | t: { step: 1, total: 2, digits: codeLength } }}</p>
+        <div class="panel-row">
+          <label class="panel-field">
+            <span>{{ 'New email address' | t }}</span>
+            <input class="field mq-ltr" type="email" name="newEmail" autocomplete="email" placeholder="you@example.com"
+                   [value]="newEmail()" (input)="newEmail.set($any($event.target).value)" />
+          </label>
+          <label class="panel-field">
+            <span>{{ 'Current password' | t }}</span>
+            <input class="field" type="password" name="emailPassword" autocomplete="current-password"
+                   [value]="emailPassword()" (input)="emailPassword.set($any($event.target).value)" />
+          </label>
+        </div>
+        @if (emailError()) { <p class="problem" role="alert">{{ emailError() }}</p> }
+        <div class="panel-buttons">
+          <button type="submit" class="line-btn primary" [disabled]="requestingEmail()">
+            {{ (requestingEmail() ? 'Sending…' : 'Send code') | t }}
+          </button>
+          <button type="button" class="line-btn" [disabled]="requestingEmail()" (click)="cancelEmailChange()">{{ 'Cancel' | t }}</button>
+        </div>
+      </form>
+    }
+
+    @if (emailStep() === 'confirm') {
+      <form class="panel" (submit)="$event.preventDefault(); confirmEmailChange()">
+        <p class="panel-note">{{ confirmNote[0] }}<strong class="mq-ltr">{{ pendingEmail() }}</strong>{{ confirmNote[1] }}</p>
+        <label class="panel-field">
+          <span>{{ 'Code' | t }}</span>
+          <input class="field code" type="text" name="emailCode" inputmode="numeric" autocomplete="one-time-code"
+                 [placeholder]="'000000' | num" [attr.maxlength]="codeLength" [value]="emailCode()" (input)="onEmailCodeInput($event)" />
+        </label>
+        @if (emailError()) { <p class="problem" role="alert">{{ emailError() }}</p> }
+        <div class="panel-buttons">
+          <button type="submit" class="line-btn primary" [disabled]="emailCode().length !== codeLength || confirmingEmail()">
+            {{ (confirmingEmail() ? 'Checking…' : 'Confirm new email') | t }}
+          </button>
+          <button type="button" class="line-btn" [disabled]="confirmingEmail()" (click)="cancelEmailChange()">{{ 'Cancel' | t }}</button>
+          <button type="button" class="text-btn" [disabled]="confirmingEmail()" (click)="useDifferentEmail()">{{ 'Use a different address' | t }}</button>
+          <button type="button" class="text-btn" [disabled]="requestingEmail() || confirmingEmail()" (click)="requestEmailChange()">
+            {{ (requestingEmail() ? 'Sending…' : 'Send the code again') | t }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+
+  <div class="line" id="password-row">
+    <span class="line-text">
+      <span class="line-label">{{ 'Password' | t }}</span>
+      <span class="line-hint">{{ 'At least {n} characters, with an uppercase letter, a number and a symbol' | t: { n: passwordMinLength } }}</span>
+    </span>
+    <span class="value-wrap">
+      <span class="value" aria-hidden="true">••••••••</span>
+      @if (!passwordOpen()) {
+        <button type="button" class="line-btn" (click)="togglePassword()">{{ 'Change' | t }}</button>
+      }
+    </span>
+
+    @if (passwordOpen()) {
+      <form class="panel" (submit)="$event.preventDefault(); changePassword()">
+        <div class="panel-row">
+          <label class="panel-field">
+            <span>{{ 'Current password' | t }}</span>
+            <input class="field" [type]="showPasswords() ? 'text' : 'password'" name="currentPassword" autocomplete="current-password"
+                   [value]="currentPassword()" (input)="currentPassword.set($any($event.target).value)" />
+          </label>
+        </div>
+        <div class="panel-row">
+          <label class="panel-field">
+            <span>{{ 'New password' | t }}</span>
+            <input class="field" [type]="showPasswords() ? 'text' : 'password'" name="newPassword" autocomplete="new-password"
+                   [value]="newPassword()" (input)="newPassword.set($any($event.target).value)" />
+          </label>
+          <label class="panel-field">
+            <span>{{ 'Confirm new password' | t }}</span>
+            <input class="field" [type]="showPasswords() ? 'text' : 'password'" name="confirmPassword" autocomplete="new-password"
+                   [value]="confirmPassword()" (input)="confirmPassword.set($any($event.target).value)" />
+          </label>
+        </div>
+        @if (passwordError()) { <p class="problem" role="alert">{{ passwordError() }}</p> }
+        <div class="panel-buttons">
+          <button type="submit" class="line-btn primary" [disabled]="changingPassword()">
+            {{ (changingPassword() ? 'Changing…' : 'Change password') | t }}
+          </button>
+          <button type="button" class="line-btn" [disabled]="changingPassword()" (click)="togglePassword()">{{ 'Cancel' | t }}</button>
+          <button type="button" class="text-btn" [attr.aria-pressed]="showPasswords()" (click)="showPasswords.set(!showPasswords())">
+            {{ (showPasswords() ? 'Hide passwords' : 'Show passwords') | t }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Two-step verification' | t }}</span>
+      <span class="line-hint">{{ 'Ask for a code from your phone when you sign in. Not available yet.' | t }}</span>
+    </span>
+    <button type="button" role="switch" class="switch" aria-checked="false" [attr.aria-label]="'Two-step verification' | t"
+            disabled [title]="'Two-step verification is not available yet' | t"><span></span></button>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Devices' | t }}</span>
+      <span class="line-hint">{{ 'Where you are signed in. Miqat cannot list or end your other sign-ins yet.' | t }}</span>
+    </span>
+    <span class="value-wrap">
+      <span class="value">{{ 'This browser' | t }}</span>
+      <button type="button" class="line-btn" disabled [title]="'Signing out other devices is not available yet' | t">{{ 'Sign out others' | t }}</button>
+    </span>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Log out' | t }}</span>
+      <span class="line-hint">{{ 'Ends your session in this browser. Your data stays as it is.' | t }}</span>
+    </span>
+    <button type="button" class="line-btn" (click)="logout()">{{ 'Log out' | t }}</button>
+  </div>
+
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ 'Delete account' | t }}</span>
+      <span class="line-hint">{{ 'Removes your calendars, tasks, boards and flows for good. Only an administrator can do this for now.' | t }}</span>
+    </span>
+    <button type="button" class="danger-btn" disabled [title]="'Deleting your own account is not available yet' | t">{{ 'Delete account' | t }}</button>
+  </div>
+</div>

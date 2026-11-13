@@ -3,8 +3,13 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { t } from '../i18n/i18n';
 import { AuthService } from './auth.service';
-import { ChatMessageEvent, RealtimeService } from './realtime.service';
+import { FriendService } from './friend.service';
+import {
+  ChatGroupEvent, ChatMessageEvent, ChatParticipant, GroupCall, GroupCallMemberEvent, RealtimeService
+} from './realtime.service';
+import { applyCallMembers, applyGroupChange, applyRead, typingLabel } from './chat-text';
 
 export interface ChatPerson {
   id: string;
@@ -20,14 +25,27 @@ export interface ChatMessage extends ChatMessageEvent {
 
 export interface ChatConversation {
   id: string;
+  /** The other person of a chat between two. For a group: a stand-in that carries the group's id and name. */
   friend: ChatPerson;
   lastMessage?: ChatMessage | null;
   lastMessageAt?: string | null;
   unreadCount: number;
-  /** The friend has read everything sent up to this moment. */
+  /** The friend has read everything sent up to this moment. Null for a group: see `participants`. */
   friendLastReadAt?: string | null;
-  /** False once the two are no longer friends: readable, but closed. */
+  /** False once the two are no longer friends, or the user is no longer in the group: readable, but closed. */
   canSend: boolean;
+
+  // The fields below are absent on an API build without group chats.
+  isGroup?: boolean;
+  /** The group's name; null for a chat between two. */
+  name?: string | null;
+  createdByUserId?: string | null;
+  /** The user is an admin of this group. */
+  isAdmin?: boolean;
+  /** Everyone in the chat, the user too, longest in it first. */
+  participants?: ChatParticipant[];
+  /** The group call going on right now. */
+  activeCall?: GroupCall | null;
 }
 
 /** The messages of one chat that are loaded so far, oldest first. */
@@ -39,25 +57,6 @@ export interface ChatThread {
 }
 
 interface MessagePage { messages: ChatMessage[]; hasMore: boolean; }
-
-/**
- * A call as one line of text, for the chat and the chat list:
- * "Video call · 2:05", "Missed voice call", "Voice call · no answer".
- * "mine" is true when the reader is the one who called.
- */
-export function describeCall(message: ChatMessageEvent, mine: boolean): string {
-  const kind = message.callVideo ? 'video call' : 'voice call';
-  const Kind = kind[0].toUpperCase() + kind.slice(1);
-
-  switch (message.callOutcome) {
-    case 'Completed': {
-      const seconds = message.callSeconds ?? 0;
-      return `${Kind} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-    }
-    case 'Declined': return `${Kind} declined`;
-    default: return mine ? `${Kind} · no answer` : `Missed ${kind}`;
-  }
-}
 
 const EMPTY_THREAD: ChatThread = { messages: [], hasMore: false, loading: false, loaded: false };
 const PAGE_SIZE = 30;
@@ -71,8 +70,8 @@ const WIDE_SCREEN_PX = 1280;
 const MAX_HEADS = 6;
 
 /**
- * Chats between friends: the list, the messages, what is unread, who is
- * online, and which chats are docked on the screen as bubbles or open windows.
+ * Chats between friends and in groups: the list, the messages, what is unread,
+ * who is online, and which chats are docked on the screen as bubbles or open windows.
  *
  * One instance for the whole app, fed by the live connection, so every piece
  * of chat UI shows the same state without asking the server again.
@@ -82,21 +81,34 @@ export class ChatService {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
   private realtime = inject(RealtimeService);
+  private friendService = inject(FriendService);
   private apiUrl = `${environment.apiUrl}/api/Chat`;
 
   private subscriptions: Subscription[] = [];
+  /** One timer per person typing, under "chat id|person id". */
   private typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private typingSentAt = new Map<string, number>();
   private peekTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /** Chats being asked for, with what to do once each is there. */
+  private fetching = new Map<string, Array<(conversation: ChatConversation) => void>>();
+  private groupsProbed = false;
   private me: string | null = null;
 
   /** Null until the server was asked; false on an API build without chat (the UI then hides itself). */
   readonly available = signal<boolean | null>(null);
+  /** True when this server has group chats and group calls. Everything about groups is hidden otherwise. */
+  readonly groupsAvailable = signal(false);
   private readonly allConversations = signal<ChatConversation[]>([]);
   private readonly threads = signal<Readonly<Record<string, ChatThread>>>({});
   private readonly onlineIds = signal<ReadonlySet<string>>(new Set());
-  private readonly typingIds = signal<ReadonlySet<string>>(new Set());
+  /** Who is typing right now, per chat. */
+  private readonly typingUsers = signal<Readonly<Record<string, readonly string[]>>>({});
   private readonly peekIds = signal<ReadonlySet<string>>(new Set());
+
+  /** The user's friends, for starting a chat or a group with them. Filled by loadFriends(). */
+  readonly friends = signal<ChatPerson[]>([]);
+  /** The "New group" dialog is open (the chat corner draws it, on every page). */
+  readonly creatingGroup = signal(false);
 
   /** Chats docked on the screen as bubbles, newest first. */
   readonly heads = signal<string[]>([]);
@@ -109,9 +121,18 @@ export class ChatService {
       .filter(c => !!c.lastMessageAt)
       .sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? '')));
 
+  /** The group chats the user is in, newest first. */
+  readonly groups = computed(() => this.conversations().filter(c => c.isGroup));
+
   readonly unreadTotal = computed(() => this.allConversations().reduce((sum, c) => sum + c.unreadCount, 0));
   readonly headConversations = computed(() => this.pick(this.heads()));
   readonly openConversations = computed(() => this.pick(this.openIds()));
+
+  /**
+   * True when this server has chat: its round button then sits on the screen's
+   * bottom corner on every page, and panels that end in that corner leave room for it.
+   */
+  readonly cornerInUse = computed(() => this.available() === true);
 
   get currentUserId(): string | null { return this.me; }
 
@@ -126,8 +147,15 @@ export class ChatService {
       this.realtime.chatMessage$.subscribe(m => this.onMessage(m)),
       this.realtime.chatMessageChanged$.subscribe(m => this.onMessageChanged(m)),
       this.realtime.chatRead$.subscribe(e => this.onRead(e.conversationId, e.userId, e.readAt)),
-      this.realtime.chatTyping$.subscribe(e => this.showTyping(e.conversationId)),
+      this.realtime.chatTyping$.subscribe(e => this.showTyping(e.conversationId, e.userId)),
       this.realtime.presenceChanged$.subscribe(e => this.setOnline(e.userId, e.isOnline)),
+      this.realtime.chatGroupChanged$.subscribe(e => this.onGroupChanged(e)),
+      this.realtime.chatGroupRemoved$.subscribe(e => this.dropConversation(e.conversationId)),
+      this.realtime.groupCallStarted$.subscribe(call => this.patchConversation(call.conversationId, c => ({ ...c, activeCall: call }))),
+      this.realtime.groupCallJoined$.subscribe(e => this.onCallMembers(e)),
+      this.realtime.groupCallLeft$.subscribe(e => this.onCallMembers(e)),
+      this.realtime.groupCallEnded$.subscribe(e => this.patchConversation(e.conversationId,
+        c => (c.activeCall?.callId === e.callId ? { ...c, activeCall: null } : c))),
       // Whatever was pushed while the connection was down was missed.
       this.realtime.reconnected$.subscribe(() => this.refresh())
     ];
@@ -144,14 +172,19 @@ export class ChatService {
     this.typingSentAt.clear();
     this.peekTimers.forEach(clearTimeout);
     this.peekTimers.clear();
+    this.fetching.clear();
+    this.groupsProbed = false;
     this.me = null;
 
     this.available.set(null);
+    this.groupsAvailable.set(false);
     this.allConversations.set([]);
     this.threads.set({});
     this.onlineIds.set(new Set());
-    this.typingIds.set(new Set());
+    this.typingUsers.set({});
     this.peekIds.set(new Set());
+    this.friends.set([]);
+    this.creatingGroup.set(false);
     this.heads.set([]);
     this.openIds.set([]);
   }
@@ -168,14 +201,62 @@ export class ChatService {
         const local = this.allConversations().filter(c => !listed.has(c.id) && !c.lastMessageAt);
 
         this.allConversations.set([...conversations, ...local]);
-        this.onlineIds.set(new Set([...online, ...conversations.filter(c => c.friend.isOnline).map(c => c.friend.id)]));
+        this.onlineIds.set(new Set([...online, ...conversations.flatMap(onlineIn)]));
         this.available.set(true);
+        this.probeGroups(conversations);
+
+        // A group the user was taken out of while the connection was down is gone from the list.
+        const known = new Set(this.allConversations().map(c => c.id));
+        this.heads.update(ids => ids.filter(id => firstLoad || known.has(id)));
+        this.openIds.update(ids => ids.filter(id => known.has(id)));
 
         if (firstLoad) this.restoreHeads();
         this.openIds().forEach(id => this.loadMessages(id, true));
       },
       // 404 is an API build without chat; anything else leaves chat hidden rather than half working.
       error: () => { if (this.available() === null) this.available.set(false); }
+    });
+  }
+
+  /**
+   * Asks once whether this server has group chats. Every chat of a build that
+   * has them says whether it is one; with no chat to look at, the list of group
+   * calls is asked for, which only such a build answers.
+   */
+  private probeGroups(conversations: ChatConversation[]): void {
+    if (this.groupsProbed) return;
+    this.groupsProbed = true;
+
+    if (conversations.length) {
+      this.groupsAvailable.set(conversations[0].isGroup !== undefined);
+      return;
+    }
+
+    const me = this.me;
+    this.http.get<GroupCall[]>(`${environment.apiUrl}/api/Call/active`).subscribe({
+      next: () => { if (me && me === this.me) this.groupsAvailable.set(true); },
+      error: () => { /* a build without groups: their controls stay hidden */ }
+    });
+  }
+
+  /** Loads the user's friends, for the lists that start a chat or fill a group. */
+  loadFriends(): void {
+    const me = this.me;
+
+    this.friendService.getMyFriends().subscribe({
+      next: rows => {
+        if (me !== this.me) return;
+        this.friends.set(rows.map(row => {
+          const friendIsSender = row.senderId !== me;
+          return {
+            id: row.friendId ?? (friendIsSender ? row.senderId : row.receiverId),
+            fullName: row.friendName ?? (friendIsSender ? row.senderName : row.receiverName) ?? t('Friend'),
+            profilePictureUrl: row.friendProfilePictureUrl ??
+              (friendIsSender ? row.senderProfilePictureUrl : row.receiverProfilePictureUrl)
+          };
+        }).sort((a, b) => a.fullName.localeCompare(b.fullName)));
+      },
+      error: () => { /* the chats that exist are still listed */ }
     });
   }
 
@@ -190,16 +271,26 @@ export class ChatService {
   }
 
   isOnline(userId: string): boolean { return this.onlineIds().has(userId); }
-  isTyping(conversationId: string): boolean { return this.typingIds().has(conversationId); }
+  isTyping(conversationId: string): boolean { return !!this.typingUsers()[conversationId]?.length; }
   isOpen(conversationId: string): boolean { return this.openIds().includes(conversationId); }
   /** A message just arrived for this bubble: its text is shown beside it for a moment. */
   isPeeking(conversationId: string): boolean { return this.peekIds().has(conversationId); }
+
+  /** "typing…" for a friend; for a group who it is ("Omar is typing…", "2 people are typing…"). Empty when nobody is. */
+  typingText(conversationId: string): string {
+    const ids = this.typingUsers()[conversationId] ?? [];
+    if (!ids.length) return '';
+
+    const conversation = this.conversation(conversationId);
+    if (!conversation?.isGroup) return t('typing…');
+    return typingLabel(ids.map(id => conversation.participants?.find(p => p.id === id)?.fullName ?? ''));
+  }
 
   // ── Bubbles and windows ─────────────────────────────────────────────────────
 
   /** Opens the chat with a friend, creating it on the first time. */
   openWith(friendId: string): Observable<ChatConversation> {
-    const known = this.allConversations().find(c => c.friend.id === friendId);
+    const known = this.allConversations().find(c => !c.isGroup && c.friend.id === friendId);
     if (known) {
       this.open(known.id);
       return of(known);
@@ -251,6 +342,46 @@ export class ChatService {
     }
     this.heads.set(heads);
     this.saveHeads();
+  }
+
+  // ── Groups ──────────────────────────────────────────────────────────────────
+
+  /** Creates a group with these friends and opens its chat. The server's refusal is the error. */
+  createGroup(name: string, memberIds: string[]): Observable<ChatConversation> {
+    return this.http.post<ChatConversation>(`${this.apiUrl}/groups`, { name: name.trim(), memberIds }).pipe(
+      tap(conversation => {
+        this.upsertConversation(conversation);
+        this.open(conversation.id);
+      }));
+  }
+
+  /** Admins only. */
+  renameGroup(id: string, name: string): Observable<ChatConversation> {
+    return this.http.put<ChatConversation>(`${this.apiUrl}/${id}/name`, { name: name.trim() })
+      .pipe(tap(conversation => this.upsertConversation(conversation)));
+  }
+
+  /** Any member adds their own friends. */
+  addMembers(id: string, userIds: string[]): Observable<ChatConversation> {
+    return this.http.post<ChatConversation>(`${this.apiUrl}/${id}/members`, { userIds })
+      .pipe(tap(conversation => this.upsertConversation(conversation)));
+  }
+
+  /** Admins only. */
+  removeMember(id: string, userId: string): Observable<ChatConversation> {
+    return this.http.delete<ChatConversation>(`${this.apiUrl}/${id}/members/${userId}`)
+      .pipe(tap(conversation => this.upsertConversation(conversation)));
+  }
+
+  /** Admins only. */
+  makeAdmin(id: string, userId: string): Observable<ChatConversation> {
+    return this.http.put<ChatConversation>(`${this.apiUrl}/${id}/members/${userId}/admin`, {})
+      .pipe(tap(conversation => this.upsertConversation(conversation)));
+  }
+
+  /** The chat disappears here at once; the others see a line saying the user left. */
+  leaveGroup(id: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${id}/leave`, {}).pipe(tap(() => this.dropConversation(id)));
   }
 
   // ── Messages ────────────────────────────────────────────────────────────────
@@ -312,12 +443,14 @@ export class ChatService {
       createdAt: new Date().toISOString(), state: 'sending'
     };
     this.patchThread(conversationId, t => ({ ...t, messages: [...t.messages, local] }));
+    // The message ends "is typing" at the others; the next key says it again without waiting.
+    this.typingSentAt.delete(conversationId);
 
     this.http.post<ChatMessage>(`${this.apiUrl}/${conversationId}/messages`, { body, clientId }).subscribe({
       next: saved => this.onMessage({ ...saved, clientId }),
       error: (err: HttpErrorResponse) => {
         this.replaceMessage(conversationId, clientId, m => ({ ...m, state: 'failed' }));
-        // 403: they stopped being friends while the window was open.
+        // 403: they stopped being friends, or the user was taken out of the group, while the window was open.
         if (err.status === 403) this.patchConversation(conversationId, c => ({ ...c, canSend: false }));
       }
     });
@@ -362,7 +495,7 @@ export class ChatService {
   private onMessage(message: ChatMessage): void {
     const id = message.conversationId;
     const mine = message.senderId === this.me;
-    if (!mine) this.hideTyping(id);
+    if (!mine) this.hideTyping(id, message.senderId);
 
     // The copy shown while sending (same clientId) or the same message arriving twice is replaced.
     this.patchThread(id, t => {
@@ -376,29 +509,34 @@ export class ChatService {
 
     const conversation = this.conversation(id);
     if (!conversation) {
-      // A friend wrote for the first time: the server knows the chat, this tab does not yet.
-      this.http.get<ChatConversation>(`${this.apiUrl}/${id}`).subscribe({
-        next: fetched => {
-          this.upsertConversation(fetched);
-          if (!mine) this.addHead(id);
-        },
-        error: () => { /* nothing to show */ }
-      });
+      // A friend wrote for the first time, or the user was put into a group:
+      // the server knows the chat, this tab does not yet.
+      this.fetchConversation(id, () => { if (!mine) this.addHead(id); });
       return;
     }
 
     const alreadyCounted = conversation.lastMessage?.id === message.id;
     const reading = this.isOpen(id) && typeof document !== 'undefined' && document.visibilityState === 'visible';
+    // The record of a group call is already read for whoever took part; only the server knows who did.
+    const groupCall = !!message.callOutcome && message.callParticipants != null;
     this.patchConversation(id, c => ({
       ...c,
       lastMessage: message,
       lastMessageAt: message.createdAt,
-      unreadCount: mine || reading || alreadyCounted ? c.unreadCount : c.unreadCount + 1
+      unreadCount: mine || reading || alreadyCounted || groupCall ? c.unreadCount : c.unreadCount + 1
     }));
 
     if (mine) return;
     if (reading) {
       this.http.put(`${this.apiUrl}/${id}/read`, {}).subscribe({ error: () => { /* next load corrects it */ } });
+    } else if (groupCall) {
+      this.http.get<ChatConversation>(`${this.apiUrl}/${id}`).subscribe({
+        next: fetched => {
+          this.patchConversation(id, c => ({ ...c, unreadCount: fetched.unreadCount }));
+          if (fetched.unreadCount) this.addHead(id);
+        },
+        error: () => { /* the next load corrects it */ }
+      });
     } else {
       // The chat pops up as a bubble, like a messenger chat head, with the message beside it for a moment.
       this.addHead(id);
@@ -425,23 +563,97 @@ export class ChatService {
   }
 
   private onRead(conversationId: string, userId: string, readAt: string): void {
-    this.patchConversation(conversationId, c => userId === this.me
-      ? { ...c, unreadCount: 0 }                 // read in another tab of this account
-      : { ...c, friendLastReadAt: readAt });     // the friend has seen it
+    this.patchConversation(conversationId, c => {
+      const marked = applyRead(c, userId, readAt);
+      if (userId === this.me) return { ...marked, unreadCount: 0 };          // read in another tab of this account
+      return c.isGroup ? marked : { ...marked, friendLastReadAt: readAt };   // the friend has seen it
+    });
   }
 
-  private showTyping(conversationId: string): void {
-    this.typingIds.update(ids => new Set(ids).add(conversationId));
-    clearTimeout(this.typingTimers.get(conversationId));
-    this.typingTimers.set(conversationId, setTimeout(() => this.hideTyping(conversationId), TYPING_SHOWN_MS));
+  private onGroupChanged(change: ChatGroupEvent): void {
+    const id = change.conversationId;
+    if (!this.conversation(id)) {
+      // A group this tab has not heard of: the user was just put into it.
+      this.fetchConversation(id);
+      return;
+    }
+
+    this.patchConversation(id, c => applyGroupChange(c, change, this.me));
+    change.participants.filter(p => p.isOnline).forEach(p => this.setOnline(p.id, true));
   }
 
-  private hideTyping(conversationId: string): void {
-    clearTimeout(this.typingTimers.get(conversationId));
-    this.typingTimers.delete(conversationId);
-    if (!this.typingIds().has(conversationId)) return;
+  /** Someone joined or left the call of a group: the chat shows who is in it. */
+  private onCallMembers(event: GroupCallMemberEvent): void {
+    const conversation = this.conversation(event.conversationId);
+    // Not in the list: the user left the group and is being told they are out of its call.
+    if (!conversation) return;
 
-    this.typingIds.update(ids => { const next = new Set(ids); next.delete(conversationId); return next; });
+    const call = applyCallMembers(conversation.activeCall, event);
+    if (call) this.patchConversation(conversation.id, c => ({ ...c, activeCall: call }));
+    else if (event.participants.length) this.fetchConversation(conversation.id);
+  }
+
+  /** Loads one chat from the server into the list. */
+  private fetchConversation(id: string, then?: (conversation: ChatConversation) => void): void {
+    const waiting = this.fetching.get(id);
+    if (waiting) {
+      if (then) waiting.push(then);
+      return;
+    }
+
+    this.fetching.set(id, then ? [then] : []);
+    this.http.get<ChatConversation>(`${this.apiUrl}/${id}`).subscribe({
+      next: fetched => {
+        const callbacks = this.fetching.get(id);
+        // Signed out meanwhile.
+        if (!callbacks) return;
+
+        this.fetching.delete(id);
+        this.upsertConversation(fetched);
+        callbacks.forEach(callback => callback(fetched));
+      },
+      error: () => this.fetching.delete(id)
+    });
+  }
+
+  /** Takes a chat off this screen for good: the user left the group or was removed from it. */
+  private dropConversation(id: string): void {
+    this.hideTyping(id);
+    this.hidePeek(id);
+    this.typingSentAt.delete(id);
+
+    this.openIds.update(ids => ids.filter(x => x !== id));
+    this.heads.update(ids => ids.filter(x => x !== id));
+    this.saveHeads();
+    this.allConversations.update(list => list.filter(c => c.id !== id));
+    this.threads.update(all => Object.fromEntries(Object.entries(all).filter(([key]) => key !== id)));
+  }
+
+  private showTyping(conversationId: string, userId: string): void {
+    if (userId === this.me) return;
+
+    this.typingUsers.update(all => {
+      const ids = all[conversationId] ?? [];
+      return ids.includes(userId) ? all : { ...all, [conversationId]: [...ids, userId] };
+    });
+
+    const key = `${conversationId}|${userId}`;
+    clearTimeout(this.typingTimers.get(key));
+    this.typingTimers.set(key, setTimeout(() => this.hideTyping(conversationId, userId), TYPING_SHOWN_MS));
+  }
+
+  /** One person stopped typing, or (without a person) the chat is gone. */
+  private hideTyping(conversationId: string, userId?: string): void {
+    const ids = this.typingUsers()[conversationId] ?? [];
+    const gone = userId ? ids.filter(id => id === userId) : ids;
+    if (!gone.length) return;
+
+    gone.forEach(id => {
+      const key = `${conversationId}|${id}`;
+      clearTimeout(this.typingTimers.get(key));
+      this.typingTimers.delete(key);
+    });
+    this.typingUsers.update(all => ({ ...all, [conversationId]: ids.filter(id => !gone.includes(id)) }));
   }
 
   private showPeek(conversationId: string): void {
@@ -478,7 +690,7 @@ export class ChatService {
       list.some(c => c.id === conversation.id)
         ? list.map(c => (c.id === conversation.id ? conversation : c))
         : [...list, conversation]);
-    if (conversation.friend.isOnline) this.setOnline(conversation.friend.id, true);
+    onlineIn(conversation).forEach(id => this.setOnline(id, true));
   }
 
   private patchConversation(id: string, change: (c: ChatConversation) => ChatConversation): void {
@@ -521,4 +733,10 @@ export class ChatService {
     this.heads.set([...unread, ...heads].slice(0, MAX_HEADS));
     if (stored === null) this.saveHeads();
   }
+}
+
+/** The people of a chat the server says are online. */
+function onlineIn(conversation: ChatConversation): string[] {
+  const people = conversation.isGroup ? [] : [conversation.friend];
+  return [...people, ...(conversation.participants ?? [])].filter(p => p.isOnline).map(p => p.id);
 }

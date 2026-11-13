@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 
 import { TaskDto } from '../../models/api.models';
+import { NumPipe, TPipe } from '../../core/i18n/t.pipe';
 
 /**
  * The small marks a task carries in a list or on a board card: how far its
@@ -14,23 +13,25 @@ import { TaskDto } from '../../models/api.models';
 @Component({
   selector: 'app-task-marks',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [TPipe, NumPipe],
   template: `
-    <span class="task-mark checklist" *ngIf="total() as count" [class.complete]="done() === count"
-          [title]="done() + ' of ' + count + ' checklist lines done'">
-      <mat-icon>checklist</mat-icon>{{ done() }}/{{ count }}
-    </span>
-    <span class="task-mark blocked" *ngIf="task().isBlocked" title="Waiting on a task that is not finished">
-      <mat-icon>block</mat-icon>Blocked
-    </span>
+    @if (total(); as count) {
+      <span class="task-mark checklist" [title]="'{done} of {total} subtasks done' | t: { done: done(), total: count }">{{ done() + '/' + count | num }}</span>
+    }
+    @if (blocked()) {
+      <span class="task-mark blocked" [title]="'Waiting on a task that is not finished' | t">{{ 'Blocked' | t }}</span>
+    }
   `,
   styleUrl: './task-marks.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.empty]': '!total() && !task().isBlocked' }
+  host: { '[class.empty]': '!total() && !blocked()' }
 })
 export class TaskMarks {
   readonly task = input.required<TaskDto>();
 
   readonly total = computed(() => this.task().subtaskCount ?? 0);
   readonly done = computed(() => Math.min(this.task().completedSubtaskCount ?? 0, this.total()));
+  /** A finished task waits for nothing. */
+  readonly blocked = computed(() =>
+    !!this.task().isBlocked && this.task().status !== 'Completed' && this.task().status !== 'Cancelled');
 }

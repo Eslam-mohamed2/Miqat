@@ -2,12 +2,12 @@ import {
   ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input,
   output, signal
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 
 import { TaskService } from '../../core/services/task.service';
 import { SubtaskDto } from '../../models/api.models';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { t } from '../../core/i18n/i18n';
+import { TPipe } from '../../core/i18n/t.pipe';
 
 /** Matches the API's column size for a checklist line. */
 const TITLE_MAX_LENGTH = 200;
@@ -19,7 +19,7 @@ export interface ChecklistProgress {
 }
 
 /**
- * The checklist of a task: the smaller steps it is made of, ticked off one by one.
+ * The subtasks of a task: the smaller steps it is made of, ticked off one by one.
  *
  * Ticking, renaming, moving and removing show at once and are put back if the
  * API refuses. It hides itself on API builds that have no checklists.
@@ -27,7 +27,7 @@ export interface ChecklistProgress {
 @Component({
   selector: 'app-task-checklist',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [TPipe],
   templateUrl: './task-checklist.html',
   styleUrl: './task-checklist.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,7 +84,7 @@ export class TaskChecklist {
         this.available.set(err?.status !== 404);
         this.list.set([]);
         this.loading.set(false);
-        if (err?.status !== 404) this.error.set(apiErrorMessage(err, 'The checklist could not be loaded.'));
+        if (err?.status !== 404) this.error.set(apiErrorMessage(err, t('The checklist could not be loaded.')));
       }
     });
   }
@@ -104,7 +104,7 @@ export class TaskChecklist {
         this.draft.set('');
         this.finish();
       },
-      error: err => this.fail(err, 'That line was not added.')
+      error: err => this.fail(err, t('That line was not added.'))
     });
   }
 
@@ -114,7 +114,7 @@ export class TaskChecklist {
     const isDone = !line.isDone;
 
     this.list.update(list => list.map(l => (l.id === line.id ? { ...l, isDone } : l)));
-    this.save(line.id, { isDone }, before, 'That tick was not saved.');
+    this.save(line.id, { isDone }, before, t('That tick was not saved.'));
   }
 
   startRename(line: SubtaskDto) {
@@ -143,7 +143,7 @@ export class TaskChecklist {
 
     const before = this.list();
     this.list.update(list => list.map(l => (l.id === line.id ? { ...l, title } : l)));
-    this.save(line.id, { title }, before, 'That name was not saved.');
+    this.save(line.id, { title }, before, t('That name was not saved.'));
   }
 
   /** `step` is -1 for up, 1 for down. */
@@ -158,7 +158,7 @@ export class TaskChecklist {
     next.splice(from, 1);
     next.splice(to, 0, line);
     this.list.set(next.map((l, position) => ({ ...l, position })));
-    this.save(line.id, { position: to }, before, 'That move was not saved.');
+    this.save(line.id, { position: to }, before, t('That move was not saved.'));
   }
 
   remove(line: SubtaskDto) {
@@ -173,7 +173,7 @@ export class TaskChecklist {
       next: () => this.finish(),
       error: err => {
         this.list.set(before);
-        this.fail(err, 'That line was not removed.');
+        this.fail(err, t('That line was not removed.'));
       }
     });
   }
@@ -216,6 +216,4 @@ export class TaskChecklist {
   textOf(event: Event): string {
     return (event.target as HTMLInputElement).value;
   }
-
-  trackById = (_: number, line: SubtaskDto) => line.id;
 }

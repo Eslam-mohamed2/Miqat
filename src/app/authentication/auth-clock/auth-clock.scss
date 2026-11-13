@@ -1,0 +1,98 @@
+@use '../../../styles/tokens' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  text-align: center;
+}
+
+.face {
+  position: relative;
+  width: 340px;
+  height: 340px;
+  max-width: 100%;
+
+  svg {
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.rim { stroke: $mq-chip; }
+.track { stroke: $mq-hover-2; }
+.passed { stroke: $mq-accent-text; }
+.dot { fill: $mq-accent-text; }
+
+.reading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.time {
+  font-family: $mq-serif;
+  font-size: 104px;
+  line-height: .9;
+  font-variant-numeric: tabular-nums;
+}
+
+.where {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: $mq-muted;
+}
+
+.dates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gregorian {
+  font-size: 15px;
+  color: $mq-text-2;
+}
+
+.hijri {
+  font-size: 14px;
+  color: $mq-accent-text;
+}
+
+.hijri-ar {
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-size: 14px;
+  color: $mq-text-4;
+}
+
+.motto {
+  max-width: 420px;
+  margin: 0;
+  font-family: $mq-serif;
+  font-size: 34px;
+  line-height: 1.2;
+
+  em { color: $mq-accent-text; }
+}
+
+@include below($bp-phone) {
+  .face {
+    width: 280px;
+    height: 280px;
+
+    svg {
+      width: 280px;
+      height: 280px;
+    }
+  }
+
+  .time { font-size: 84px; }
+  .motto { font-size: 28px; }
+}

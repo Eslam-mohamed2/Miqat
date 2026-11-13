@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
@@ -15,11 +13,14 @@ import {
   ContactDto, EventDto, RecurrencePattern, SaveEventDto, TimeSlotDto
 } from '../../../../models/api.models';
 import { apiErrorMessage } from '../../../../core/http/api-error';
+import { locale, t, tCount } from '../../../../core/i18n/i18n';
+import { TPipe } from '../../../../core/i18n/t.pipe';
 import {
-  dateInputInZone, dayKeyOfCell, formatTimeInZone, instantFromInputs, timeInputInZone, timeZoneLabel,
+  allDaySpan, dateInputInZone, dayKeyOfCell, formatTimeInZone, instantFromInputs, timeInputInZone, timeZoneLabel,
   zonedParts
 } from '../../../../core/utils/time-zone';
 import { REMINDER_PRESETS, reminderLabel } from '../../../../core/utils/reminder-label';
+import { initialsOf } from '../../calendar-layout';
 
 /** One date of a repeating event, as the calendar showed it. */
 export interface OccurrenceTarget {
@@ -35,6 +36,8 @@ export interface EventEditorData {
   zone: string;
   /** New event: the day (a calendar cell) it starts on. */
   date?: Date;
+  /** New event: when it starts on that day ("HH:mm"), when a time was picked on the grid. */
+  time?: string;
   /** Edit: the event to change. */
   event?: EventDto;
   /** Edit one date of a repeating event: only its time, title and place change. */
@@ -51,13 +54,25 @@ const MINUTE = 60_000;
 /** Limits of the API, checked here first so the message is next to the field. */
 const MAX_EVENT_DAYS = 31;
 
-const REPEATS: { value: RecurrencePattern; label: string; unit: string }[] = [
-  { value: 'None', label: 'Does not repeat', unit: '' },
-  { value: 'Daily', label: 'Every day', unit: 'day' },
-  { value: 'Weekly', label: 'Every week', unit: 'week' },
-  { value: 'Monthly', label: 'Every month', unit: 'month' },
-  { value: 'Yearly', label: 'Every year', unit: 'year' }
+/** Someone who already has something at the chosen time. */
+interface BusyPerson {
+  me: boolean;
+  name: string;
+}
+
+const REPEATS: { value: RecurrencePattern; label: string }[] = [
+  { value: 'None', label: t('Does not repeat') },
+  { value: 'Daily', label: t('Every day') },
+  { value: 'Weekly', label: t('Every week') },
+  { value: 'Monthly', label: t('Every month') },
+  { value: 'Yearly', label: t('Every year') }
 ];
+
+/** "Lisa", "Lisa and Omar", "Lisa, Omar and Sara". */
+function listOf(names: string[]): string {
+  if (names.length < 2) return names[0] ?? '';
+  return t('{first} and {second}', { first: names.slice(0, -1).join(t(', ')), second: names[names.length - 1] });
+}
 
 /**
  * The window an event is created and changed in.
@@ -69,7 +84,7 @@ const REPEATS: { value: RecurrencePattern; label: string; unit: string }[] = [
 @Component({
   selector: 'app-event-editor',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule],
+  imports: [ReactiveFormsModule, TPipe],
   templateUrl: './event-editor.html',
   styleUrl: './event-editor.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -123,21 +138,27 @@ export class EventEditor {
   readonly suggesting = signal(false);
 
   /**
-   * Who already has something at the chosen time: 'You' and / or guests' names.
-   * Only the fact that they are busy is known, never what with.
+   * Who already has something at the chosen time: the user and / or guests, the
+   * user first. Only the fact that they are busy is known, never what with.
    */
-  readonly busyPeople = signal<string[]>([]);
+  readonly busyPeople = signal<BusyPerson[]>([]);
 
   /** "You already have something at that time." / "You and Lisa Chen are busy at that time." */
   readonly busyText = computed(() => {
     const people = this.busyPeople();
     if (!people.length) return '';
-    if (people.length === 1 && people[0] === 'You') return 'You already have something at that time.';
+    const me = people.some(person => person.me);
+    const others = people.filter(person => !person.me).map(person => person.name);
 
-    const names = people.length > 1
-      ? `${people.slice(0, -1).join(', ')} and ${people[people.length - 1]}`
-      : people[0];
-    return `${names} ${people.length > 1 ? 'are' : 'is'} busy at that time.`;
+    if (me) {
+      if (!others.length) return t('You already have something at that time.');
+      return others.length === 1
+        ? t('You and {name} are busy at that time.', { name: others[0] })
+        : t('You, {names} are busy at that time.', { names: listOf(others) });
+    }
+    return others.length === 1
+      ? t('{name} is busy at that time.', { name: others[0] })
+      : t('{names} are busy at that time.', { names: listOf(others) });
   });
 
   private busyTimer?: ReturnType<typeof setTimeout>;
@@ -158,16 +179,18 @@ export class EventEditor {
         : this.defaultTimes(settings?.workDayStart);
 
     const allDay = !this.occurrence && !!this.event?.isAllDay;
-    // An all-day event is stored up to the next midnight; the form shows its last day.
-    const shownEnd = allDay ? new Date(source.end.getTime() - 1) : source.end;
+    // An all-day event keeps the dates it was given, in whatever zone it was made;
+    // the form shows its first and its last day.
+    const span = allDay ? allDaySpan(source.start, source.end, this.zone) : null;
+    const spanDay = (offset: number) => span ? dayKeyOfCell(new Date(span.year, span.month - 1, span.day + offset)) : '';
     this.duration = Math.max(5, Math.round((source.end.getTime() - source.start.getTime()) / MINUTE));
 
     this.form = this.fb.group({
       title: [this.occurrence?.title ?? this.event?.title ?? '', [Validators.required, Validators.maxLength(200)]],
       isAllDay: [allDay],
-      startDate: [dateInputInZone(source.start, this.zone), Validators.required],
+      startDate: [span ? spanDay(0) : dateInputInZone(source.start, this.zone), Validators.required],
       startTime: [timeInputInZone(source.start, this.zone), Validators.required],
-      endDate: [dateInputInZone(shownEnd, this.zone), Validators.required],
+      endDate: [span ? spanDay(span.days - 1) : dateInputInZone(source.end, this.zone), Validators.required],
       endTime: [timeInputInZone(source.end, this.zone), Validators.required],
       recurrence: [this.event?.recurrence ?? 'None'],
       recurrenceInterval: [this.event?.recurrenceInterval ?? 1, [Validators.min(1), Validators.max(99)]],
@@ -182,7 +205,7 @@ export class EventEditor {
 
     if (this.event) {
       this.guests.set(this.event.attendees.map(attendee => ({
-        id: attendee.userId, name: attendee.fullName || 'Unknown', picture: attendee.profilePictureUrl
+        id: attendee.userId, name: attendee.fullName || t('Unknown'), picture: attendee.profilePictureUrl
       })));
     }
 
@@ -195,8 +218,8 @@ export class EventEditor {
   }
 
   get heading(): string {
-    if (this.isOccurrence) return 'Change this date only';
-    return this.isEdit ? 'Edit event' : 'New event';
+    if (this.isOccurrence) return t('Change this date only');
+    return this.isEdit ? t('Edit event') : t('New event');
   }
 
   get isAllDay(): boolean {
@@ -209,14 +232,22 @@ export class EventEditor {
 
   /** "week" -> "weeks" when the interval is more than one. */
   get repeatUnit(): string {
-    const unit = REPEATS.find(repeat => repeat.value === this.form.get('recurrence')?.value)?.unit ?? '';
-    return Number(this.form.get('recurrenceInterval')?.value) === 1 ? unit : `${unit}s`;
+    const count = Number(this.form.get('recurrenceInterval')?.value);
+    switch (this.form.get('recurrence')?.value as RecurrencePattern) {
+      case 'Daily': return tCount(count, 'day', 'days');
+      case 'Weekly': return tCount(count, 'week', 'weeks');
+      case 'Monthly': return tCount(count, 'month', 'months');
+      case 'Yearly': return tCount(count, 'year', 'years');
+      default: return '';
+    }
   }
 
   /** What the default reminder is, so "Default" says what it means. */
   get defaultReminderLabel(): string {
     const minutes = this.calendarData.settings()?.defaultReminderMinutes;
-    return minutes === null || minutes === undefined ? 'Default (none)' : `Default (${reminderLabel(minutes).toLowerCase()})`;
+    return minutes === null || minutes === undefined
+      ? t('Default (none)')
+      : t('Default ({reminder})', { reminder: reminderLabel(minutes).toLowerCase() });
   }
 
   // ── Dates ──────────────────────────────────────────────────────────────────
@@ -228,8 +259,11 @@ export class EventEditor {
     const today = zonedParts(now, this.zone);
     const isToday = dayKeyOfCell(cell) === dateInputInZone(now, this.zone);
 
-    let time = /^\d{2}:\d{2}$/.test(workDayStart ?? '') ? workDayStart! : '09:00';
-    if (isToday) {
+    const clock = /^\d{2}:\d{2}$/;
+    let time = clock.test(workDayStart ?? '') ? workDayStart! : '09:00';
+    if (clock.test(this.data.time ?? '')) {
+      time = this.data.time!;
+    } else if (isToday) {
       const hour = Math.min(23, today.hour + 1);
       time = `${String(hour).padStart(2, '0')}:00`;
     }
@@ -274,16 +308,19 @@ export class EventEditor {
       }
 
       const request = ++this.busyRequest;
-      this.schedule.getAvailability(this.guests().map(guest => guest.id), start, end).subscribe({
+      // The user is named too: with guests asked for, the answer has only those named.
+      const guests = this.guests().map(guest => guest.id);
+      const ids = guests.length && this.myId ? [this.myId, ...guests] : guests;
+      this.schedule.getAvailability(ids, start, end).subscribe({
         next: people => {
           if (request !== this.busyRequest) return;
           const overlaps = (slot: TimeSlotDto) =>
             new Date(slot.start).getTime() < end.getTime() && new Date(slot.end).getTime() > start.getTime();
           this.busyPeople.set(people
             .filter(person => person.busy.some(overlaps))
-            .map(person => person.userId === this.myId ? 'You' : person.fullName || 'A guest')
-            // "You" first.
-            .sort((a, b) => Number(b === 'You') - Number(a === 'You')));
+            .map(person => ({ me: person.userId === this.myId, name: person.fullName || t('A guest') }))
+            // The user first.
+            .sort((a, b) => Number(b.me) - Number(a.me)));
         },
         // A hint only: without it the event can still be saved.
         error: () => this.busyPeople.set([])
@@ -316,6 +353,11 @@ export class EventEditor {
     if (start && end && !this.isAllDay && end.getTime() > start.getTime()) {
       this.duration = Math.round((end.getTime() - start.getTime()) / MINUTE);
     }
+  }
+
+  toggleAllDay() {
+    this.form.patchValue({ isAllDay: !this.isAllDay });
+    this.allDayChanged();
   }
 
   allDayChanged() {
@@ -354,8 +396,7 @@ export class EventEditor {
   }
 
   initials(name: string): string {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    return parts.length ? (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase() : '?';
+    return initialsOf(name);
   }
 
   // ── Find a time ────────────────────────────────────────────────────────────
@@ -381,7 +422,7 @@ export class EventEditor {
       },
       error: err => {
         this.suggesting.set(false);
-        this.error.set(apiErrorMessage(err, 'Free times could not be looked up.'));
+        this.error.set(apiErrorMessage(err, t('Free times could not be looked up.')));
       }
     });
   }
@@ -402,10 +443,13 @@ export class EventEditor {
   slotLabel(slot: TimeSlotDto): string {
     const start = new Date(slot.start);
     const hour24 = this.calendarData.use24HourClock();
-    const day = new Intl.DateTimeFormat(undefined, {
+    const day = new Intl.DateTimeFormat(locale(), {
       weekday: 'short', day: 'numeric', month: 'short', timeZone: this.zone
     }).format(start);
-    return `${day} · ${formatTimeInZone(start, this.zone, hour24)} – ${formatTimeInZone(new Date(slot.end), this.zone, hour24)}`;
+    const time = t('{start} – {end}', {
+      start: formatTimeInZone(start, this.zone, hour24), end: formatTimeInZone(new Date(slot.end), this.zone, hour24)
+    });
+    return `${day} · ${time}`;
   }
 
   // ── Save ───────────────────────────────────────────────────────────────────
@@ -416,22 +460,22 @@ export class EventEditor {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.error.set(this.form.get('title')?.invalid ? 'Give the event a title.' : 'Check the highlighted fields.');
+      this.error.set(this.form.get('title')?.invalid ? t('Give the event a title.') : t('Check the highlighted fields.'));
       return;
     }
 
     const start = this.startInstant();
     const end = this.endInstant();
     if (!start || !end) {
-      this.error.set('Fill in when the event starts and ends.');
+      this.error.set(t('Fill in when the event starts and ends.'));
       return;
     }
     if (end.getTime() <= start.getTime()) {
-      this.error.set('The event has to end after it starts.');
+      this.error.set(t('The event has to end after it starts.'));
       return;
     }
     if (end.getTime() - start.getTime() > MAX_EVENT_DAYS * 86_400_000) {
-      this.error.set(`An event cannot be longer than ${MAX_EVENT_DAYS} days.`);
+      this.error.set(t('An event cannot be longer than {n} days.', { n: MAX_EVENT_DAYS }));
       return;
     }
 
@@ -455,7 +499,7 @@ export class EventEditor {
       let repeatEnd: string | null = null;
       if (repeats && value.recurrenceEndDate) {
         if (value.recurrenceEndDate < value.startDate) {
-          this.error.set('The repeat cannot end before the event starts.');
+          this.error.set(t('The repeat cannot end before the event starts.'));
           return;
         }
         // The whole last day counts.
@@ -494,7 +538,7 @@ export class EventEditor {
       },
       error: err => {
         this.saving.set(false);
-        this.error.set(apiErrorMessage(err, 'The event was not saved.'));
+        this.error.set(apiErrorMessage(err, t('The event was not saved.')));
       }
     });
   }
@@ -514,7 +558,4 @@ export class EventEditor {
   close() {
     this.dialogRef.close(false);
   }
-
-  trackByGuest = (_: number, guest: Guest) => guest.id;
-  trackByContact = (_: number, contact: ContactDto) => contact.id;
 }

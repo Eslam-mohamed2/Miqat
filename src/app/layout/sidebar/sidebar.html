@@ -1,128 +1,106 @@
-<button class="mobile-sidebar-trigger" [class.hidden]="isMobileMenuOpen()" type="button" (click)="toggleMobileMenu()" aria-label="Open navigation menu">
-  <mat-icon>menu</mat-icon>
-  <span>Menu</span>
-</button>
+<!-- Wide screens: the 60px rail. -->
+<nav class="rail" [attr.aria-label]="'Sections' | t">
+  <a class="rail-logo" routerLink="/calendar" [attr.aria-label]="'Miqat home' | t">
+    <app-miqat-logo [height]="28" />
+  </a>
 
-<div class="mobile-sidebar-backdrop" [class.visible]="isMobileMenuOpen()" (click)="closeMobileMenu()"></div>
-
-<!-- Reopens the sidebar after it has been closed on desktop. -->
-<button class="sidebar-reveal" *ngIf="isHidden()" type="button"
-        (click)="showSidebar()" aria-label="Show navigation">
-  <mat-icon>chevron_right</mat-icon>
-</button>
-
-<div class="sidebar"
-     [ngClass]="{'collapsed': isCollapsed(), 'mobile-open': isMobileMenuOpen(), 'hidden': isHidden(), 'resizing': isResizing()}"
-     [style.width.px]="isCollapsed() ? null : width()">
-  <div class="mobile-sheet-header">
-    <span>Navigation</span>
-    <button type="button" (click)="closeMobileMenu()" aria-label="Close navigation menu">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
-
-  <!-- Phones only: the top bar has no room for the search box there. -->
-  <button type="button" class="mobile-search" (click)="openSearch()">
-    <mat-icon>search</mat-icon>
-    <span>Search tasks, projects, events or people</span>
+  <!-- Create: the three things a user makes, one press away on every page. -->
+  <button type="button" class="rail-link rail-create" (click)="toggleCreate($event)"
+          [attr.aria-label]="'Create' | t" [title]="'Create' | t" aria-haspopup="menu" [attr.aria-expanded]="createOpen()">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
   </button>
+  @if (createOpen()) {
+    <div class="mq-menu rail-menu" role="menu" [attr.aria-label]="'Create' | t"
+         [style.top.px]="createTop()" (click)="$event.stopPropagation()">
+      <button type="button" class="mq-menu-item" role="menuitem" (click)="create('event')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+        {{ 'New event' | t }}
+      </button>
+      <button type="button" class="mq-menu-item" role="menuitem" (click)="create('task')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8.5 12.5l2.5 2.5 4.5-5"></path></svg>
+        {{ 'New task' | t }}
+      </button>
+      <button type="button" class="mq-menu-item" role="menuitem" (click)="create('project')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2.5h6.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"></path></svg>
+        {{ 'New project' | t }}
+      </button>
+      <div class="mq-menu-sep"></div>
+      <button type="button" class="mq-menu-item" role="menuitem" (click)="create('palette')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg>
+        {{ 'Type it or search' | t }}
+        <span class="rail-menu-key mq-ltr">Ctrl K</span>
+      </button>
+    </div>
+  }
 
-  <!-- Desktop close. Collapse gives the icon rail; this hides it outright. -->
-  <button class="sidebar-close" type="button" (click)="hideSidebar()" aria-label="Close navigation">
-    <mat-icon>close</mat-icon>
+  <a class="rail-link" routerLink="/calendar" routerLinkActive="active" ariaCurrentWhenActive="page"
+     [attr.aria-label]="'Calendar' | t" [title]="'Calendar' | t">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+  </a>
+  <a class="rail-link" routerLink="/tasks" routerLinkActive="active" ariaCurrentWhenActive="page"
+     [attr.aria-label]="'Tasks' | t" [title]="'Tasks' | t">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>
+  </a>
+  <a class="rail-link" routerLink="/whiteboard" routerLinkActive="active" ariaCurrentWhenActive="page"
+     [attr.aria-label]="'Whiteboard' | t" [title]="'Whiteboard' | t">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+  </a>
+  <a class="rail-link" routerLink="/node-flow" routerLinkActive="active" ariaCurrentWhenActive="page"
+     [attr.aria-label]="'Node Flow' | t" [title]="'Node Flow' | t">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="18" cy="6" r="2.5"></circle><circle cx="18" cy="18" r="2.5"></circle><path d="M8.5 6h7M6 8.5v4a3 3 0 0 0 3 3h6.5"></path></svg>
+  </a>
+  <a class="rail-link" routerLink="/friends" routerLinkActive="active" ariaCurrentWhenActive="page"
+     [attr.aria-label]="'People' | t" [title]="'People' | t">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"></path></svg>
+  </a>
+
+  <span class="rail-space"></span>
+
+  <!-- Light or dark, one press away on every page (the same choice as Settings → Appearance). -->
+  <button type="button" class="rail-link rail-theme" (click)="toggleTheme()"
+          [attr.aria-label]="themeLabel()" [title]="themeLabel()">
+    @if (themes.theme() === 'dark') {
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"></path></svg>
+    } @else {
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
+    }
   </button>
+  <a class="rail-link" routerLink="/inbox" routerLinkActive="active" ariaCurrentWhenActive="page"
+     [attr.aria-label]="inboxLabel()" [title]="'Inbox' | t">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg>
+    @if (unread()) { <span class="rail-dot"></span> }
+  </a>
+  <a class="rail-link" routerLink="/settings" routerLinkActive="active" ariaCurrentWhenActive="page"
+     [attr.aria-label]="'Settings' | t" [title]="'Settings' | t">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg>
+  </a>
+</nav>
 
-  <!-- Drag the right edge to resize; arrow keys work when focused. -->
-  <div class="resize-handle" *ngIf="!isCollapsed()"
-       (pointerdown)="startResize($event)" (dblclick)="resetWidth()"
-       (keydown)="onResizeKey($event)"
-       role="separator" aria-orientation="vertical" tabindex="0"
-       [attr.aria-valuenow]="width()" [attr.aria-valuemin]="minWidth" [attr.aria-valuemax]="maxWidth"
-       aria-label="Resize navigation (arrow keys, double-click to reset)">
-  </div>
-
-  <div class="logo-section">
-    <div class="d-flex align-items-center w-100 justify-content-center header-wrapper">
-      <div class="d-flex align-items-center">
-        <img src="../../../assets/Logo.png" alt="Miqat" class="logo dark-logo">
-        <img src="../../../assets/Light-mode-logo.png" alt="Miqat" class="logo light-logo">
-      </div>
-    </div>
-  </div>
-
-  <div class="nav-groups">
-    <div class="nav-group">
-      <div class="nav-label">APPLICATION</div>
-      <ng-container *ngFor="let item of navItemsApp">
-        <div class="nav-item" *ngIf="!item.disabled" routerLinkActive="active" [routerLink]="item.route"
-             [title]="item.label" (click)="closeMobileMenu()">
-          <mat-icon>{{ item.icon }}</mat-icon>
-          <span>{{ item.label }}</span>
-        </div>
-        <div class="nav-item disabled" *ngIf="item.disabled" title="Coming soon">
-          <mat-icon>{{ item.icon }}</mat-icon>
-          <span>{{ item.label }}</span>
-          <span class="nav-badge-soon">Soon</span>
-        </div>
-      </ng-container>
-    </div>
-
-    <div class="nav-group spaced" *ngIf="(groups$ | async) as groups">
-      <div class="nav-label-container" (click)="uiService.toggleProjects(true)">
-        <div class="nav-label">PINNED PROJECTS</div>
-        <mat-icon class="label-icon">settings_overscan</mat-icon>
-      </div>
-
-      <div class="nav-item" *ngFor="let group of groups" [title]="group.name"
-           (click)="uiService.openProjectDetails(group.id); closeMobileMenu()">
-        <div class="project-dot" [style.backgroundColor]="group.color || '#2ec4a0'"></div>
-        <span>{{ group.name }}</span>
-      </div>
-
-      <div class="nav-item new-project-btn" title="New Project" (click)="uiService.toggleProjects(true); closeMobileMenu()">
-        <mat-icon>add_circle_outline</mat-icon>
-        <span>New Project</span>
-      </div>
-    </div>
-
-    <div class="nav-group spaced">
-      <div class="nav-label">OTHERS</div>
-      <ng-container *ngFor="let item of navItemsOther">
-        <div class="nav-item" *ngIf="!item.disabled" routerLinkActive="active" [routerLink]="item.route"
-             [title]="item.label" (click)="closeMobileMenu()">
-          <mat-icon>{{ item.icon }}</mat-icon>
-          <span>{{ item.label }}</span>
-        </div>
-        <div class="nav-item disabled" *ngIf="item.disabled" title="Coming soon">
-          <mat-icon>{{ item.icon }}</mat-icon>
-          <span>{{ item.label }}</span>
-          <span class="nav-badge-soon">Soon</span>
-        </div>
-      </ng-container>
-    </div>
-  </div>
-
-  <div class="nav-item toggle-btn-wrapper" [title]="isCollapsed() ? 'Expand' : 'Collapse'" (click)="toggleSidebar()">
-    <mat-icon class="toggle-icon">menu_open</mat-icon>
-    <span>Collapse</span>
-  </div>
-
-  <div class="bottom-section">
-    <div class="nav-item logout-btn" title="Logout" (click)="onLogout()">
-      <mat-icon>logout</mat-icon>
-      <span>Logout</span>
-    </div>
-
-    <div class="user-profile" *ngIf="currentUser() as user" [routerLink]="['/settings']" (click)="closeMobileMenu()">
-      <!-- The picture, or the user's initials when there is none (it used to be an empty circle). -->
-      <div class="avatar-placeholder">
-        <app-chat-avatar [name]="displayName(user)" [url]="user.profilePictureUrl" [size]="36" />
-      </div>
-      <div class="user-info">
-        <div class="user-name">{{ displayName(user) }}</div>
-        <div class="user-email">{{ user.email }}</div>
-      </div>
-      <mat-icon class="chevron">chevron_right</mat-icon>
-    </div>
-  </div>
-</div>
+<!-- Phones: the floating tab bar. -->
+<nav class="tabbar" [attr.aria-label]="'Main@@navigation' | t">
+  <a class="tab" routerLink="/calendar" [queryParams]="{ view: 'day' }" routerLinkActive="active"
+     [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'subset', matrixParams: 'ignored', fragment: 'ignored' }"
+     ariaCurrentWhenActive="page">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+    {{ 'Day' | t }}
+  </a>
+  <a class="tab" routerLink="/calendar" [queryParams]="{ view: 'week' }" routerLinkActive="active"
+     [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'subset', matrixParams: 'ignored', fragment: 'ignored' }"
+     ariaCurrentWhenActive="page">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+    {{ 'Week' | t }}
+  </a>
+  <button type="button" class="tab-add" (click)="openQuickAdd()" [attr.aria-label]="'Quick add' | t">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+  </button>
+  <a class="tab" routerLink="/tasks" routerLinkActive="active" ariaCurrentWhenActive="page">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>
+    {{ 'Tasks' | t }}
+  </a>
+  <a class="tab" routerLink="/inbox" routerLinkActive="active" ariaCurrentWhenActive="page"
+     [attr.aria-label]="inboxLabel()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg>
+    {{ 'Inbox' | t }}
+    @if (unread()) { <span class="tab-dot"></span> }
+  </a>
+</nav>

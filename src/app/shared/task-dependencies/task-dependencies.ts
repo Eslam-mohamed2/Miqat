@@ -2,14 +2,15 @@ import {
   ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input,
   output, signal
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 
 import { TaskService } from '../../core/services/task.service';
 import { UserService } from '../../core/services/user.service';
 import { TaskDependenciesDto, TaskDto, TaskLinkDto } from '../../models/api.models';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { zonedParts } from '../../core/utils/time-zone';
+import { isArabic, locale, t, tCount } from '../../core/i18n/i18n';
+import { TPipe } from '../../core/i18n/t.pipe';
 
 /** Rows the picker shows at once; typing narrows the list. */
 const PICKER_LIMIT = 8;
@@ -17,7 +18,19 @@ const PICKER_LIMIT = 8;
 const NO_LINKS: TaskDependenciesDto = { blockedBy: [], blocks: [], isBlocked: false };
 
 /**
- * How a task is tied to others: what has to be finished before it ("Waiting on")
+ * The API's status values as the task screens name them. The key stays as the API
+ * sends it; the label is looked up in the interface language when it is shown.
+ */
+const STATUS_LABELS: Record<string, () => string> = {
+  Pending: () => t('To do'),
+  In_progress: () => t('In progress'),
+  On_hold: () => t('On hold'),
+  Completed: () => t('Done@@status'),
+  Cancelled: () => t('Cancelled')
+};
+
+/**
+ * How a task is tied to others: what has to be finished before it ("Blocked by")
  * and what waits for it ("Blocking").
  *
  * It hides itself on API builds that have no dependencies.
@@ -25,7 +38,7 @@ const NO_LINKS: TaskDependenciesDto = { blockedBy: [], blocks: [], isBlocked: fa
 @Component({
   selector: 'app-task-dependencies',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule],
+  imports: [RouterLink, TPipe],
   templateUrl: './task-dependencies.html',
   styleUrl: './task-dependencies.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -89,7 +102,7 @@ export class TaskDependencies {
         this.available.set(err?.status !== 404);
         this.links.set(NO_LINKS);
         this.loading.set(false);
-        if (err?.status !== 404) this.error.set(apiErrorMessage(err, 'Dependencies could not be loaded.'));
+        if (err?.status !== 404) this.error.set(apiErrorMessage(err, t('Dependencies could not be loaded.')));
       }
     });
   }
@@ -117,7 +130,7 @@ export class TaskDependencies {
       error: err => {
         this.pickerLoading.set(false);
         this.pickerOpen.set(false);
-        this.error.set(apiErrorMessage(err, 'Your tasks could not be loaded.'));
+        this.error.set(apiErrorMessage(err, t('Your tasks could not be loaded.')));
       }
     });
   }
@@ -142,7 +155,7 @@ export class TaskDependencies {
         this.apply(links);
       },
       // The API explains itself here ("These two tasks would be waiting for each other.").
-      error: err => this.fail(err, 'That link was not added.')
+      error: err => this.fail(err, t('That link was not added.'))
     });
   }
 
@@ -170,10 +183,10 @@ export class TaskDependencies {
             this.busy.set(false);
             this.apply(links);
           },
-          error: err => this.fail(err, 'Dependencies could not be reloaded.')
+          error: err => this.fail(err, t('Dependencies could not be reloaded.'))
         });
       },
-      error: err => this.fail(err, 'That link was not removed.')
+      error: err => this.fail(err, t('That link was not removed.'))
     });
   }
 
@@ -200,19 +213,38 @@ export class TaskDependencies {
 
   /** "In progress · due 14 Nov", in the profile's time zone. */
   details(link: { status?: string | null; dueDate?: string | null }): string {
-    const status = (link.status ?? '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+    const status = STATUS_LABELS[link.status ?? '']?.() ?? (link.status ?? '').replace(/_/g, ' ');
     const date = link.dueDate ? new Date(link.dueDate) : null;
+    // English keeps the day before the month ("14 Nov"), as this row always showed it.
     const due = date && !Number.isNaN(date.getTime())
-      ? 'due ' + new Intl.DateTimeFormat(undefined, {
-          day: 'numeric', month: 'short', timeZone: this.users.timeZone()
-        }).format(date)
+      ? t('due {date}', {
+          date: new Intl.DateTimeFormat(isArabic() ? locale() : 'en-GB', {
+            day: 'numeric', month: 'short', timeZone: this.users.timeZone()
+          }).format(date)
+        })
       : '';
     return [status, due].filter(Boolean).join(' · ');
+  }
+
+  /** The label at the end of a row: "Done", "2d late", or the status and due day. */
+  state(link: TaskLinkDto): { text: string; late: boolean } {
+    if (link.isDone) return { text: t('Done@@status'), late: false };
+
+    const due = link.dueDate ? new Date(link.dueDate) : null;
+    if (due && !Number.isNaN(due.getTime()) && due.getTime() < Date.now()) {
+      // Whole calendar days in the profile's time zone, as the task list counts them.
+      const zone = this.users.timeZone();
+      const day = (date: Date) => {
+        const parts = zonedParts(date, zone);
+        return Date.UTC(parts.year, parts.month - 1, parts.day) / 86_400_000;
+      };
+      const days = Math.round(day(new Date()) - day(due));
+      return { text: days ? tCount(days, '{n}d late', '{n}d late') : t('Late'), late: true };
+    }
+    return { text: this.details(link), late: false };
   }
 
   textOf(event: Event): string {
     return (event.target as HTMLInputElement).value;
   }
-
-  trackById = (_: number, item: { id: string }) => item.id;
 }

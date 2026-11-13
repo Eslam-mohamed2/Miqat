@@ -1,61 +1,289 @@
 @use '../../../../styles/tokens' as *;
 
-// The calendar lays itself out by the room it actually has, not by the window's
-// width: the app sidebar beside it can be collapsed, hidden or dragged up to 460px
-// wide, so two windows of the same size can leave the calendar very different
-// amounts of space. (With window-width rules, a 1024px screen with the sidebar open
-// squeezed the grid into 350px and cut the Day / Week / Month buttons off.)
+// design/miqat-2.0: Main / L-Week (the header and the three columns under it).
+// The page fills the space beside the rail; the columns scroll on their own, so
+// the header and the day headings stay in view while the hours move.
 :host {
-  display: block;
-  height: 100%;
-  container: calendar / inline-size;
-}
-
-.calendar-layout {
-  display: flex;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  background-color: var(--surface);
-  color: var(--text-primary);
-}
-
-.calendar-main-column {
-  flex: 1;
-  min-width: 0;
-  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  // The grid's own rules (stacked header, dots instead of chips) key off this.
-  container: calendar-main / inline-size;
+  height: 100%;
+  min-height: 0;
+  background: $mq-bg;
+  color: $mq-text;
 }
 
-.calendar-sidebar-column {
-  width: 320px;
+// ── Header ──────────────────────────────────────────────────────────────────
+.head {
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  background-color: var(--surface);
-  border-left: 1px solid var(--border);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 20px;
+  border-bottom: 1px solid $mq-line;
 }
 
-// Not enough room for the grid and the sidebar side by side: the sidebar moves
-// underneath and the page scrolls.
-@container calendar (max-width: 900px) {
-  .calendar-layout {
-    flex-direction: column;
-    overflow-y: auto;
-    height: auto;
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arrow {
+  @include mq-icon-btn;
+}
+
+// "Previous" points the way the page reads.
+:host-context([dir='rtl']) .steps .arrow svg {
+  transform: scaleX(-1);
+}
+
+.today {
+  @include mq-btn-ghost;
+  border: 1px solid $mq-line-2;
+  color: $mq-text;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  h1 { @include mq-serif; }
+}
+
+.sub {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.search {
+  flex: 1 1 160px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  // 380 by 38 in the design file, drawn there without its padding and border counted in.
+  max-width: 402px;
+  min-width: 0;
+  height: 40px;
+  margin-inline-start: auto;
+  padding-block: 0;
+  padding-inline: 12px 8px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  color: $mq-muted;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color $mq-t-press $mq-ease-quick, color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover {
+    border-color: $mq-line-4;
+    color: $mq-text;
   }
 
-  .calendar-main-column {
-    border-right: none;
-    flex: none;
+  svg { flex-shrink: 0; }
+  kbd { @include mq-kbd; flex-shrink: 0; }
+}
+
+.search-text {
+  flex: 1;
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+.views {
+  @include mq-seg;
+
+  button { @include mq-seg-item; }
+}
+
+.plan {
+  @include mq-btn-primary;
+}
+
+.share {
+  // 38px plus its border, as the design file draws it.
+  @include mq-btn-outline(40px);
+}
+
+// ── Columns ─────────────────────────────────────────────────────────────────
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.column {
+  flex: 1 1 240px;
+  min-width: 0;
+  max-width: 300px;
+  border-inline-end: 1px solid $mq-line;
+  overflow-y: auto;
+  @include mq-scroll;
+}
+
+.main {
+  flex: 999 1 560px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.panel {
+  flex: 1 1 300px;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 380px;
+  padding: 20px 22px;
+  border-inline-start: 1px solid $mq-line;
+  overflow-y: auto;
+  @include mq-scroll;
+
+  // The chat button floats over this corner: the panel ends above it.
+  &.beside-chat { padding-bottom: 92px; }
+}
+
+.panel-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h2 { @include mq-serif(34px, 1.05); }
+
+  p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: $mq-text-3;
+  }
+}
+
+.panel-eyebrow {
+  @include mq-eyebrow;
+  letter-spacing: .1em;
+}
+
+// ── The left column as a sheet ──────────────────────────────────────────────
+.sheet-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: mq-shadow(.6);
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+}
+
+.sheet {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 901;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: min(340px, calc(100vw - 48px));
+  background: $mq-bg;
+  border-inline-end: 1px solid $mq-line-2;
+  box-shadow: 0 24px 60px mq-shadow(.55);
+  overflow-y: auto;
+  animation: sheet-in $mq-t-arrive $mq-ease-calm;
+  @include mq-scroll;
+}
+
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: none; }
+}
+
+// In Arabic the sheet sits on the right and comes in from there.
+@keyframes sheet-in-rtl {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+:host-context([dir='rtl']) .sheet {
+  animation-name: sheet-in-rtl;
+}
+
+.sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 12px;
+  padding-inline: 20px 12px;
+  background: $mq-bg;
+  border-bottom: 1px solid $mq-line;
+}
+
+.sheet-title {
+  font-family: $mq-serif;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.sheet-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 16px 0;
+}
+
+.sheet-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// ── Narrow pages ────────────────────────────────────────────────────────────
+@include below($bp-tablet) {
+  .head {
+    gap: 10px 12px;
+    padding: 12px 16px;
   }
 
-  .calendar-sidebar-column {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid var(--border);
+  // The tab bar's "+" opens the same palette.
+  .search { display: none; }
+
+  .views { margin-inline-end: auto; }
+
+  .arrow,
+  .today,
+  .plan,
+  .share {
+    height: 44px;
   }
+
+  .arrow { width: 44px; }
+
+  .views button { height: 38px; }
+
+  // Phones: the sheet comes up from the bottom, above the tab bar.
+  .sheet {
+    inset-block: auto 0;
+    inset-inline: 0;
+    width: auto;
+    max-height: 86dvh;
+    border-inline-end: 0;
+    border-top: 1px solid $mq-line-2;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation-name: sheet-up;
+  }
+
+  // Stronger than the sideways arrival Arabic has on wide pages.
+  :host-context([dir='rtl']) .sheet { animation-name: sheet-up; }
+
+  .sheet-head { border-radius: 22px 22px 0 0; }
+}
+
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
 }

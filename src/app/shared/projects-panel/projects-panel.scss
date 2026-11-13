@@ -1,542 +1,249 @@
 @use '../../../styles/tokens' as *;
 
+
+// The projects drawer. No design file draws it: it uses the design's side panels
+// (serif title, quiet rows, hairlines) and the project colours of V2-Tasks.
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
   z-index: 900;
+  background: mq-shadow(.5);
+  animation: mq-fade $mq-t-change $mq-ease-calm;
 }
 
 .projects-panel {
   position: fixed;
   top: 0;
-  right: 0;
-  // Never wider than the screen.
-  width: min(480px, 100vw);
-  // dvh follows the visible viewport, so the panel's footer is not hidden behind
-  // mobile browser chrome the way a 100vh panel is.
-  height: 100dvh;
-  background: $bg-sidebar;
-  border-left: 1px solid $border-subtle;
+  bottom: 0;
+  inset-inline-end: 0;
   z-index: 901;
+  box-sizing: border-box;
+  width: min(440px, 100vw);
   display: flex;
   flex-direction: column;
-  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-
-  @supports not (height: 100dvh) { height: 100vh; }
-
-  // Below tablet a fixed 480px panel covers nearly the whole screen anyway, so
-  // it steps down with the viewport instead of overhanging it.
-  @include below($bp-tablet) { width: 82%; }
-
-  // 100% rather than 100vw: vw includes the scrollbar gutter and overflows.
-  @include below($bp-phone-lg) { width: 100%; }
-}
-
-// ── Header ────────────────────────────────────────────
-.panel-header {
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid $border-subtle;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  background: $bg-topbar;
-}
-
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  .title-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: rgba(46, 196, 160, 0.12);
-    border: 1px solid rgba(46, 196, 160, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    mat-icon { color: $teal-primary; font-size: 20px; width: 20px; height: 20px; }
-  }
-
-  .title-text {
-    font-size: 16px;
-    font-weight: 700;
-    color: $text-primary;
-    display: block;
-  }
-
-  .project-count {
-    font-size: 12px;
-    font-weight: 600;
-    color: $text-muted;
-    background: $bg-card;
-    border: 1px solid $border-card;
-    border-radius: 10px;
-    padding: 1px 8px;
-    margin-left: 8px;
-  }
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-new-project {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: $teal-primary;
-  color: $btn-quick-add-text;
+  background: $mq-bg;
+  border-inline-start: 1px solid $mq-line;
+  // The shadow falls on the page, and the drawer slides in from its own edge:
+  // --mq-dir is 1 left to right and -1 right to left (styles.scss).
+  box-shadow: calc(-24px * var(--mq-dir, 1)) 0 60px mq-shadow(.5);
+  color: $mq-text;
   font-size: 13px;
-  font-weight: 700;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: $transition-std;
-
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
-
-  &:hover {
-    background: $teal-dark;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(46, 196, 160, 0.35);
-  }
+  animation: panel-in $mq-t-arrive $mq-ease-calm;
 }
 
-.close-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: $bg-card;
-  border: 1px solid $border-subtle;
-  color: $text-secondary;
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(calc(24px * var(--mq-dir, 1))); }
+  to { opacity: 1; transform: none; }
+}
+
+.panel-head {
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: $transition-std;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 18px 14px 16px 22px;
+  border-bottom: 1px solid $mq-line;
 
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-  &:hover { color: $text-primary; background: $bg-card-hover; }
+  :host-context([dir='rtl']) & { padding: 18px 22px 16px 14px; }
 }
 
-// ── Search ────────────────────────────────────────────
-.search-bar {
+.head-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+h2 {
+  @include mq-serif(30px, 1.1);
+}
+
+.btn-new {
+  @include mq-btn-primary(36px, 0 14px, 10px);
+}
+
+.btn-outline {
+  @include mq-btn-outline(36px, 0 12px, 10px);
+  font-size: 12.5px;
+}
+
+.icon-btn {
+  @include mq-icon-btn(36px, 9px);
+}
+
+.search {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid $border-subtle;
-  flex-shrink: 0;
+  height: 38px;
+  margin: 14px 22px 0;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  color: $mq-muted;
 
-  .search-icon {
-    font-size: 17px;
-    width: 17px;
-    height: 17px;
-    color: $text-muted;
-    flex-shrink: 0;
-  }
+  &:focus-within { border-color: $mq-accent; }
 
   input {
     flex: 1;
-    background: none;
-    border: none;
+    min-width: 0;
+    border: 0;
     outline: none;
-    color: $text-primary;
+    background: transparent;
+    color: $mq-text;
+    font: inherit;
     font-size: 13px;
 
-    &::placeholder { color: $text-muted; }
+    &::placeholder { color: $mq-muted; opacity: 1; }
   }
 }
 
-// ── Grid ──────────────────────────────────────────────
-.projects-grid {
+.panel-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 16px;
+  padding: 14px 22px 24px;
+  @include mq-scroll;
+}
+
+.project-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-
+  gap: 10px;
 }
 
-// ── Project Card ──────────────────────────────────────
-.project-card {
-  background: $bg-card;
-  border: 1px solid $border-card;
+.project {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 14px;
   border-radius: 14px;
-  padding: 16px;
-  position: relative;
-  overflow: hidden;
+  background: $mq-card;
+  border: 1px solid $mq-line-b;
+  color: $mq-text;
+  font: inherit;
+  text-align: start;
   cursor: pointer;
-  transition: all 0.25s ease;
-  // The list is a flex column: without this, cards are squashed to fit the panel's
-  // height and their last rows (owner, progress) are cut off.
-  flex-shrink: 0;
+  transition: border-color $mq-t-press $mq-ease-quick, background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
 
   &:hover {
-    background: $bg-card-hover;
-    border-color: #333;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-
-    .card-actions { opacity: 1; }
+    background: $mq-card-5;
+    border-color: $mq-line-5;
   }
 }
 
-.color-bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  border-radius: 14px 0 0 14px;
-  transition: width 0.2s ease;
-}
-
-.project-card:hover .color-bar { width: 4px; }
-
-.card-top {
+.project-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 10px;
 }
 
-.project-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 1.5px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .initials {
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-  }
-}
-
-.status-chip {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-}
-
-.card-body {
-  margin-bottom: 12px;
+.project-dot {
+  @include mq-dot(8px, 2px);
 }
 
 .project-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: $text-primary;
-  margin: 0 0 5px 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  @include mq-ellipsis;
+}
+
+// A name and a description keep their own reading direction (dir="auto") but start
+// at the card's start edge, so a list of Arabic and Latin names stays in one line.
+.project-name,
+.project-desc {
+  text-align: left;
+  @include mq-rtl { text-align: right; }
+}
+
+.project-percent {
+  font-size: 11.5px;
+  color: $mq-muted;
 }
 
 .project-desc {
-  font-size: 12px;
-  color: $text-muted;
-  margin: 0;
+  font-size: 12.5px;
   line-height: 1.5;
+  color: $mq-text-3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-// ── Stats ─────────────────────────────────────────────
-.card-stats {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
+.project-meta {
+  font-size: 11.5px;
+  color: $mq-muted;
 }
 
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: $text-secondary;
+.project-bar {
+  height: 3px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: $mq-line;
 
-  mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-    color: $text-muted;
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--tone, #{$mq-accent});
   }
 }
 
-// ── Card Footer ───────────────────────────────────────
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 10px;
-  border-top: 1px solid;
-}
-
-.card-date {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: $text-muted;
-
-  mat-icon { font-size: 12px; width: 12px; height: 12px; }
-}
-
-.card-actions {
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  transition: $transition-std;
-}
-
-.card-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: $bg-input;
-  border: none;
-  color: $text-muted;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: $transition-std;
-
-  mat-icon { font-size: 14px; width: 14px; height: 14px; }
-
-  &:hover { color: $teal-primary; background: $teal-glow; }
-}
-
-// ── Skeleton ──────────────────────────────────────────
-.loading-state {
-  padding: 16px;
+.state {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.card-skeleton {
-  height: 140px;
-  border-radius: 14px;
-  background: linear-gradient(90deg, $bg-card 25%, $bg-card-hover 50%, $bg-card 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-// ── Empty State ────────────────────────────────────────
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 24px;
-  text-align: center;
-}
-
-.empty-icon-wrap {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  animation: float 3s ease-in-out infinite;
-
-  mat-icon { font-size: 32px; width: 32px; height: 32px; color: $text-muted; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.empty-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: $text-secondary;
-  margin: 0 0 8px;
-}
-
-.empty-sub {
-  font-size: 13px;
-  color: $text-muted;
-  margin: 0 0 20px;
-}
-
-.btn-create-first {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: $teal-primary;
-  color: $btn-quick-add-text;
-  font-size: 13px;
-  font-weight: 700;
-  height: 38px;
-  padding: 0 18px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: $transition-std;
-
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
-  &:hover { background: $teal-dark; transform: translateY(-1px); }
-}
-
-// ── Dark Mode Overrides ──────────────────────────────────────
-@at-root body.dark-mode .projects-panel {
-  background: var(--bg-app);
-  border-left-color: rgba(255,255,255,0.1);
-  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.8);
-
-  .panel-header {
-    background: var(--bg-card);
-    border-bottom-color: rgba(255,255,255,0.1);
-  }
-
-  .title-text { color: var(--text-primary); }
-  .project-count {
-    background: rgba(255,255,255,0.05);
-    border-color: rgba(255,255,255,0.1);
-    color: var(--text-muted);
-  }
-
-  .close-btn {
-    background: rgba(255,255,255,0.05);
-    border-color: rgba(255,255,255,0.1);
-    color: var(--text-muted);
-    &:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
-  }
-
-  .search-bar {
-    border-bottom-color: rgba(255,255,255,0.1);
-    input { color: var(--text-primary); &::placeholder { color: var(--text-muted); } }
-  }
-
-  .project-card {
-    background: var(--bg-card);
-    border-color: rgba(255,255,255,0.1);
-    &:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
-  }
-
-  .project-name { color: var(--text-primary); }
-  .project-desc, .stat { color: var(--text-muted); }
-  .card-footer { border-top-color: rgba(255,255,255,0.1); }
-  .card-date { color: var(--text-muted); }
-
-  .empty-icon-wrap { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-  .empty-title { color: var(--text-primary); }
-  .empty-sub { color: var(--text-muted); }
-}
-
-
-// ── Card detail added with the count fix ────────────────────────────────────
-.card-owner {
-  display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  margin: 10px 0 2px;
+  padding: 24px 0;
 }
 
-.owner-avatar {
-  flex: 0 0 auto;
+.state-title {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.state-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: $mq-text-4;
+}
+
+.skeleton {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 700;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.owner-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.bone {
+  height: 84px;
+  border-radius: 14px;
+  background: $mq-card;
+  animation: mq-fade 900ms $mq-ease-calm infinite alternate;
 }
 
-.card-progress {
-  margin: 10px 0 0;
+@include below($bp-tablet) {
+  .projects-panel { border: 0; }
 
-  &.empty {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-}
+  .panel-body { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
 
-.progress-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 5px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  .btn-new,
+  .btn-outline,
+  .icon-btn { height: 44px; }
 
-  strong { font-size: 12px; font-weight: 700; }
-}
+  .icon-btn { width: 44px; }
 
-.progress-track {
-  height: 5px;
-  border-radius: 999px;
-  background: var(--bg-input);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
-
-// Project colours are chosen by the user, so one used as a *text* colour can be
-// near-black on the dark theme or near-white on the light one (the seeded
-// "Leadership" navy measured 1.6:1). The colour stays on the tinted background
-// and border; the letters use the theme's text colour. !important because the
-// template sets the colour inline.
-.project-avatar .initials,
-.owner-avatar {
-  color: $text-primary !important;
-}
-
-.status-chip,
-.card-progress strong {
-  color: $text-primary !important;
+  .search { height: 44px; }
 }

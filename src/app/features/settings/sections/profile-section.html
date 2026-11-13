@@ -1,0 +1,110 @@
+@if (user(); as me) {
+  <div class="group">
+    <ng-container *ngTemplateOutlet="textRow; context: { $implicit: rows.fullName }" />
+    <ng-container *ngTemplateOutlet="textRow; context: { $implicit: rows.bio }" />
+
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Photo' | t }}</span>
+        <span class="line-hint">
+          {{ (me.profilePictureUrl ? 'JPG or PNG, up to {n} MB' : 'Initials are used until you add one. JPG or PNG, up to {n} MB') | t: { n: maxPictureMb } }}
+        </span>
+      </span>
+      <span class="value-wrap">
+        <span class="face">
+          @if (picture(); as url) {
+            <img [src]="url" [alt]="'Your profile picture' | t" referrerpolicy="no-referrer" (error)="pictureFailed.set(true)" />
+          } @else {
+            {{ initials() }}
+          }
+        </span>
+        <input type="file" #file hidden accept=".jpg,.jpeg,.png" (change)="upload($event)" />
+        <button type="button" class="line-btn" [disabled]="uploading()" (click)="file.click()">
+          {{ (uploading() ? 'Uploading…' : me.profilePictureUrl ? 'Change' : 'Upload') | t }}
+        </button>
+        @if (me.profilePictureUrl) {
+          <button type="button" class="line-btn" [disabled]="removing() || uploading()" (click)="removePicture()">
+            {{ (removing() ? 'Removing…' : 'Remove') | t }}
+          </button>
+        }
+      </span>
+    </div>
+
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Status' | t }}</span>
+        <span class="line-hint">{{ 'Friends see a green dot next to your name while you are here' | t }}</span>
+      </span>
+      <span class="value-wrap">
+        <span class="value">{{ 'Online' | t }}</span>
+        <button type="button" class="line-btn" disabled [title]="'Setting your own status is not available yet' | t">{{ 'Set' | t }}</button>
+      </span>
+    </div>
+
+    <ng-container *ngTemplateOutlet="textRow; context: { $implicit: rows.phoneNumber }" />
+    <ng-container *ngTemplateOutlet="textRow; context: { $implicit: rows.country }" />
+
+    <div class="line">
+      <span class="line-text">
+        <span class="line-label">{{ 'Gender' | t }}</span>
+        <span class="line-hint">{{ 'Shown on your profile' | t }}</span>
+      </span>
+      <label class="pick">
+        <select [attr.aria-label]="'Gender' | t" [value]="me.gender || ''" (change)="setGender($any($event.target).value)">
+          <option value="" [selected]="!me.gender">{{ 'Prefer not to say' | t }}</option>
+          @for (option of genders; track option.value) {
+            <option [value]="option.value" [selected]="me.gender === option.value">{{ option.label }}</option>
+          }
+        </select>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9l5-5 5 5M7 15l5 5 5-5"></path></svg>
+      </label>
+    </div>
+
+    <ng-container *ngTemplateOutlet="textRow; context: { $implicit: rows.dateOfBirth }" />
+  </div>
+} @else {
+  <div class="group" aria-hidden="true">
+    @for (i of [1, 2, 3, 4]; track i) {
+      <div class="line"><span class="line-text"><span class="ghost"></span></span></div>
+    }
+  </div>
+}
+
+<!-- A row whose value is typed: "Edit" opens a box in place of the value. -->
+<ng-template #textRow let-row>
+  <div class="line">
+    <span class="line-text">
+      <span class="line-label">{{ row.label }}</span>
+      <span class="line-hint">{{ row.hint }}</span>
+    </span>
+
+    @if (editing() === row.key) {
+      <span class="edit">
+        @if (row.kind === 'area') {
+          <textarea class="field" rows="3" dir="auto" [attr.maxlength]="row.maxLength" [attr.aria-label]="row.label"
+                    [value]="draft()" (input)="draft.set($any($event.target).value)"
+                    (keydown.control.enter)="commit()" (keydown.escape)="cancel()" (blur)="commit()"></textarea>
+        } @else {
+          <input class="field" [class.mq-ltr]="row.kind === 'tel'" [type]="row.kind" [attr.dir]="row.kind === 'text' ? 'auto' : null"
+                 [attr.maxlength]="row.maxLength ?? null" [attr.aria-label]="row.label"
+                 [value]="draft()" (input)="draft.set($any($event.target).value)"
+                 (keydown.enter)="commit()" (keydown.escape)="cancel()" (blur)="commit()" />
+        }
+        <button type="button" class="line-btn" (click)="commit()">{{ 'Done' | t }}</button>
+        @if (row.kind === 'area') {
+          <span class="counter">{{ draft().length | num }} / {{ row.maxLength | num }}</span>
+        }
+        @if (problem()) {
+          <span class="problem counter" role="alert">{{ problem() }}</span>
+        }
+      </span>
+    } @else {
+      <span class="value-wrap">
+        <span class="value" [class.mq-ltr]="row.kind === 'tel' && !!shown(row.key)"
+              [attr.dir]="(row.kind === 'text' || row.kind === 'area') && shown(row.key) ? 'auto' : null">{{ shown(row.key) || ('Not set' | t) }}</span>
+        <button type="button" class="line-btn" (click)="edit(row.key)"
+                [attr.aria-label]="'Edit {field}' | t: { field: row.label.toLowerCase() }">{{ 'Edit' | t }}</button>
+      </span>
+    }
+  </div>
+</ng-template>

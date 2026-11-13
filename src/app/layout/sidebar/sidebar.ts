@@ -1,194 +1,80 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
-import { GroupService } from '../../core/services/group.service';
-import { UserService } from '../../core/services/user.service';
-import { UiService } from '../../core/services/ui.service';
-import { AuthService } from '../../core/services/auth.service';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { GroupDto, UserDto } from '../../models/api.models';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, input, signal } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
-interface NavItem {
-  label: string;
-  /** null when the destination does not exist yet. */
-  route: string | null;
-  icon: string;
-  disabled?: boolean;
-}
+import { InboxCountService } from '../../core/services/inbox-count.service';
+import { QuickAddService } from '../../core/services/quick-add.service';
+import { ThemeService } from '../../core/services/theme.service';
+import { t, tCount } from '../../core/i18n/i18n';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { MiqatLogo } from '../../shared/logo/miqat-logo';
 
-const WIDTH_STORAGE_KEY = 'miqat.sidebar.width';
-
-import { ChatAvatar } from '../../shared/chat/chat-avatar';
-
+/**
+ * The app's navigation (design/miqat-2.0, "shared shell").
+ *
+ * Wide screens: a 60px rail at the start edge (the left; the right in Arabic) with the logo, the five sections, and
+ * Inbox and Settings at the bottom. Phones: a floating tab bar at the bottom with
+ * Day, Week, quick add, Tasks and Inbox; the other sections are in the avatar menu.
+ */
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIconModule, ChatAvatar],
+  imports: [RouterLink, RouterLinkActive, MiqatLogo, TPipe],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.focused]': 'focused()' }
 })
-export class Sidebar implements OnInit {
-  private groupService = inject(GroupService);
-  private userService = inject(UserService);
-  public uiService = inject(UiService);
-  private authService = inject(AuthService);
+export class Sidebar {
+  /** A focused screen (Find a time, Plan my day) is drawn without the rail; phones keep the tab bar. */
+  readonly focused = input(false);
 
-  private router = inject(Router);
+  private inbox = inject(InboxCountService);
+  private quickAdd = inject(QuickAddService);
+  readonly themes = inject(ThemeService);
 
-  groups$!: Observable<GroupDto[]>;
-  user$!: Observable<UserDto | null>;
-  isCollapsed = signal(false);
-  isMobileMenuOpen = signal(false);
+  readonly unread = this.inbox.total;
 
-  /** Drag-to-resize bounds. 290px is the floor the layout is designed around. */
-  readonly minWidth = 290;
-  readonly maxWidth = 460;
+  readonly inboxLabel = computed(() => {
+    const count = this.unread();
+    return count ? tCount(count, 'Inbox, {n} new', 'Inbox, {n} new') : t('Inbox');
+  });
 
-  width = signal(this.restoreWidth());
-  /** Fully hidden, as opposed to collapsed to the icon rail. */
-  /** Shared signal, so an avatar change anywhere lands here too. */
-  readonly currentUser = this.userService.currentUser;
+  readonly themeLabel = computed(() => this.themes.theme() === 'dark' ? t('Switch to light mode') : t('Switch to dark mode'));
 
-  isHidden = signal(false);
-  isResizing = signal(false);
-
-  private resizeMove?: (event: PointerEvent) => void;
-  private resizeEnd?: () => void;
-
-  // `/whiteboard` and `/node-flow` are real routes now, so these link straight
-  // at the board instead of at `/new`. A destination that does not exist yet is
-  // flagged `disabled` (shown as "Soon") rather than linked into a router error.
-  navItemsApp: NavItem[] = [
-    { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
-    { label: 'Task List/Kanban', route: '/tasks', icon: 'view_kanban' },
-    { label: 'Calendar', route: '/calendar', icon: 'calendar_today' },
-    { label: 'Whiteboard', route: '/whiteboard', icon: 'edit' },
-    { label: 'Node Flow', route: '/node-flow', icon: 'account_tree' },
-  ];
-
-  navItemsOther: NavItem[] = [
-    { label: 'Settings', route: '/settings', icon: 'settings' },
-    { label: 'Help Center', route: '/help', icon: 'help_outline' },
-  ];
-
-  ngOnInit() {
-    // Both feed `| async`, which rethrows into the template on error — so each
-    // stream degrades to an empty value instead of taking the sidebar down.
-    this.groups$ = this.groupService.getGroups().pipe(catchError(() => of([])));
-    // Kick off the fetch, but render from the shared signal: a one-shot
-    // observable never sees a later avatar change, which is why the sidebar
-    // kept the old picture after an upload.
-    this.userService.getMe().pipe(catchError(() => of(null))).subscribe();
+  toggleTheme(): void {
+    this.themes.toggleTheme();
   }
 
-  /** UserDto exposes `fullName`, not `firstName`/`lastName`. */
-  displayName(user: UserDto): string {
-    return user.fullName?.trim() || user.email || '';
+  openQuickAdd(): void {
+    this.quickAdd.openPalette();
   }
-
-  toggleSidebar() {
-    this.isCollapsed.set(!this.isCollapsed());
-  }
-
-  /** Hides the sidebar entirely; a floating handle brings it back. */
-  hideSidebar() {
-    this.isHidden.set(true);
-  }
-
-  showSidebar() {
-    this.isHidden.set(false);
-  }
-
-  // ── Resizing ───────────────────────────────────────────────────────────────
 
   /**
-   * Drag the right edge to resize. Listeners live on the document so the drag
-   * keeps tracking even when the pointer runs ahead of the 4px handle, and
-   * pointer events cover mouse, pen and touch with one code path.
+   * The "Create" menu of the rail, and where it opens: level with its button, on the
+   * page side of the rail. Only the top comes from here; the stylesheet keeps the menu
+   * 56px from the rail's own edge (inset-inline-start), so it opens to the right of a
+   * rail on the left and to the left of a rail on the right (Arabic).
    */
-  startResize(event: PointerEvent) {
-    if (this.isCollapsed()) return;
-    event.preventDefault();
+  readonly createOpen = signal(false);
+  readonly createTop = signal(0);
 
-    const startX = event.clientX;
-    const startWidth = this.width();
-
-    this.isResizing.set(true);
-
-    this.resizeMove = (moveEvent: PointerEvent) => {
-      const next = startWidth + (moveEvent.clientX - startX);
-      this.width.set(Math.min(this.maxWidth, Math.max(this.minWidth, next)));
-    };
-
-    this.resizeEnd = () => {
-      this.isResizing.set(false);
-      this.persistWidth(this.width());
-      document.removeEventListener('pointermove', this.resizeMove!);
-      document.removeEventListener('pointerup', this.resizeEnd!);
-      document.removeEventListener('pointercancel', this.resizeEnd!);
-    };
-
-    document.addEventListener('pointermove', this.resizeMove);
-    document.addEventListener('pointerup', this.resizeEnd);
-    document.addEventListener('pointercancel', this.resizeEnd);
+  toggleCreate(event: MouseEvent): void {
+    event.stopPropagation();
+    this.createTop.set((event.currentTarget as HTMLElement).getBoundingClientRect().top);
+    this.createOpen.update(open => !open);
   }
 
-  /** Keyboard resizing, so the handle is not mouse-only. */
-  onResizeKey(event: KeyboardEvent) {
-    const step = event.shiftKey ? 32 : 8;
-    let next: number | null = null;
-
-    if (event.key === 'ArrowLeft') next = this.width() - step;
-    if (event.key === 'ArrowRight') next = this.width() + step;
-    if (next === null) return;
-
-    event.preventDefault();
-    this.width.set(Math.min(this.maxWidth, Math.max(this.minWidth, next)));
-    this.persistWidth(this.width());
+  create(kind: 'event' | 'task' | 'project' | 'palette'): void {
+    this.createOpen.set(false);
+    if (kind === 'event') this.quickAdd.newEvent();
+    else if (kind === 'task') this.quickAdd.newTask();
+    else if (kind === 'project') this.quickAdd.newProject();
+    else this.quickAdd.openPalette();
   }
 
-  resetWidth() {
-    this.width.set(this.minWidth);
-    this.persistWidth(this.minWidth);
-  }
-
-  private restoreWidth(): number {
-    try {
-      const stored = Number(localStorage?.getItem(WIDTH_STORAGE_KEY));
-      if (!Number.isFinite(stored) || stored <= 0) return 290;
-      return Math.min(460, Math.max(290, stored));
-    } catch {
-      return 290;
-    }
-  }
-
-  private persistWidth(value: number) {
-    try {
-      localStorage?.setItem(WIDTH_STORAGE_KEY, String(value));
-    } catch {
-      // Storage unavailable — the width just will not survive a reload.
-    }
-  }
-
-  toggleMobileMenu() {
-    this.isMobileMenuOpen.set(!this.isMobileMenuOpen());
-  }
-
-  closeMobileMenu() {
-    this.isMobileMenuOpen.set(false);
-  }
-
-  /** The "Search" row of the phone menu: closes the menu and opens the palette. */
-  openSearch() {
-    this.closeMobileMenu();
-    this.uiService.openSearch();
-  }
-
-  onLogout() {
-    this.closeMobileMenu();
-    this.authService.logout().subscribe();
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  closeCreate(): void {
+    this.createOpen.set(false);
   }
 }

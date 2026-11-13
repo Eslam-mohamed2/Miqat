@@ -3,66 +3,58 @@
 // Shared look of the small sections attached to a task or an event (reminders,
 // files, checklist, dependencies): one title style, one row-remove button, one
 // way to say "empty" and "that failed". Kept in one place so the sections cannot
-// drift apart from each other.
+// drift apart from each other. The title is the design's small-capitals label
+// (design/miqat-2.0: "AGENDA", "LINKED IN MIQAT" in the event panel).
 @mixin item-section {
   .item-title {
+    @include mq-eyebrow;
     display: flex;
     align-items: center;
     gap: 6px;
-    margin: 0 0 12px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: $text-muted;
+    margin: 0 0 10px;
+    letter-spacing: .1em;
 
-    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    mat-icon { font-size: 15px; width: 15px; height: 15px; }
+    svg { flex-shrink: 0; }
 
     .count {
-      margin-left: auto;
+      margin-inline-start: auto;
       font-weight: 600;
       letter-spacing: 0;
       text-transform: none;
-      color: $text-secondary;
+      color: $mq-text-4;
     }
   }
 
   .item-empty,
   .item-note {
     margin: 0 0 10px;
-    font-size: 13px;
+    font-size: 12.5px;
     line-height: 1.5;
-    color: $text-muted;
+    color: $mq-muted;
   }
 
   .item-note { margin: 10px 0 0; }
 
   .item-error {
     margin: 10px 0 0;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
-    color: $text-danger;
+    color: $mq-late;
   }
 
   .row-remove {
+    @include mq-icon-btn(28px, 8px);
     flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
-    color: $text-muted;
-    cursor: pointer;
+    color: $mq-muted;
 
-    mat-icon { font-size: 17px; width: 17px; height: 17px; }
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
 
-    &:hover:not(:disabled) { background: $bg-card-hover; color: $text-danger; }
-    &:disabled { opacity: 0.5; cursor: default; }
+    &:hover:not(:disabled) { color: $mq-late; }
 
-    @include touch { width: 40px; height: 40px; }
+    @include touch {
+      width: 40px;
+      height: 40px;
+    }
   }
 }

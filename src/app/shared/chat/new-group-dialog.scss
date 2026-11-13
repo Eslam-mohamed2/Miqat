@@ -1,0 +1,120 @@
+@use '../../../styles/tokens' as *;
+
+// "New group", a dialog in the language of design/miqat-2.0: the page dimmed
+// behind a raised card with a serif title, hairline fields and one accent button.
+:host {
+  line-height: normal;
+  --avatar-ring: #{$mq-card-2};
+}
+
+p, h2 {
+  margin: 0;
+}
+
+// Dialogs sit at 1000: above the chat corner, below a call.
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: color-mix(in srgb, var(--mq-bg) 72%, transparent);
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+}
+
+.dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 24px));
+  height: min(600px, calc(100dvh - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 20px;
+  background: $mq-card-2;
+  border: 1px solid $mq-line-3;
+  color: $mq-text;
+  box-shadow: 0 40px 120px mq-shadow(.6);
+  pointer-events: auto;
+  animation: mq-fade $mq-t-arrive $mq-ease-calm;
+}
+
+.top {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h2 { @include mq-serif(30px); }
+}
+
+.icon-btn {
+  @include mq-icon-btn(32px, 9px);
+}
+
+.field {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+
+  input[type='text'] {
+    @include mq-field(40px);
+    font-size: 13.5px;
+  }
+
+  &.grow {
+    flex: 1;
+    min-height: 0;
+  }
+
+  app-friend-picker {
+    flex: 1;
+  }
+}
+
+.label {
+  @include mq-eyebrow;
+}
+
+.error {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: $mq-late;
+}
+
+.foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: $mq-muted;
+}
+
+.cancel { @include mq-btn-ghost(38px, 0 12px, 10px); }
+.create { @include mq-btn-primary(38px, 0 16px, 10px); }
+
+@include below($bp-tablet) {
+  .dialog {
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 32px);
+    padding: 16px;
+  }
+
+  .icon-btn { width: 40px; height: 40px; }
+  .field input[type='text'] { height: 44px; font-size: 16px; }
+  .cancel, .create { height: 44px; }
+}

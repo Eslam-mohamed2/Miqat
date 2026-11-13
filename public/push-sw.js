@@ -27,7 +27,7 @@ function urlFor(data) {
     case 'Event':
       return id ? `/calendar?event=${id}` : '/calendar';
     default:
-      return '/notifications';
+      return '/inbox';
   }
 }
 
@@ -67,7 +67,7 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
-  const target = new URL((event.notification.data && event.notification.data.url) || '/notifications', self.location.origin).href;
+  const target = new URL((event.notification.data && event.notification.data.url) || '/inbox', self.location.origin).href;
 
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });

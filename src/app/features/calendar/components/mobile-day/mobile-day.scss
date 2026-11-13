@@ -1,0 +1,302 @@
+@use '../../../../../styles/tokens' as *;
+@use '../../calendar' as cal;
+
+// design/miqat-2.0: V2-MobileDay / L-MobileDay.
+:host {
+  @include cal.vars;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  color: $mq-text;
+}
+
+:host-context([data-theme='light']) {
+  @include cal.vars-light;
+  // The phone file draws its prayer lines a touch stronger than the week does.
+  --cal-prayer-line: #{$mq-accent-text};
+}
+
+.top {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 30px 20px 0;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.head-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  h1 { @include mq-serif(38px, 1); }
+}
+
+.dayname {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: $mq-accent-text;
+}
+
+.summary {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.date-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  @include mq-focus(4px);
+
+  svg { color: $mq-muted; }
+}
+
+// ── The week as a strip ─────────────────────────────────────────────────────
+.strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.strip-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 60px;
+  padding: 0;
+  border: 1px solid $mq-line;
+  border-radius: 14px;
+  background: transparent;
+  color: $mq-text-2;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background $mq-t-change $mq-ease-calm, color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &.off { color: $mq-muted; }
+  // A public holiday tints its day; an observance does not.
+  &.holiday { @include cal.holiday-tint; }
+  &.today .strip-num { color: $mq-accent-text; }
+
+  &[aria-pressed='true'] {
+    border-color: transparent;
+    background: $mq-accent;
+    color: $mq-on-accent;
+
+    .strip-num { color: inherit; }
+    .strip-load { background: $mq-on-accent; }
+  }
+}
+
+.strip-dow {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.strip-num {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.strip-load {
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, #{$mq-accent} 60%, transparent);
+}
+
+// ── What is next ────────────────────────────────────────────────────────────
+.next {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 10px;
+  padding-inline: 14px 10px;
+  border-radius: 14px;
+  background: color-mix(in srgb, #{$mq-accent} 10%, #{$mq-card});
+  border: 1px solid color-mix(in srgb, #{$mq-accent} 40%, transparent);
+}
+
+.next-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  @include mq-focus;
+}
+
+.next-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  @include mq-ellipsis;
+}
+
+.next-detail {
+  font-size: 11.5px;
+  color: $mq-text-4;
+  @include mq-ellipsis;
+}
+
+.next-btn {
+  @include mq-btn-primary(36px, 0 16px, 10px);
+}
+
+.allday {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.allday-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--cal-tone) 16%, var(--mq-event-base));
+  color: $mq-text-2;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  @include mq-focus;
+
+  span:last-child { @include mq-ellipsis; }
+
+  &.task {
+    background: $mq-card;
+    box-shadow: inset 0 0 0 1px $mq-line-2;
+  }
+}
+
+.ring {
+  @include cal.task-ring;
+}
+
+// ── The day's hours ─────────────────────────────────────────────────────────
+.timeline {
+  flex: 1;
+  min-height: 0;
+  // The design leaves this much air between the card and the hours.
+  margin-top: 41px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  @include mq-scroll;
+}
+
+.hours {
+  position: relative;
+  margin: 10px 0 16px;
+}
+
+.hour {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.hour-label {
+  width: 46px;
+  text-align: end;
+  font-size: 10.5px;
+  color: $mq-muted;
+  transform: translateY(-7px);
+  white-space: nowrap;
+}
+
+.hour-rule {
+  flex: 1;
+  border-top: 1px solid $mq-hover;
+}
+
+.prayer-line {
+  @include cal.prayer-line;
+  inset-inline: 56px 12px;
+  z-index: 3;
+}
+
+.prayer-tag {
+  @include cal.prayer-tag;
+  inset-inline-end: 16px;
+  z-index: 4;
+}
+
+.lane {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: 56px 12px;
+}
+
+.ev {
+  @include cal.block(10px, 7px 10px, 0 10px, 8px);
+  animation: mq-settle $mq-t-arrive $mq-ease-calm both;
+
+  &.planned {
+    animation-delay: .12s;
+
+    .ev-time { color: $mq-accent-text; }
+  }
+
+  &.done .ev-title {
+    color: $mq-muted;
+    text-decoration: line-through;
+  }
+}
+
+.ev-time {
+  @include cal.block-time;
+  flex-shrink: 0;
+}
+
+.ev-title {
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  color: $mq-text;
+  @include mq-ellipsis;
+}
+
+.now {
+  @include cal.now-line;
+  inset-inline: 52px 12px;
+  z-index: 5;
+}
+
+// Calendar and project colours, as the theme draws them (see cal.tone).
+.ev,
+.allday-chip {
+  @include cal.tone;
+}

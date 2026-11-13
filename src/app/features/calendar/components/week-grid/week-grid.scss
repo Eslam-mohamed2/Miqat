@@ -1,0 +1,360 @@
+@use '../../../../../styles/tokens' as *;
+@use '../../calendar' as cal;
+
+// The scroll area: hours move up and down, and a narrow page slides the days sideways.
+:host {
+  @include cal.vars;
+  @include mq-scroll;
+  display: block;
+  min-width: 0;
+  overflow: auto;
+  // The headings above the hours change height as the layers load; the hours must not follow them.
+  overflow-anchor: none;
+}
+
+:host-context([data-theme='light']) {
+  @include cal.vars-light;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  min-width: 720px;
+}
+
+:host(.single) .inner {
+  min-width: 0;
+}
+
+// ── Headings ────────────────────────────────────────────────────────────────
+.head {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: $mq-bg;
+}
+
+.head-row,
+.allday-row {
+  display: flex;
+  border-bottom: 1px solid $mq-line;
+}
+
+.gutter {
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.gutter-head {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-block-end: 10px;
+  padding-inline-end: 8px;
+}
+
+.zone-tag {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  width: 40px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: $mq-text-3;
+  cursor: pointer;
+  transition: color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { color: $mq-text; }
+
+  &.second {
+    width: 36px;
+    font-weight: 400;
+    color: $mq-muted;
+    cursor: default;
+  }
+}
+
+.zone-menu {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 8px;
+  z-index: 20;
+  width: 232px;
+}
+
+.zone-option {
+  min-height: 46px;
+  justify-content: space-between;
+
+  svg { color: $mq-accent-text; }
+}
+
+.zone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+
+  small {
+    font-size: 11px;
+    font-weight: 400;
+    color: $mq-muted;
+  }
+}
+
+.day-heads,
+.allday,
+.grid {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--days, 7), minmax(0, 1fr));
+}
+
+.day-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 10px 9px;
+  border-inline-start: 1px solid $mq-line;
+
+  &.off { background: $mq-bg-3; }
+  // A public holiday tints its heading; an observance does not.
+  &.holiday { @include cal.holiday-tint; }
+}
+
+.day-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: $mq-muted;
+}
+
+.day-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-family: $mq-serif;
+  font-size: 22px;
+  line-height: 1;
+  color: $mq-text;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: $mq-hover; }
+
+  &.today {
+    background: $mq-accent;
+    color: $mq-on-accent;
+  }
+}
+
+.hijri {
+  font-size: 10.5px;
+  color: $mq-muted;
+  @include mq-ellipsis;
+}
+
+// ── All-day row ─────────────────────────────────────────────────────────────
+.gutter-allday {
+  padding-block-start: 9px;
+  padding-inline-end: 8px;
+  text-align: end;
+  font-size: 10.5px;
+  color: $mq-muted;
+}
+
+.allday {
+  grid-auto-flow: row dense;
+  gap: 3px;
+  // One row of bars, also while there are none.
+  min-height: 32px;
+  padding: 5px 3px;
+}
+
+.bar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--cal-tone) 16%, var(--mq-event-base));
+  color: $mq-text-2;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+  transition: filter $mq-t-press $mq-ease-quick, box-shadow $mq-t-change $mq-ease-calm;
+  @include mq-focus;
+
+  &:hover { filter: brightness(1.12); }
+  &.declined { opacity: .55; }
+
+  &.task {
+    background: $mq-card;
+    box-shadow: inset 0 0 0 1px $mq-line-2;
+  }
+
+  &.selected { box-shadow: 0 0 0 2px $mq-bg, 0 0 0 3.5px $mq-accent-text; }
+}
+
+.bar-title {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ring {
+  @include cal.task-ring;
+}
+
+// ── Hours ───────────────────────────────────────────────────────────────────
+.body {
+  position: relative;
+  display: flex;
+}
+
+.gutter-body {
+  position: relative;
+}
+
+.hour {
+  position: absolute;
+  inset-inline: 0 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.hour-first {
+  width: 40px;
+  text-align: end;
+  color: $mq-text-4;
+}
+
+.hour-second {
+  width: 36px;
+  text-align: end;
+  color: $mq-placeholder;
+}
+
+.grid {
+  position: relative;
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid $mq-hover-2;
+
+  &.half { border-top: 1px dashed var(--cal-half-line); }
+}
+
+// Above the day's own lines, under its events.
+.prayer-tag {
+  @include cal.prayer-tag;
+  inset-inline-end: 6px;
+  z-index: 2;
+}
+
+.prayer-line {
+  @include cal.prayer-line;
+}
+
+// ── Day columns ─────────────────────────────────────────────────────────────
+.day-col {
+  position: relative;
+  min-width: 0;
+  border-inline-start: 1px solid $mq-line;
+
+  &.off { background: $mq-bg-3; }
+  &.today { background: color-mix(in srgb, #{$mq-accent} 3%, transparent); }
+}
+
+.ev {
+  @include cal.block;
+  // The design draws the text of a block with the font's own figures, not the tabular ones.
+  font-feature-settings: normal;
+
+  &.done .ev-title {
+    color: $mq-muted;
+    text-decoration: line-through;
+  }
+
+  &.declined .ev-title { text-decoration: line-through; }
+
+  &.planned .ev-time { @include cal.block-time($mq-accent); }
+
+  &[draggable='true'] { cursor: grab; }
+
+  // Where a dragged task would land.
+  &.ghost {
+    animation: none;
+    opacity: .7;
+    pointer-events: none;
+  }
+}
+
+.ev-title {
+  @include cal.block-title;
+}
+
+.ev-time {
+  @include cal.block-time;
+}
+
+.now {
+  @include cal.now-line;
+}
+
+// Fingers need more to hold on to than 24px.
+@include touch {
+  .day-num {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+// Calendar and project colours, as the theme draws them (see cal.tone).
+.ev,
+.bar {
+  @include cal.tone;
+}

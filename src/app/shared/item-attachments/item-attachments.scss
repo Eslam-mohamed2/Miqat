@@ -12,19 +12,19 @@
 @include extras.item-section;
 
 .file-list {
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 10px;
 }
 
+// One file: the design's linked-item row (a tag in the accent, then the name).
 .file-row {
   display: flex;
   align-items: center;
   gap: 4px;
-  border-bottom: 1px solid $border-card;
 
-  &:last-child { border-bottom: 0; }
-  &.busy { opacity: 0.6; }
+  &.busy { opacity: .6; }
 }
 
 .file-open {
@@ -33,39 +33,39 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 6px;
-  margin: 0 -6px;
-  border: 0;
-  border-radius: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid $mq-line;
   background: transparent;
   color: inherit;
-  text-align: left;
+  font-family: inherit;
+  text-align: start;
   cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
 
   &:hover:not(:disabled) {
-    background: $bg-card-hover;
+    background: $mq-row-hover;
+
     .file-get { opacity: 1; }
   }
 
   &:disabled { cursor: default; }
 }
 
-.file-icon {
+.file-tag {
   flex: 0 0 auto;
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  color: $text-secondary;
+  width: 34px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: $mq-accent-text;
 }
 
 .file-get {
   flex: 0 0 auto;
-  font-size: 17px;
-  width: 17px;
-  height: 17px;
-  color: $text-muted;
+  color: $mq-muted;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity $mq-t-press $mq-ease-quick;
 
   // No hover on a touch screen, so the hint is always there.
   @include touch { opacity: 1; }
@@ -76,39 +76,39 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 
   strong {
-    font-size: 13.5px;
-    font-weight: 600;
-    color: $text-primary;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: $mq-text;
+    @include mq-ellipsis;
+    // A file name keeps its own reading direction (dir="auto", so a long one is cut
+    // at its end) but starts at the row's start edge, whatever language it is in.
+    text-align: left;
+    @include mq-rtl { text-align: right; }
   }
 
   small {
-    font-size: 12px;
-    color: $text-muted;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 11px;
+    color: $mq-muted;
+    @include mq-ellipsis;
   }
 }
 
 .attach-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px dashed $border-card;
-  color: $text-secondary;
-  font-size: 13px;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px dashed $mq-line-3;
+  color: $mq-text-4;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color $mq-t-press $mq-ease-quick, color $mq-t-press $mq-ease-quick, background $mq-t-press $mq-ease-quick;
 
   // The real input stays in the page for keyboard and screen-reader users; only
   // its box is taken out of view.
@@ -120,24 +120,9 @@
     pointer-events: none;
   }
 
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
+  &:hover:not(.disabled) { border-color: $mq-line-5; color: $mq-text; background: $mq-hover; }
+  &:focus-within { border-color: $mq-accent; }
+  &.disabled { opacity: .6; cursor: default; }
 
-  &:hover:not(.disabled) { border-color: $teal-primary; color: $text-primary; background: $bg-card-hover; }
-  &:focus-within { border-color: $teal-primary; }
-  &.disabled { opacity: 0.6; cursor: default; }
-
-  @include touch { min-height: 42px; }
-}
-
-.spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid $border-card;
-  border-top-color: $teal-primary;
-  border-radius: 50%;
-  animation: attach-spin 0.7s linear infinite;
-}
-
-@keyframes attach-spin {
-  to { transform: rotate(360deg); }
+  @include touch { min-height: 44px; }
 }

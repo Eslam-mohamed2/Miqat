@@ -1,220 +1,306 @@
-<div class="tasks-page">
+<div class="tasks" [class.detail-open]="!!routeId()" [class.is-board]="view() === 'kanban'">
 
-  <!-- ── Header ──────────────────────────────────────────────────────────── -->
-  <header class="page-header">
-    <div class="header-text">
-      <h1 class="greeting">Tasks</h1>
-      <p class="subtitle">
-        {{ stats().total }} task{{ stats().total === 1 ? '' : 's' }}
-        <span *ngIf="stats().overdue" class="sub-warn"> · {{ stats().overdue }} overdue</span>
-        <span *ngIf="stats().total"> · {{ stats().percent }}% done</span>
-      </p>
-    </div>
-
-    <div class="header-actions">
-      <div class="view-toggle" role="tablist" aria-label="Task view">
-        <button type="button" role="tab" [attr.aria-selected]="view() === 'list'"
-                [class.active]="view() === 'list'" (click)="setView('list')">
-          <mat-icon>view_list</mat-icon><span>List</span>
-        </button>
-        <button type="button" role="tab" [attr.aria-selected]="view() === 'kanban'"
-                [class.active]="view() === 'kanban'" (click)="setView('kanban')">
-          <mat-icon>view_kanban</mat-icon><span>Kanban</span>
-        </button>
-      </div>
-
-      <button type="button" class="btn-new" (click)="openCreate()">
-        <mat-icon>add</mat-icon><span>New Task</span>
+  @if (view() === 'list') {
+    <!-- ── Page header ───────────────────────────────────────────────────── -->
+    <header class="top">
+      <button type="button" class="search" (click)="quickAdd.openPalette()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <span class="search-text">{{ 'Search tasks or type a command' | t }}</span>
+        <kbd>Ctrl K</kbd>
       </button>
-    </div>
-  </header>
-
-  <!-- ── Filters ─────────────────────────────────────────────────────────── -->
-  <div class="filter-bar">
-    <div class="search-field">
-      <mat-icon>search</mat-icon>
-      <input type="search" placeholder="Search tasks, tags…" aria-label="Search tasks"
-             [ngModel]="search()" (ngModelChange)="search.set($event)" />
-    </div>
-
-    <select aria-label="Filter by priority" [ngModel]="priorityFilter()" (ngModelChange)="priorityFilter.set($event)">
-      <option value="All">All priorities</option>
-      <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
-    </select>
-
-    <select aria-label="Filter by project" [ngModel]="groupFilter()" (ngModelChange)="groupFilter.set($event)">
-      <option value="All">All projects</option>
-      <option *ngFor="let g of groups()" [value]="g.id">{{ g.name }}</option>
-    </select>
-
-    <button type="button" class="btn-clear" *ngIf="hasActiveFilters()" (click)="clearFilters()">
-      <mat-icon>close</mat-icon><span>Clear</span>
-    </button>
-  </div>
-
-  <!-- ── Error ───────────────────────────────────────────────────────────── -->
-  <div class="error-banner" *ngIf="errorMessage()" role="alert">
-    <mat-icon>error_outline</mat-icon>
-    <span>{{ errorMessage() }}</span>
-    <button type="button" (click)="errorMessage.set('')" aria-label="Dismiss">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
-
-  <!-- ── Loading ─────────────────────────────────────────────────────────── -->
-  <div class="skeleton-wrap" *ngIf="loading()">
-    <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5]"></div>
-  </div>
-
-  <ng-container *ngIf="!loading()">
-
-    <!-- ── Empty ─────────────────────────────────────────────────────────── -->
-    <div class="empty-state" *ngIf="!filtered().length">
-      <div class="empty-icon-wrap"><mat-icon>task_alt</mat-icon></div>
-      <p class="empty-title">{{ hasActiveFilters() ? 'No tasks match those filters' : 'No tasks yet' }}</p>
-      <p class="empty-sub">
-        {{ hasActiveFilters() ? 'Try clearing the filters to see everything.' : 'Create your first task to get started.' }}
-      </p>
-      <button type="button" class="btn-new" (click)="hasActiveFilters() ? clearFilters() : openCreate()">
-        <mat-icon>{{ hasActiveFilters() ? 'filter_alt_off' : 'add' }}</mat-icon>
-        <span>{{ hasActiveFilters() ? 'Clear filters' : 'New Task' }}</span>
+      <a class="plan" routerLink="/dashboard">{{ 'Plan my day' | t }}</a>
+      <button type="button" class="new-task" (click)="openCreate()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>{{ 'New task' | t }}
       </button>
-    </div>
+      <app-user-menu />
+    </header>
 
-    <!-- ── List view ─────────────────────────────────────────────────────── -->
-    <div class="list-view" *ngIf="filtered().length && view() === 'list'">
-      <div class="table-scroll">
-        <table class="task-table">
-          <thead>
-            <tr>
-              <th scope="col" class="col-title">
-                <button type="button" (click)="sortBy('title')">
-                  Task <mat-icon *ngIf="sortKey() === 'title'">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-                </button>
-              </th>
-              <th scope="col">
-                <button type="button" (click)="sortBy('status')">
-                  Status <mat-icon *ngIf="sortKey() === 'status'">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-                </button>
-              </th>
-              <th scope="col">
-                <button type="button" (click)="sortBy('priority')">
-                  Priority <mat-icon *ngIf="sortKey() === 'priority'">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-                </button>
-              </th>
-              <th scope="col" class="col-due">
-                <button type="button" (click)="sortBy('dueDate')">
-                  Due <mat-icon *ngIf="sortKey() === 'dueDate'">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-                </button>
-              </th>
-              <th scope="col" class="col-project">Project</th>
-              <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let task of sorted(); trackBy: trackById" (click)="openTask(task)" tabindex="0"
-                (keydown.enter)="openTask(task)" [class.is-saving]="isSaving(task.id)">
-              <td class="col-title">
-                <span class="task-title">{{ task.title }}</span>
-                <span class="task-desc" *ngIf="task.description">{{ task.description }}</span>
-                <div class="tag-row" *ngIf="tagList(task.tags).length">
-                  <span class="tag" *ngFor="let tag of tagList(task.tags)">{{ tag }}</span>
-                </div>
-                <app-task-marks class="row-marks" [task]="task"></app-task-marks>
-              </td>
-              <td>
-                <!-- Doubles as the no-mouse way to change status, so the board is not
-                     the only path to moving a task. -->
-                <select class="status-select tone-text" [style.--tone]="statusColor(task.status)"
-                        [ngModel]="task.status" (ngModelChange)="moveTo(task, $event)"
-                        (click)="$event.stopPropagation()" aria-label="Change status">
-                  <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
-                </select>
-              </td>
-              <td>
-                <span class="priority-pill tone-text tone-tint" [style.--tone]="priorityColor(task.priority)">{{ task.priority }}</span>
-              </td>
-              <td class="col-due">
-                <span class="due" [class.overdue]="isOverdue(task)">
-                  <mat-icon *ngIf="isOverdue(task)">schedule</mat-icon>{{ formatDue(task.dueDate) }}
-                </span>
-              </td>
-              <td class="col-project">
-                <span class="project-name" *ngIf="groupName(task); else noProject">{{ groupName(task) }}</span>
-                <ng-template #noProject><span class="muted">—</span></ng-template>
-              </td>
-              <td class="col-actions">
-                <button type="button" class="icon-btn" (click)="openEdit(task, $event)"
-                        [attr.aria-label]="'Quick edit ' + task.title">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button type="button" class="icon-btn danger" (click)="deleteTask(task, $event)"
-                        [attr.aria-label]="'Delete ' + task.title">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <div class="columns">
+      <!-- ── Lists, views and projects ───────────────────────────────────── -->
+      <aside class="lists">
+        <nav [attr.aria-label]="'Lists' | t">
+          @for (item of lists; track item.key) {
+            <button type="button" class="nav-item" [class.on]="list() === item.key"
+                    [attr.aria-current]="list() === item.key ? 'page' : null" (click)="choose(item.key)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="item.icon"></path></svg>
+              <span class="nav-label">{{ item.label }}</span>
+              <span class="nav-count">{{ countOf(item.key) | num }}</span>
+            </button>
+          }
+        </nav>
 
-    <!-- ── Kanban view ───────────────────────────────────────────────────── -->
-    <div class="kanban-view" *ngIf="filtered().length && view() === 'kanban'">
-      <p class="unknown-note" *ngIf="unknownStatusCount()">
-        {{ unknownStatusCount() }} task(s) have a status outside the five columns and are not shown here.
-        Switch to List view to see them.
-      </p>
+        <nav [attr.aria-label]="'Views' | t">
+          <span class="nav-title">{{ 'Views' | t }}</span>
+          <button type="button" class="nav-item" [class.on]="list() === 'mine'"
+                  [attr.aria-current]="list() === 'mine' ? 'page' : null" (click)="choose('mine')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="views[0].icon"></path></svg>
+            <span class="nav-label">{{ 'Assigned to me' | t }}</span>
+            <span class="nav-count">{{ counts().mine || '' | num }}</span>
+          </button>
+          <a class="nav-item" routerLink="/inbox" [queryParams]="{ tab: 'mentions' }">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="mentionsIcon"></path></svg>
+            <span class="nav-label">{{ 'Mentions' | t }}</span>
+            <span class="nav-count">{{ inbox.unreadMentions() || '' | num }}</span>
+          </a>
+          <button type="button" class="nav-item" [class.on]="list() === 'blocked'"
+                  [attr.aria-current]="list() === 'blocked' ? 'page' : null" (click)="choose('blocked')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="views[1].icon"></path></svg>
+            <span class="nav-label">{{ 'Blocked' | t }}</span>
+            <span class="nav-count">{{ counts().blocked || '' | num }}</span>
+          </button>
+        </nav>
 
-      <div class="kanban-board" cdkDropListGroup>
-        <section class="kanban-col" *ngFor="let col of columns()">
-          <header class="col-header" [style.border-top-color]="col.color">
-            <span class="col-dot" [style.background]="col.color"></span>
-            <h2 class="col-title">{{ col.label }}</h2>
-            <span class="col-count">{{ col.tasks.length }}</span>
-          </header>
-
-          <div class="col-body" cdkDropList [cdkDropListData]="col.tasks"
-               (cdkDropListDropped)="onDrop($event, col.value)">
-
-            <article class="task-card" *ngFor="let task of col.tasks; trackBy: trackById"
-                     cdkDrag [cdkDragData]="task" (click)="openTask(task)"
-                     [class.is-saving]="isSaving(task.id)">
-
-              <div class="card-drag-preview" *cdkDragPlaceholder></div>
-
-              <div class="card-top">
-                <span class="priority-bar" [style.background]="priorityColor(task.priority)"></span>
-                <h3 class="card-title">{{ task.title }}</h3>
-                <button type="button" class="icon-btn danger" (click)="deleteTask(task, $event)"
-                        [attr.aria-label]="'Delete ' + task.title">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
-
-              <p class="card-desc" *ngIf="task.description">{{ task.description }}</p>
-
-              <div class="tag-row" *ngIf="tagList(task.tags).length">
-                <span class="tag" *ngFor="let tag of tagList(task.tags)">{{ tag }}</span>
-              </div>
-
-              <app-task-marks class="card-marks" [task]="task"></app-task-marks>
-
-              <footer class="card-foot">
-                <span class="due" [class.overdue]="isOverdue(task)">
-                  <mat-icon>event</mat-icon>{{ formatDue(task.dueDate) }}
-                </span>
-                <span class="project-chip" *ngIf="groupName(task)">{{ groupName(task) }}</span>
-              </footer>
-
-              <span class="saving-dot" *ngIf="isSaving(task.id)" aria-label="Saving"></span>
-            </article>
-
-            <p class="col-empty" *ngIf="!col.tasks.length">Drop tasks here</p>
+        <nav [attr.aria-label]="'Projects' | t">
+          <div class="nav-title-row">
+            <button type="button" class="nav-title" [title]="'All projects' | t" (click)="openProjects()">{{ 'Projects' | t }}</button>
+            <button type="button" class="nav-add" [attr.aria-label]="'New project' | t" [title]="'New project' | t" (click)="newProject()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            </button>
           </div>
-        </section>
+          @for (item of projects(); track item.id) {
+            <button type="button" class="nav-item" [class.on]="projectId() === item.id"
+                    [attr.aria-current]="projectId() === item.id ? 'page' : null" (click)="chooseProject(item.id)">
+              <svg class="ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" [style.--tone]="item.color"><circle class="ring-track" cx="8" cy="8" r="6" fill="none" stroke-width="2.2"></circle><circle class="ring-fill" cx="8" cy="8" r="6" fill="none" stroke-width="2.2" [attr.stroke-dasharray]="item.dash" transform="rotate(-90 8 8)"></circle></svg>
+              <span class="nav-label" dir="auto">{{ item.name }}</span>
+              <span class="nav-count quiet">{{ item.percent }}</span>
+            </button>
+          } @empty {
+            <span class="nav-empty">{{ 'No projects yet.' | t }}</span>
+          }
+        </nav>
+      </aside>
+
+      <!-- ── The list ────────────────────────────────────────────────────── -->
+      <main class="main">
+        <div class="head">
+          <div class="head-title">
+            <span class="date">{{ dateLine() }}</span>
+            <h1 dir="auto">{{ title() }}</h1>
+          </div>
+          <span class="summary">
+            {{ summary() }}
+            @if (project(); as chosen) {
+              · <a [routerLink]="['/projects', chosen.id]">{{ 'Open project' | t }}</a>
+            }
+          </span>
+
+          <div class="head-actions">
+            <div class="seg" role="group" [attr.aria-label]="'Layout' | t">
+              <button type="button" aria-pressed="true">{{ 'List' | t }}</button>
+              <button type="button" aria-pressed="false" (click)="setView('kanban')">{{ 'Board' | t }}</button>
+            </div>
+
+            <span class="display">
+              <button type="button" class="display-btn" aria-haspopup="dialog" [attr.aria-expanded]="displayOpen()"
+                      (click)="displayOpen.set(!displayOpen())">
+                {{ 'Display' | t }}
+                @if (hasFilters()) { <span class="display-dot" [attr.aria-label]="'Filters are on' | t"></span> }
+              </button>
+
+              @if (displayOpen()) {
+                <div class="display-menu mq-menu" role="dialog" [attr.aria-label]="'Display' | t">
+                  <span class="menu-title">{{ 'Sort by' | t }}</span>
+                  @for (choice of sortChoices; track choice.key) {
+                    <button type="button" class="mq-menu-item" role="menuitemradio"
+                            [attr.aria-checked]="sortKey() === choice.key" (click)="sortBy(choice.key)">
+                      <span class="menu-label">{{ choice.label }}</span>
+                      @if (sortKey() === choice.key) {
+                        <svg class="menu-arrow" [class.down]="!sortAsc()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" [attr.aria-label]="(sortAsc() ? 'Ascending' : 'Descending') | t"><path d="M12 19V5M6 11l6-6 6 6"></path></svg>
+                      }
+                    </button>
+                  }
+
+                  <div class="mq-menu-sep"></div>
+                  <span class="menu-title">{{ 'Priority' | t }}</span>
+                  <div class="menu-chips" role="group" [attr.aria-label]="'Filter by priority' | t">
+                    <button type="button" class="menu-chip" [attr.aria-pressed]="priorityFilter() === 'All'"
+                            (click)="priorityFilter.set('All')">{{ 'All' | t }}</button>
+                    @for (priority of priorities; track priority.value) {
+                      <button type="button" class="menu-chip" [attr.aria-pressed]="priorityFilter() === priority.value"
+                              (click)="priorityFilter.set(priority.value)">{{ priority.label }}</button>
+                    }
+                  </div>
+
+                  <div class="mq-menu-sep"></div>
+                  <label class="menu-title" for="tasks-filter">{{ 'Filter this list' | t }}</label>
+                  <input id="tasks-filter" type="search" class="menu-input" dir="auto" [placeholder]="'Title, description or label' | t"
+                         [value]="term()" (input)="term.set(textOf($event))" />
+
+                  @if (hasFilters()) {
+                    <button type="button" class="menu-reset" (click)="clearFilters()">{{ 'Clear filters' | t }}</button>
+                  }
+                </div>
+              }
+            </span>
+          </div>
+        </div>
+
+        <!-- Phones: the title block, the three lists and the day's load (V2-MobileTasks). -->
+        <div class="m-head">
+          <div class="m-title">
+            <span class="m-eyebrow">{{ 'Tasks' | t }}</span>
+            <h1 dir="auto">{{ title() }}</h1>
+          </div>
+          <span class="m-summary">{{ shortSummary() }}</span>
+        </div>
+
+        <div class="m-seg" role="group" [attr.aria-label]="'List' | t">
+          <button type="button" [attr.aria-pressed]="list() === 'today'" (click)="choose('today')">{{ 'Today' | t }}</button>
+          <button type="button" [attr.aria-pressed]="list() === 'upcoming'" (click)="choose('upcoming')">{{ 'Upcoming' | t }}</button>
+          <button type="button" [attr.aria-pressed]="list() === 'inbox'" (click)="choose('inbox')">
+            {{ 'Inbox' | t }} @if (counts().inbox) { · {{ counts().inbox | num }} }
+          </button>
+        </div>
+
+        <a class="m-plan" routerLink="/dashboard">
+          <span class="m-plan-row"><span class="m-plan-label">{{ dayLoad().label }}</span><span class="m-plan-link">{{ 'Plan my day' | t }}</span></span>
+          <span class="m-plan-bar" role="img" [attr.aria-label]="'Meetings and task blocks as a share of your working day' | t">
+            <span class="m-plan-meetings" [style.width.%]="dayLoad().meetingShare"></span>
+            <span class="m-plan-tasks" [style.width.%]="dayLoad().taskShare"></span>
+          </span>
+        </a>
+
+        <!-- ── Add a task ────────────────────────────────────────────────── -->
+        <form class="add-form" (submit)="$event.preventDefault(); addFromRow()">
+          <label class="add">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            <span class="mq-sr">{{ 'Add a task' | t }}</span>
+            <input type="text" class="add-input" autocomplete="off" maxlength="200" dir="auto"
+                   [placeholder]="'Add a task — “Review PR tomorrow ~{n}m #Backend !high”' | t: { n: 30 }"
+                   [value]="draft()" [disabled]="adding()" (input)="draft.set(textOf($event))" />
+            <kbd>N</kbd>
+          </label>
+
+          @if (draft().trim()) {
+            <div class="understood" aria-live="polite">
+              <span class="u-label">{{ 'Will add' | t }}</span>
+              <span class="u-title" dir="auto" [class.missing]="!understood().title">{{ understood().title || ('a title is needed' | t) }}</span>
+              @if (understood().dueChip; as due) {
+                <button type="button" class="chip when" [title]="'Read as plain words instead' | t" (click)="ignore('due')">
+                  {{ due }}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+              }
+              @if (understood().estimateLabel; as estimate) {
+                <button type="button" class="chip length" [title]="'Read as plain words instead' | t" (click)="ignore('estimate')">
+                  {{ estimate }}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+              }
+              @if (understood().project; as inProject) {
+                <button type="button" class="chip project" [title]="'Read as plain words instead' | t" (click)="ignore('project')">
+                  {{ inProject.name }}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+              }
+              @if (understood().priorityChip; as priority) {
+                <button type="button" class="chip priority" [title]="'Read as plain words instead' | t" (click)="ignore('priority')">
+                  {{ priority }}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+              }
+              @if (understood().unknownProject; as unknown) {
+                <span class="u-note">{{ 'No project starts with “{name}”' | t: { name: unknown } }}</span>
+              }
+              <button type="submit" class="u-add" [disabled]="!understood().title || adding()">
+                {{ (adding() ? 'Adding…' : 'Add') | t }} <kbd>Enter</kbd>
+              </button>
+            </div>
+          }
+        </form>
+
+        @if (store.error(); as message) {
+          <div class="notice" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" (click)="store.reload()">{{ 'Try again' | t }}</button>
+          </div>
+        }
+
+        @if (store.loading()) {
+          <div class="skeleton" aria-hidden="true">
+            @for (bone of [1, 2, 3, 4, 5]; track bone) { <span class="bone"></span> }
+          </div>
+        } @else if (sections().length) {
+          <app-task-list [sections]="sections()" [selectedId]="selectedId()"
+                         (pick)="select($event)" (fold)="toggleFold($event)" />
+        } @else if (!store.error()) {
+          <div class="empty">
+            <p class="empty-title">{{ emptyText() }}</p>
+            @if (hasFilters()) {
+              <button type="button" class="empty-btn" (click)="clearFilters()">{{ 'Clear filters' | t }}</button>
+            } @else {
+              <button type="button" class="empty-btn" (click)="openCreate()">{{ 'New task' | t }}</button>
+            }
+          </div>
+        }
+
+        <div class="hints">
+          <span><kbd>J K</kbd>{{ 'Move@@between rows' | t }}</span>
+          <span><kbd>Space</kbd>{{ 'Complete@@verb' | t }}</span>
+          <span><kbd>S</kbd>{{ 'Schedule on calendar' | t }}</span>
+          <span><kbd>Shift P</kbd>{{ 'Set priority' | t }}</span>
+        </div>
+      </main>
+
+      <!-- ── The selected task ───────────────────────────────────────────── -->
+      @if (selectedId(); as id) {
+        <app-task-panel class="detail" [attr.aria-label]="'Task details' | t" role="complementary"
+                        [taskId]="id" [focusCommentId]="focusCommentId()" [closable]="!wide()"
+                        (closed)="closeDetail()" (removed)="closeDetail()" />
+      } @else {
+        <aside class="detail none" [attr.aria-label]="'Task details' | t">
+          <p>{{ 'Choose a task to see its details here.' | t }}</p>
+        </aside>
+      }
+    </div>
+  } @else {
+    <!-- ── Board header ──────────────────────────────────────────────────── -->
+    <header class="board-top">
+      <div class="board-title">
+        <span class="date"><span dir="auto">{{ boardScope() }}</span> · <span [title]="'Miqat has no sprints yet, so the board shows every task' | t">{{ 'no sprint set up yet' | t }}</span></span>
+        <h1>{{ 'Board' | t }}</h1>
       </div>
+
+      <div class="done-card">
+        <div class="done-main">
+          <span class="done-row"><span class="done-key">{{ 'Done@@progress' | t }}</span><span class="done-value">{{ boardProgress().label }}</span></span>
+          <span class="done-bar"><span [style.width.%]="boardProgress().percent"></span></span>
+        </div>
+        <svg class="mq-flip" width="120" height="40" viewBox="0 0 120 40" role="img" [attr.aria-label]="'Burndown: needs sprint dates, which are not set up yet' | t">
+          <title>{{ 'The burndown needs sprint dates, which are not set up yet' | t }}</title>
+          <path class="ideal" d="M2 4L118 36" stroke-width="1.2" stroke-dasharray="3 3" fill="none"></path>
+        </svg>
+      </div>
+
+      <div class="board-actions">
+        <div class="seg" role="group" [attr.aria-label]="'Layout' | t">
+          <button type="button" aria-pressed="false" (click)="setView('list')">{{ 'List' | t }}</button>
+          <button type="button" aria-pressed="true">{{ 'Board' | t }}</button>
+        </div>
+        <button type="button" class="toggle" [attr.aria-pressed]="lanes()" (click)="lanes.set(!lanes())">{{ 'Rows by project' | t }}</button>
+        <button type="button" class="toggle" [attr.aria-pressed]="onlyMine()" (click)="onlyMine.set(!onlyMine())">{{ 'Assigned to me' | t }}</button>
+        <button type="button" class="toggle" [attr.aria-pressed]="onlyHigh()" (click)="onlyHigh.set(!onlyHigh())">{{ 'High priority' | t }}</button>
+        <button type="button" class="new-task" (click)="openCreate()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>{{ 'New task' | t }}
+        </button>
+      </div>
+    </header>
+
+    <div class="board-body">
+      @if (store.error(); as message) {
+        <div class="notice" role="alert">
+          <span>{{ message }}</span>
+          <button type="button" (click)="store.reload()">{{ 'Try again' | t }}</button>
+        </div>
+      }
+      <app-task-board [tasks]="boardTasks()" [lanes]="lanes()" [selectedId]="routeId()"
+                      (pick)="select($event)" (openLogbook)="showLogbook()" />
     </div>
 
-  </ng-container>
+    <!-- The picked card's details, over the board. -->
+    @if (routeId(); as id) {
+      <div class="drawer-shade" (click)="closeDetail()"></div>
+      <app-task-panel class="drawer" [attr.aria-label]="'Task details' | t" role="complementary"
+                      [taskId]="id" [focusCommentId]="focusCommentId()" [closable]="true"
+                      (closed)="closeDetail()" (removed)="closeDetail()" />
+    }
+  }
+
+  <app-schedule-popover />
 </div>

@@ -1,27 +1,47 @@
-<div class="app-shell dashboard-theme">
-  <app-sidebar></app-sidebar>
-  <div class="main-area">
-    <app-topnav></app-topnav>
-    <div class="page-content">
-      <router-outlet></router-outlet>
-    </div>
-  </div>
+<div class="app-shell">
+  <app-sidebar [focused]="focused()" />
+
+  <!-- Each page draws its own header (design/miqat-2.0); the shell adds nothing above it. -->
+  <main class="page-content">
+    <router-outlet />
+  </main>
 </div>
+
+<!-- The command palette ("Create or search", Ctrl K). Pages open it through QuickAddService. -->
+<app-global-search />
+
+<!-- The projects drawer, opened from anywhere through UiService. -->
+<app-projects-panel [isOpen]="ui.projectsPanelOpen()" (closed)="ui.projectsPanelOpen.set(false)" />
 
 <!-- Says why the user was brought to this page, e.g. after opening a notification. -->
-<div class="context-notice" [class.beside-chat]="chat.available()"
-     *ngIf="notices.notice() as notice" role="status" aria-live="polite">
-  <span class="notice-icon"><mat-icon>{{ notice.icon }}</mat-icon></span>
-  <span class="notice-body">
-    <span class="notice-label">{{ notice.label }}</span>
-    <span class="notice-text">{{ notice.text }}</span>
-  </span>
-  <button type="button" class="notice-close" (click)="notices.clear()" aria-label="Dismiss">
-    <mat-icon>close</mat-icon>
-  </button>
+@if (notices.notice(); as notice) {
+  <div class="context-notice" [class.beside-chat]="chat.cornerInUse()" role="status" aria-live="polite">
+    <span class="notice-dot" aria-hidden="true"></span>
+    <span class="notice-body">
+      <span class="notice-label">{{ notice.label }}</span>
+      <span class="notice-text">{{ notice.text }}</span>
+    </span>
+    <button type="button" class="notice-close" (click)="notices.clear()" [attr.aria-label]="'Dismiss' | t">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+  </div>
+}
+
+<!-- Short confirmations, with "Undo" where the action can be taken back. -->
+<div class="mq-toast-stack" aria-live="polite">
+  @for (toast of toasts.toasts(); track toast.id) {
+    <div class="mq-toast" role="status" [style.--tone]="toast.tone || null">
+      <span class="mq-toast-dot" aria-hidden="true"></span>
+      <span>{{ toast.text }}</span>
+      @if (toast.actionLabel) {
+        <button type="button" class="mq-toast-action" (click)="toasts.act(toast)">{{ toast.actionLabel }}</button>
+      }
+      <span class="mq-toast-bar" [style.animation-duration.ms]="toast.duration" aria-hidden="true"></span>
+    </div>
+  }
 </div>
 
-<!-- Chat with friends: bubbles and pop-up windows in the bottom-right corner. -->
+<!-- Chat with friends: bubbles and pop-up windows in the bottom corner at the end edge. -->
 <app-chat-dock />
 
 <!-- Voice and video calls: the ringing pop-up and the call screen, above everything else. -->

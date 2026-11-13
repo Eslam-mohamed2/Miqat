@@ -1,0 +1,228 @@
+@use '../../../styles/tokens' as *;
+@use '../../home/public' as *;
+@use '../auth-layout' as *;
+
+@include auth-form;
+
+.step { gap: 18px; }
+
+select {
+  box-sizing: border-box;
+  border: 1px solid $mq-line-4;
+  color: $mq-text;
+  font-family: inherit;
+  font-weight: 400;
+  font-feature-settings: normal;
+  line-height: normal;
+  cursor: pointer;
+  transition: border-color $mq-t-press $mq-ease-quick;
+
+  &:focus { border-color: $mq-accent; outline: none; }
+}
+
+.zone {
+  height: 48px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: $mq-card-2;
+  font-size: 14.5px;
+}
+
+.choices {
+  display: grid;
+  gap: 6px;
+
+  &.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  &.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  button {
+    @include auth-choice;
+
+    &.arabic { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+  }
+}
+
+// Prayer times and Hijri dates: the two optional layers of the calendar.
+.layers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  border: 1px solid $mq-chip;
+  background: $mq-card;
+}
+
+.layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.layer-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layer-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.layer-hint {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.toggle {
+  @include mq-switch;
+  @include touch-area(10px, 2px);
+}
+
+.method {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 10px;
+  font-size: 13px;
+  color: $mq-text-3;
+  animation: mq-rise $mq-t-change $mq-ease-calm;
+
+  select {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 10px;
+    border-radius: 10px;
+    background: $mq-bg;
+    font-size: 13.5px;
+
+    @include touch { height: 44px; }
+  }
+}
+
+// ── The side panel: this week, as the choices on the left shape it ────────────
+.preview {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 460px;
+  padding: 28px;
+  border-radius: 24px;
+  background: $mq-bg;
+  border: 1px solid $mq-chip;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.preview-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: $mq-accent-text;
+}
+
+.preview-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+// A day off: dashed. A working day: a card. Today: the accent.
+.preview-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0;
+  border-radius: 12px;
+  border: 1px dashed $mq-chip;
+  color: $mq-placeholder;
+  transition: background $mq-t-change $mq-ease-calm, border-color $mq-t-change $mq-ease-calm, color $mq-t-change $mq-ease-calm;
+
+  &.work {
+    border: 1px solid $mq-line-2;
+    background: $mq-card-5;
+    color: $mq-text;
+  }
+
+  &.today {
+    border: 0;
+    background: $mq-accent;
+    color: $mq-on-accent;
+  }
+}
+
+.preview-dow {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.preview-num {
+  font-family: $mq-serif;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.preview-hijri {
+  font-size: 10px;
+  color: $mq-muted;
+}
+
+.preview-hours {
+  font-size: 13.5px;
+  color: $mq-text-3;
+}
+
+.preview-prayers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid $mq-line;
+}
+
+.preview-prayer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 14px;
+}
+
+.preview-dot {
+  // The design sizes the circle without its hairline.
+  box-sizing: content-box;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid $mq-accent-text;
+
+  &.next {
+    border: 0;
+    background: $mq-accent;
+  }
+}
+
+.preview-name { flex: 1; }
+.preview-time { color: $mq-text-4; }
+
+.preview-none {
+  padding: 7px 0;
+  font-size: 13px;
+  color: $mq-muted;
+}
+
+.preview-note {
+  font-size: 12.5px;
+  color: $mq-muted;
+}
+
+@include below($bp-phone) {
+  .preview { padding: 20px 16px; }
+  .preview-days { gap: 4px; }
+}

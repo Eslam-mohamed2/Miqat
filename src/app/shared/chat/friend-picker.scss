@@ -1,0 +1,152 @@
+@use '../../../styles/tokens' as *;
+
+// Chips, a search box and a list with ticks, in the language of design/miqat-2.0.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  line-height: normal;
+}
+
+p {
+  margin: 0;
+}
+
+.chips {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 68px;
+  overflow-y: auto;
+  @include mq-scroll;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  height: 28px;
+  padding-inline: 10px 4px;
+  border-radius: 999px;
+  background: $mq-chip;
+  color: $mq-text;
+  font-size: 12px;
+  font-weight: 600;
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+
+  button {
+    @include mq-icon-btn(20px, 50%);
+  }
+}
+
+.chip-name {
+  @include mq-ellipsis;
+}
+
+.search {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  color: $mq-muted;
+  transition: border-color $mq-t-press $mq-ease-quick;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $mq-text;
+    font-family: inherit;
+    font-size: 13px;
+
+    &::placeholder { color: $mq-placeholder; opacity: 1; }
+    &::-webkit-search-cancel-button { display: none; }
+  }
+
+  &:focus-within { border-color: $mq-accent; }
+}
+
+.options {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  @include mq-scroll;
+}
+
+.option {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: $mq-text;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus(-2px);
+
+  &:hover { background: $mq-hover-2; }
+}
+
+.option-name {
+  flex: 1;
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+// An empty ring until the person is chosen, then the accent with a tick.
+.tick {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid $mq-line-5;
+  color: $mq-on-accent;
+  transition: background $mq-t-press $mq-ease-quick, border-color $mq-t-press $mq-ease-quick;
+
+  .option[aria-selected='true'] & {
+    background: $mq-accent;
+    border-color: $mq-accent;
+  }
+}
+
+.none {
+  padding: 14px 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $mq-muted;
+}
+
+@include below($bp-tablet) {
+  .search { height: 44px; }
+  .search input { font-size: 16px; }
+  .option { min-height: 48px; }
+  .chip { height: 32px; }
+  .chip button { width: 28px; height: 28px; }
+}

@@ -1,0 +1,169 @@
+<div class="import-window" (keydown.escape)="close()">
+
+  <header class="window-head">
+    <div class="head-text">
+      <span class="eyebrow">{{ 'Google Calendar' | t }}</span>
+      <h2 #title class="title" tabindex="-1">{{ heading() }}</h2>
+    </div>
+    <button type="button" class="icon-btn" (click)="close()" [disabled]="step() === 'running'" [attr.aria-label]="'Close' | t">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+  </header>
+
+  <div class="window-body">
+    @switch (step()) {
+
+      <!-- ── What it is, and Google's permission ───────────────────────────── -->
+      @case ('intro') {
+        <p class="lead">{{ 'Pick calendars from your Google account, and Miqat copies their events here, next to your tasks.' | t }}</p>
+
+        <div class="note">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"></rect><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"></path></svg>
+          <p><strong>{{ 'It is a copy made now, not a live connection.' | t }}</strong> {{ 'Changes you make in Google later are not followed. Import again to refresh.' | t }}</p>
+        </div>
+
+        <div class="points" role="list">
+          <div class="point" role="listitem">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
+            <span>{{ 'Miqat asks Google for permission to read your calendars and nothing else. It cannot change anything in Google.' | t }}</span>
+          </div>
+          <div class="point" role="listitem">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+            <span>{{ 'The permission is used for this import only. Miqat does not keep it.' | t }}</span>
+          </div>
+          <div class="point" role="listitem">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="13" height="11" rx="2"></rect><path d="M8 19h11a2 2 0 0 0 2-2V9"></path></svg>
+            <span>{{ 'Google opens in its own window. Allow pop-ups if your browser asks.' | t }}</span>
+          </div>
+        </div>
+
+        @if (waiting() === 'google') {
+          <p class="status" role="status">{{ 'Finish in the Google window that opened.' | t }}</p>
+        }
+        @if (problem()) {
+          <p class="error" role="alert">{{ problem() }}</p>
+        }
+      }
+
+      <!-- ── Which calendars, which period ─────────────────────────────────── -->
+      @case ('choose') {
+        @if (calendars().length) {
+          <p class="lead">{{ 'Each calendar you tick becomes a calendar in Miqat with the same name.' | t }}</p>
+
+          <div class="calendars" role="list" [attr.aria-label]="'Your Google calendars' | t">
+            @for (calendar of calendars(); track calendar.id) {
+              <label class="calendar" role="listitem">
+                <input type="checkbox" [checked]="isChosen(calendar.id)" (change)="toggle(calendar.id)" />
+                <span class="dot" [style.--tone]="calendar.color || null"></span>
+                <span class="calendar-name">{{ calendar.name }}</span>
+                @if (calendar.primary) { <span class="tag">{{ 'Main' | t }}</span> }
+              </label>
+            }
+          </div>
+
+          <div class="field">
+            <label for="google-import-period">{{ 'Period' | t }}</label>
+            <span class="select">
+              <select id="google-import-period" (change)="setPeriod($event)">
+                @for (period of periods; track period.id) {
+                  <option [value]="period.id" [selected]="period.id === periodId()">{{ period.label }}</option>
+                }
+              </select>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"></path></svg>
+            </span>
+            <span class="hint">{{ 'A repeating event with dates in this period comes with its whole series.' | t }}</span>
+          </div>
+
+          <div class="note quiet">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"></path></svg>
+            <p>{{ 'Events you imported before are updated, not added twice. An event you delete in Google later stays in Miqat until you delete it here.' | t }}</p>
+          </div>
+        } @else {
+          <p class="lead">{{ 'This Google account has no calendars Miqat can read, so there is nothing to import.' | t }}</p>
+        }
+      }
+
+      <!-- ── Copying ───────────────────────────────────────────────────────── -->
+      @case ('running') {
+        <p class="lead" role="status">{{ 'Keep this window open while Miqat copies your events.' | t }} {{ position() }}</p>
+
+        <div class="rows" role="list" [attr.aria-label]="'Calendars being imported' | t">
+          @for (row of rows(); track row.calendar.id) {
+            <div class="row" role="listitem" [class.active]="row.state === 'reading' || row.state === 'saving'">
+              <span class="dot" [style.--tone]="row.result?.color || row.calendar.color || null"></span>
+              <span class="row-text">
+                <span class="row-name">{{ row.calendar.name }}</span>
+                <span class="row-state" [class.failed]="row.result?.error" aria-live="polite">{{ row.result?.error || progressOf(row) }}</span>
+              </span>
+              @if (row.state === 'reading' || row.state === 'saving') {
+                <span class="spinner" aria-hidden="true"></span>
+              } @else if (row.state === 'done' && !row.result?.error) {
+                <svg class="tick" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── What happened ─────────────────────────────────────────────────── -->
+      @case ('done') {
+        <p class="lead" role="status">{{ summary() }}</p>
+        @if (problem()) {
+          <p class="error" role="alert">{{ problem() }}</p>
+        }
+
+        <div class="rows" role="list" [attr.aria-label]="'What was imported' | t">
+          @for (row of rows(); track row.calendar.id) {
+            @if (row.result; as result) {
+              <div class="row" role="listitem">
+                <span class="dot" [style.--tone]="result.color"></span>
+                <span class="row-text">
+                  <span class="row-name">{{ result.name }}</span>
+                  <span class="row-state">{{ countsOf(result) }}</span>
+                  @if (result.error) {
+                    <span class="row-state failed">{{ result.error }}</span>
+                  }
+                  @if (result.split.length) {
+                    <span class="row-note">{{ 'Repeats on several weekdays, so Miqat keeps one series per weekday: {titles}.' | t: { titles: titles(result.split) } }}</span>
+                  }
+                  @if (result.simplified.length) {
+                    <span class="row-note">{{ 'Repeats by a rule Miqat cannot follow exactly, so check its dates: {titles}.' | t: { titles: titles(result.simplified) } }}</span>
+                  }
+                </span>
+              </div>
+            }
+          }
+        </div>
+
+        @if (total()) {
+          <div class="note">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"></rect><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"></path></svg>
+            <p>{{ 'This is a copy of your Google calendars as they are now. Changes you make in Google later are not followed. Import again to refresh.' | t }}</p>
+          </div>
+        }
+      }
+    }
+  </div>
+
+  <footer class="window-foot">
+    @switch (step()) {
+      @case ('intro') {
+        <button type="button" class="btn-quiet" (click)="close()">{{ 'Cancel' | t }}</button>
+        <button type="button" class="btn-main" (click)="connect()" [disabled]="!!waiting()">{{ connectLabel() }}</button>
+      }
+      @case ('choose') {
+        <button type="button" class="btn-quiet" (click)="close()">{{ 'Cancel' | t }}</button>
+        @if (calendars().length) {
+          <button type="button" class="btn-main" (click)="start()" [disabled]="!chosen().size">{{ importLabel() }}</button>
+        }
+      }
+      @case ('running') {
+        <button type="button" class="btn-main" disabled>{{ 'Importing…' | t }}</button>
+      }
+      @case ('done') {
+        <button type="button" class="btn-quiet" (click)="again()">{{ 'Import again' | t }}</button>
+        <button type="button" class="btn-main" (click)="close()">{{ 'Done' | t }}</button>
+      }
+    }
+  </footer>
+</div>

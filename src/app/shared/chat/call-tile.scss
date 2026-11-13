@@ -1,0 +1,68 @@
+@use '../../../styles/tokens' as *;
+
+:host {
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 14px;
+  background: $mq-card-5;
+  border: 1px solid $mq-line-2;
+  overflow: hidden;
+  transition: box-shadow $mq-t-change $mq-ease-calm, border-color $mq-t-change $mq-ease-calm;
+  --avatar-ring: #{$mq-card-5};
+}
+
+// Whoever is speaking wears the accent.
+:host(.speaking) {
+  border-color: $mq-accent;
+  box-shadow: 0 0 0 2px $mq-accent;
+}
+
+video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  // Present for its sound even when there is no picture to show.
+  visibility: hidden;
+
+  &.shown { visibility: visible; }
+  // Like a mirror, which is how people expect to see themselves.
+  &.mirror { transform: scaleX(-1); }
+}
+
+.note {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+// The name sits on its own chip, so it reads the same whatever the camera shows.
+.label {
+  position: absolute;
+  inset-inline-start: 8px;
+  bottom: 8px;
+  max-width: calc(100% - 16px);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mq-bg) 78%, transparent);
+  color: $mq-text;
+  font-size: 12px;
+  font-weight: 600;
+
+  app-chat-icon { color: $mq-late; }
+}
+
+.label-name {
+  @include mq-ellipsis;
+}

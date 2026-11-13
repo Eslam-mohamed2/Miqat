@@ -1,0 +1,37 @@
+@let at = step();
+
+<section class="main">
+  <div class="top">
+    <a class="brand" routerLink="/home">
+      <app-miqat-logo variant="wordmark" [height]="22" />
+    </a>
+    @if (at !== null) {
+      <ol class="steps" [attr.aria-label]="'Steps' | t">
+        @for (label of steps; track label; let i = $index) {
+          <li [class.current]="i === at" [class.done]="i < at" [attr.aria-current]="i === at ? 'step' : null">
+            <span class="dot">{{ i < at ? '✓' : (i + 1 | num) }}</span>{{ label }}
+          </li>
+        }
+      </ol>
+    }
+    <!-- Written in the language it switches to, so the person it is for can read it. -->
+    <button type="button" class="lang" [class.arabic]="other === 'ar'" [attr.lang]="other"
+      [attr.aria-label]="other === 'ar' ? 'Switch to Arabic' : 'Switch to English'"
+      (click)="switchLanguage()">{{ other === 'ar' ? 'العربية' : 'English' }}</button>
+  </div>
+
+  <div class="content">
+    <ng-content />
+  </div>
+
+  <!-- The terms and the privacy policy are not written yet: shown as designed, not links. -->
+  <p class="legal">{{ legal[0] }}<a aria-disabled="true" [title]="'The terms are not published yet' | t">{{ legal[1] }}</a>{{ legal[2] }}<a aria-disabled="true" [title]="'The privacy policy is not published yet' | t">{{ legal[3] }}</a>{{ legal[4] }}</p>
+</section>
+
+<section class="side" [attr.aria-label]="panelLabel() ?? clockLabel">
+  @if (panelLabel()) {
+    <ng-content select="[authPanel]" />
+  } @else {
+    <app-auth-clock />
+  }
+</section>

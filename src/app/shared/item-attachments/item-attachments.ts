@@ -1,14 +1,14 @@
 import {
   ChangeDetectionStrategy, Component, effect, inject, input, signal
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 
 import { ATTACHMENT_MAX_BYTES, AttachmentService } from '../../core/services/attachment.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { AttachmentDto, CalendarItemKind } from '../../models/api.models';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { formatNumber, isArabic, locale, t } from '../../core/i18n/i18n';
+import { NumPipe, TPipe } from '../../core/i18n/t.pipe';
 
 /**
  * Files attached to one task or event: the list, a way to add one and a way to
@@ -19,7 +19,7 @@ import { apiErrorMessage } from '../../core/http/api-error';
 @Component({
   selector: 'app-item-attachments',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [TPipe, NumPipe],
   templateUrl: './item-attachments.html',
   styleUrl: './item-attachments.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,7 +62,7 @@ export class ItemAttachments {
         this.available.set(err?.status !== 404);
         this.list.set([]);
         this.loading.set(false);
-        if (err?.status !== 404) this.error.set(apiErrorMessage(err, 'Files could not be loaded.'));
+        if (err?.status !== 404) this.error.set(apiErrorMessage(err, t('Files could not be loaded.')));
       }
     });
   }
@@ -75,7 +75,7 @@ export class ItemAttachments {
     if (!file || this.uploading()) return;
 
     if (file.size > ATTACHMENT_MAX_BYTES) {
-      this.error.set('A file can be up to 10 MB.');
+      this.error.set(t('A file can be up to {n} MB.', { n: 10 }));
       return;
     }
 
@@ -89,7 +89,7 @@ export class ItemAttachments {
       },
       error: err => {
         this.uploading.set(false);
-        this.error.set(apiErrorMessage(err, 'That file was not attached.'));
+        this.error.set(apiErrorMessage(err, t('That file was not attached.')));
       }
     });
   }
@@ -112,13 +112,13 @@ export class ItemAttachments {
       },
       error: err => {
         this.busyId.set(null);
-        this.error.set(apiErrorMessage(err, 'That file could not be downloaded.'));
+        this.error.set(apiErrorMessage(err, t('That file could not be downloaded.')));
       }
     });
   }
 
   remove(attachment: AttachmentDto) {
-    if (this.busyId() || !confirm(`Remove "${attachment.fileName}"?`)) return;
+    if (this.busyId() || !confirm(t('Remove "{name}"?', { name: attachment.fileName }))) return;
     this.busyId.set(attachment.id);
     this.error.set(null);
 
@@ -129,7 +129,7 @@ export class ItemAttachments {
       },
       error: err => {
         this.busyId.set(null);
-        this.error.set(apiErrorMessage(err, 'That file was not removed.'));
+        this.error.set(apiErrorMessage(err, t('That file was not removed.')));
       }
     });
   }
@@ -138,30 +138,43 @@ export class ItemAttachments {
     return this.canManage() || (!!this.myId && attachment.uploadedByUserId === this.myId);
   }
 
-  icon(attachment: AttachmentDto): string {
+  /**
+   * A short tag for the kind of file: "IMG", "PDF", "ZIP", "XLS", or its extension.
+   * The names of formats stay as they are in every language; "IMG" and "FILE" are words.
+   */
+  tag(attachment: AttachmentDto): string {
     const type = attachment.contentType ?? '';
-    if (type.startsWith('image/')) return 'image';
-    if (type === 'application/pdf') return 'picture_as_pdf';
-    if (type.includes('zip')) return 'folder_zip';
-    if (type.includes('sheet') || type.includes('excel') || type === 'text/csv') return 'table_chart';
-    return 'description';
+    if (type.startsWith('image/')) return t('IMG');
+    if (type === 'application/pdf') return 'PDF';
+    if (type.includes('zip')) return 'ZIP';
+    if (type.includes('sheet') || type.includes('excel') || type === 'text/csv') return 'XLS';
+    const extension = /\.([a-z0-9]{1,4})$/i.exec(attachment.fileName ?? '')?.[1];
+    return extension ? extension.toUpperCase() : t('FILE');
   }
 
   /** 1536 -> "1.5 KB". */
   size(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes < 1024) return t('{n} B', { n: this.figure(bytes, 0) });
+    if (bytes < 1024 * 1024) return t('{n} KB', { n: this.figure(bytes / 1024, bytes < 10 * 1024 ? 1 : 0) });
+    return t('{n} MB', { n: this.figure(bytes / (1024 * 1024), 1) });
+  }
+
+  /** A number with a fixed count of decimals, in the chosen digits and with their decimal mark. */
+  private figure(value: number, decimals: number): string {
+    return formatNumber(value, { minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: false });
   }
 
   /** "Carlos Rodriguez · 12 Nov", in the profile's time zone. */
   details(attachment: AttachmentDto): string {
     const date = new Date(attachment.createdAt);
-    const day = Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(undefined, {
+    const day = Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale(), {
       day: 'numeric', month: 'short', timeZone: this.users.timeZone()
     }).format(date);
-    return [this.size(attachment.sizeBytes), attachment.uploadedByName, day].filter(Boolean).join(' · ');
+    // In an Arabic line a Latin name would otherwise pull the date's digits to its own side:
+    // the name is isolated (U+2068 … U+2069) so each piece of the line keeps its place.
+    const name = attachment.uploadedByName && isArabic()
+      ? '\u2068' + attachment.uploadedByName + '\u2069'
+      : attachment.uploadedByName;
+    return [this.size(attachment.sizeBytes), name, day].filter(Boolean).join(' · ');
   }
-
-  trackById = (_: number, attachment: AttachmentDto) => attachment.id;
 }

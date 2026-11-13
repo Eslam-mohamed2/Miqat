@@ -1,5 +1,7 @@
 import { AbstractControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 
+import { t } from '../i18n/i18n';
+
 /**
  * Mirrors the API's registration rules exactly, as reported by its 400 responses:
  * at least 8 characters, one uppercase letter, one number, one special character.
@@ -41,13 +43,17 @@ export function passwordsMatchValidator(
   };
 }
 
-/** First human-readable message for a failed password control. */
+/**
+ * First human-readable message for a failed password control, in the interface
+ * language. The sentences are the API's own (its validators say the same), so they
+ * are listed once in the Arabic dictionary.
+ */
 export function passwordErrorMessage(errors: ValidationErrors | null): string {
   if (!errors) return '';
-  if (errors['required']) return 'Password is required.';
-  if (errors['minlength']) return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
-  if (errors['uppercase']) return 'Password must contain at least one uppercase letter.';
-  if (errors['number']) return 'Password must contain at least one number.';
-  if (errors['special']) return 'Password must contain at least one special character.';
-  return 'Password is invalid.';
+  if (errors['required']) return t('Password is required.');
+  if (errors['minlength']) return t('Password must be at least {n} characters.', { n: PASSWORD_MIN_LENGTH });
+  if (errors['uppercase']) return t('Password must contain at least one uppercase letter.');
+  if (errors['number']) return t('Password must contain at least one number.');
+  if (errors['special']) return t('Password must contain at least one special character.');
+  return t('Password is invalid.');
 }

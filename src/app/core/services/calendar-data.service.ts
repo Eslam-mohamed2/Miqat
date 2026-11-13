@@ -12,12 +12,9 @@ import {
 
 const DAY_NAMES: DayOfWeekName[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-/** How far ahead the "Upcoming" list looks. */
-const UPCOMING_DAYS = 14;
-
 /**
- * What the calendar screen shows, loaded once and shared by its parts (the grid,
- * the side panel, the event window). They used to fetch the same lists separately
+ * What the calendar screen shows, loaded once and shared by its parts (the views,
+ * the left column, the detail panel). They used to fetch the same lists separately
  * and could disagree for a moment after a change.
  *
  * On an API build that has no events (the feed answers 404) it falls back to the
@@ -34,8 +31,6 @@ export class CalendarDataService {
 
   /** What is on the calendar in the weeks on screen. */
   readonly items = signal<CalendarItemDto[]>([]);
-  /** From now on, for the "Upcoming" list; not tied to the month on screen. */
-  readonly upcoming = signal<CalendarItemDto[]>([]);
   /** The user's own calendars ("Personal", "Work", ...). */
   readonly calendars = signal<UserCalendarDto[]>([]);
   /** Projects, for the colour of their tasks and the project filter. */
@@ -44,6 +39,12 @@ export class CalendarDataService {
   readonly invitations = signal<EventDto[]>([]);
   /** null until loaded, and on API builds without calendar settings. */
   readonly settings = signal<CalendarSettingsDto | null>(null);
+  /**
+   * The user's own tasks, whatever their dates. The feed only has tasks with a due
+   * date and none of their details, so the estimate and the time block (the task's
+   * start date) behind "To plan" and "Planned" come from here.
+   */
+  readonly tasks = signal<TaskDto[]>([]);
 
   /**
    * False until the server is known to have events, and on API builds that have
@@ -103,6 +104,24 @@ export class CalendarDataService {
   reload() {
     this.reloadLists();
     this.reloadItems();
+    this.reloadTasks();
+  }
+
+  /** Guards against an older, slower answer overwriting a newer one. */
+  private taskRequest = 0;
+
+  /** The task list behind "To plan" and the planned blocks. */
+  reloadTasks() {
+    const request = ++this.taskRequest;
+    this.taskApi.getTasks().pipe(catchError(() => of(null))).subscribe(tasks => {
+      if (tasks && request === this.taskRequest) this.tasks.set(tasks);
+    });
+  }
+
+  /** Shows a changed task at once; an answer that is still on its way is dropped. */
+  patchTask(id: string, changes: Partial<TaskDto>) {
+    this.taskRequest++;
+    this.tasks.update(list => list.map(task => task.id === id ? { ...task, ...changes } : task));
   }
 
   /** Calendars, projects, invitations and settings. */
@@ -120,22 +139,15 @@ export class CalendarDataService {
     });
   }
 
-  /** The dates on screen and the "Upcoming" list. */
+  /** What falls on the dates on screen. */
   reloadItems() {
     const range = this.range;
     if (!range) return;
 
     const request = ++this.feedRequest;
-    const now = new Date();
-    const ahead = new Date(now.getTime() + UPCOMING_DAYS * 86_400_000);
-
-    forkJoin({
-      items: this.feed(range.from, range.to),
-      upcoming: this.feed(now, ahead)
-    }).subscribe(result => {
+    this.feed(range.from, range.to).subscribe(items => {
       if (request !== this.feedRequest) return;
-      this.items.set(result.items);
-      this.upcoming.set(result.upcoming);
+      this.items.set(items);
       this.loading.set(false);
     });
   }

@@ -1,18 +1,23 @@
 import {
   ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, effect, inject, viewChild
 } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { CallService } from '../../core/services/call.service';
+import { callClock } from '../../core/services/call-media';
+import { num, t } from '../../core/i18n/i18n';
+import { TPipe } from '../../core/i18n/t.pipe';
 import { ChatAvatar } from './chat-avatar';
+import { ChatIcon } from './chat-icon';
+import { GroupCallOverlay } from './group-call-overlay';
 
 /**
  * The call screen: the pop-up when a friend is calling, and the view of a
  * call that is being made or is going on. All state lives in CallService.
+ * The calls of a group have their own screen (GroupCallOverlay), drawn from here.
  */
 @Component({
   selector: 'app-call-overlay',
   standalone: true,
-  imports: [MatIconModule, ChatAvatar],
+  imports: [ChatAvatar, ChatIcon, GroupCallOverlay, TPipe],
   templateUrl: './call-overlay.html',
   styleUrl: './call-overlay.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -28,12 +33,21 @@ export class CallOverlay {
     if (!call) return '';
 
     switch (call.phase) {
-      case 'starting': return 'Starting…';
-      case 'calling': return 'Ringing…';
-      case 'ringing': return call.video ? 'Incoming video call' : 'Incoming voice call';
-      case 'connecting': return 'Connecting…';
-      case 'active': return clock(this.calls.seconds());
+      case 'starting': return t('Starting…');
+      case 'calling': return t('Ringing…');
+      case 'ringing': return call.video ? t('Incoming video call') : t('Incoming voice call');
+      case 'connecting': return t('Connecting…');
+      case 'active': return num(callClock(this.calls.seconds()));
     }
+  });
+
+  /** What a screen reader says when a friend calls: "Incoming video call from Omar". */
+  protected readonly incomingLabel = computed(() => {
+    const call = this.calls.call();
+    if (!call) return '';
+
+    const name = call.peer.fullName;
+    return call.video ? t('Incoming video call from {name}', { name }) : t('Incoming voice call from {name}', { name });
   });
 
   /** The friend's picture is on screen: a video call that is connected. */
@@ -61,13 +75,4 @@ function attach(player: HTMLVideoElement | undefined, stream: MediaStream | null
   player.srcObject = stream;
   // Some browsers wait for an explicit play() even with autoplay set.
   if (stream) player.play().catch(() => { /* starts with the next user action */ });
-}
-
-/** 75 -> "1:15", 3725 -> "1:02:05". */
-function clock(totalSeconds: number): string {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = String(totalSeconds % 60).padStart(2, '0');
-
-  return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${minutes}:${seconds}`;
 }

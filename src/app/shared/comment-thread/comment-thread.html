@@ -1,113 +1,238 @@
-<section class="thread" [class.compact]="compact">
+<section class="thread" [class.compact]="compact" [class.discussion]="discussion()">
 
-  <header class="thread-head">
-    <h4>Discussion</h4>
-    <span class="count" *ngIf="comments().length">{{ comments().length }}</span>
-  </header>
+  @if (!discussion()) {
+    <!-- ── A task's thread ───────────────────────────────────────────────── -->
+    @if (showHeading) {
+      <header class="thread-head">
+        <h3 class="eyebrow">{{ 'Activity' | t }}</h3>
+        @if (comments().length) { <span class="count">{{ comments().length | num }}</span> }
+      </header>
+    }
 
-  <p class="hint" *ngIf="loading()">Loading discussion…</p>
-  <p class="hint" *ngIf="!loading() && !comments().length">
-    No comments yet — start the discussion, or type <b>&#64;</b> to pull someone in.
-  </p>
+    @if (loading()) {
+      <p class="hint">{{ 'Loading comments…' | t }}</p>
+    } @else if (!comments().length && showHeading) {
+      <p class="hint">{{ emptyHint.before }}<b>&#64;</b>{{ emptyHint.after }}</p>
+    }
 
-  <div class="list" *ngIf="comments().length">
-    <article class="comment-row" *ngFor="let c of comments(); trackBy: trackById"
-             [id]="'comment-' + c.id" [class.focused]="focusedId() === c.id">
-      <!-- referrerpolicy is not cosmetic: Google avatar hosts reject requests
-           that carry a Referer they do not recognise, so these load as broken
-           images without it. If one fails anyway, fall back to initials rather
-           than leaving a torn-image glyph in the thread. -->
-      <img *ngIf="c.authorProfilePictureUrl && !avatarFailed(c.authorId); else avatarFallback"
-           [src]="c.authorProfilePictureUrl" [alt]="c.authorName || 'User'" class="avatar"
-           referrerpolicy="no-referrer" (error)="onAvatarError(c.authorId)" />
-      <ng-template #avatarFallback>
-        <span class="avatar initials">{{ initials(c.authorName) }}</span>
-      </ng-template>
+    @for (c of comments(); track c.id) {
+      <article class="comment-row" [id]="'comment-' + c.id" [class.focused]="focusedId() === c.id">
+        <ng-container *ngTemplateOutlet="avatar; context: { $implicit: c }" />
 
-      <div class="bubble-wrap">
-        <div class="bubble">
-          <a class="author" [routerLink]="['/profile', c.authorId]">{{ c.authorName || 'Unknown' }}</a>
-          <!-- Editing rewrites the text only: the API takes no mention list on an edit,
-               so nobody new is notified or given access from here. -->
-          <div class="edit-box" *ngIf="editingId() === c.id; else shownText">
-            <textarea [id]="'comment-edit-' + c.id" rows="2" maxlength="2000" aria-label="Edit your comment"
-                      [value]="editDraft()" [disabled]="savingEdit()"
-                      (input)="onEditInput($event)" (keydown)="onEditKeydown($event, c)"></textarea>
-            <p class="edit-note" *ngIf="editDraft().includes('@')">
-              Editing changes the text only. To notify someone new, mention them in a new comment.
-            </p>
-            <div class="edit-actions">
-              <span class="shortcut">Esc to cancel · Ctrl + Enter to save</span>
-              <button type="button" class="edit-cancel" [disabled]="savingEdit()" (click)="cancelEdit()">Cancel</button>
-              <button type="button" class="send" [disabled]="!canSaveEdit(c)" (click)="saveEdit(c)">
-                {{ savingEdit() ? 'Saving…' : 'Save' }}
-              </button>
-            </div>
-          </div>
-          <ng-template #shownText>
-          <p class="text"><ng-container
-              *ngFor="let part of parts(c)"><a *ngIf="part.mentionOf; else plain"
-                class="mention" [routerLink]="['/profile', part.mentionOf.userId]"
-                >{{ part.text }}</a><ng-template #plain>{{ part.text }}</ng-template></ng-container></p>
-          </ng-template>
+        <div class="body">
+          @if (editingId() === c.id) {
+            <ng-container *ngTemplateOutlet="editBox; context: { $implicit: c }" />
+          } @else {
+            <!-- One line on purpose: the text keeps its own line breaks (pre-wrap). -->
+            <p class="text" dir="auto">@for (part of parts(c); track $index) {@if (part.mentionOf) {<a class="mention" [routerLink]="['/profile', part.mentionOf.userId]">{{ part.text }}</a>} @else {<span>{{ part.text }}</span>}}<span class="when"> · {{ when(c.createdAt) }}</span>@if (isEdited(c)) {<span class="when" [title]="'Edited {when}' | t: { when: when(c.updatedAt!) }"> · {{ 'edited' | t }}</span>}</p>
+
+            @if (isMine(c)) {
+              <span class="row-actions">
+                <button type="button" class="link-btn" (click)="startEdit(c)">{{ 'Edit' | t }}</button>
+                <button type="button" class="link-btn danger" (click)="remove(c)">{{ 'Delete' | t }}</button>
+              </span>
+            }
+          }
         </div>
-        <div class="meta">
-          <span>{{ when(c.createdAt) }}</span>
-          <span class="edited" *ngIf="isEdited(c)" [title]="'Edited ' + when(c.updatedAt!)">edited</span>
-          <button type="button" class="link-btn plain" *ngIf="isMine(c) && editingId() !== c.id"
-                  (click)="startEdit(c)">Edit</button>
-          <button type="button" class="link-btn" *ngIf="isMine(c)" (click)="remove(c)">Delete</button>
-        </div>
+      </article>
+    }
+  } @else {
+    <!-- ── A project's discussion ────────────────────────────────────────── -->
+    @if (missing()) {
+      <div class="state" role="status">
+        <p class="state-title">{{ 'The discussion is not available on this server yet.' | t }}</p>
+        <p class="state-text">{{ 'This server runs an older build without project discussions. They will be here once the server is updated; nothing else on this page is affected.' | t }}</p>
       </div>
-    </article>
-  </div>
+    } @else if (loading()) {
+      <p class="hint" role="status">{{ 'Loading comments…' | t }}</p>
+    } @else if (loadError()) {
+      <div class="state" role="alert">
+        <p class="state-title">{{ 'Could not load the discussion.' | t }}</p>
+        <p class="state-text">{{ loadError() }}</p>
+        <button type="button" class="state-btn" (click)="retryLoad()">{{ 'Try again' | t }}</button>
+      </div>
+    } @else {
+      @if (hasMore()) {
+        <button #older type="button" class="older" [disabled]="loadingOlder()" (click)="loadOlder()">
+          {{ loadingOlder() ? ('Loading…' | t) : ('Earlier comments' | t) }}
+        </button>
+      }
+
+      @if (!threads().length) {
+        <div class="state">
+          <p class="state-title">{{ 'No comments yet.' | t }}</p>
+          <p class="state-text">{{ 'Start the discussion: everyone on this project can read it and reply.' | t }}</p>
+        </div>
+      }
+
+      @for (thread of threads(); track thread.comment.id) {
+        <div class="thread-block">
+          <ng-container *ngTemplateOutlet="row; context: { $implicit: thread.comment }" />
+          @if (thread.replies.length) {
+            <div class="replies">
+              @for (reply of thread.replies; track reply.id) {
+                <ng-container *ngTemplateOutlet="row; context: { $implicit: reply }" />
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  }
 
   <!-- ── Composer ────────────────────────────────────────────────────────── -->
-  <div class="composer">
-    <div class="composer-box">
-      <textarea #composer rows="2" placeholder="Write a comment…  Type @ to mention someone"
-                maxlength="2000" [value]="draft()"
-                (input)="onInput($event)" (click)="onClick($event)"
-                (keydown)="onKeydown($event)" (blur)="closeMenu()"></textarea>
+  @if (!discussion() || (!missing() && !loading() && !loadError())) {
+    <div class="composer">
+      @if (replyTo(); as target) {
+        <div class="replying">
+          <span class="replying-text">{{ 'Replying to {name}' | t: { name: target.authorName || ('Unknown' | t) } }}</span>
+          <button type="button" class="link-btn" (click)="cancelReply()">{{ 'Cancel' | t }}</button>
+        </div>
+      }
 
-      <!-- Mousedown, not click: blur fires first and would close the menu. -->
-      <ul class="mention-menu" *ngIf="menuOpen()" role="listbox">
-        <li *ngFor="let user of suggestions(); let i = index; trackBy: trackById"
-            role="option" [attr.aria-selected]="i === activeIndex()"
-            [class.active]="i === activeIndex()"
-            (mouseenter)="activeIndex.set(i)"
-            (mousedown)="$event.preventDefault(); choose(user)">
-          <img *ngIf="user.profilePictureUrl && !avatarFailed(user.userId); else menuInitials"
-               [src]="user.profilePictureUrl" [alt]="user.fullName" class="menu-avatar"
-               referrerpolicy="no-referrer" (error)="onAvatarError(user.userId)" />
-          <ng-template #menuInitials>
-            <span class="menu-avatar initials">{{ initials(user.fullName) }}</span>
-          </ng-template>
-          <span class="menu-text">
-            <strong>{{ user.fullName }}</strong>
-            <small>{{ user.relationship }}</small>
-          </span>
-          <span class="menu-tag" *ngIf="!user.hasAccess">needs access</span>
-        </li>
-      </ul>
+      <div class="composer-box">
+        <textarea #composer rows="1" dir="auto"
+                  [placeholder]="!discussion() ? ('Comment, @mention someone…' | t)
+                    : replyTo() ? ('Write a reply…' | t) : ('Write a comment, @mention a member…' | t)"
+                  [attr.aria-label]="replyTo() ? ('Reply' | t) : ('Comment' | t)"
+                  maxlength="2000" [value]="draft()"
+                  (input)="onInput($event)" (click)="onClick($event)"
+                  (keydown)="onKeydown($event)" (blur)="closeMenu()"></textarea>
+
+        @if (draft().trim()) {
+          <button type="button" class="send" [disabled]="posting()" (click)="post()"
+                  [attr.aria-label]="posting() ? ('Posting' | t) : ('Post comment' | t)" [title]="'Post (Enter)' | t">
+            <svg class="mq-flip" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </button>
+        }
+
+        <!-- Mousedown, not click: blur fires first and would close the menu. -->
+        @if (menuOpen()) {
+          <div class="mention-menu mq-menu" role="listbox" [attr.aria-label]="'People you can mention' | t">
+            @for (user of suggestions(); track user.userId; let i = $index) {
+              <div class="mention-option" role="option" [attr.aria-selected]="i === activeIndex()"
+                   [class.active]="i === activeIndex()"
+                   (mouseenter)="activeIndex.set(i)"
+                   (mousedown)="$event.preventDefault(); choose(user)">
+                <span class="avatar">
+                  @if (user.profilePictureUrl && !avatarFailed(user.userId)) {
+                    <img [src]="user.profilePictureUrl" alt="" referrerpolicy="no-referrer"
+                         (error)="onAvatarError(user.userId)" />
+                  } @else {
+                    <span aria-hidden="true">{{ initials(user.fullName) }}</span>
+                  }
+                </span>
+                <span class="menu-text">
+                  <strong dir="auto">{{ user.fullName }}</strong>
+                  <small>{{ relationship(user) }}</small>
+                </span>
+                @if (!user.hasAccess) { <span class="menu-tag">{{ 'needs access' | t }}</span> }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (grantsAccessTo().length) {
+        <p class="grant-note">{{ grantNote.before }}@for (u of grantsAccessTo(); track u.userId; let last = $last) {<span><b>{{ u.fullName }}</b>{{ last ? '' : listSeparator }}</span>}{{ grantNote.after }}</p>
+      }
+
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+
+      @if (draft().trim()) {
+        <p class="shortcut">{{ 'Enter to post · Shift + Enter for a new line' | t }}</p>
+      }
     </div>
+  }
 
-    <p class="grant-note" *ngIf="grantsAccessTo().length">
-      <mat-icon>lock_open</mat-icon>
-      <span>
-        <ng-container *ngFor="let u of grantsAccessTo(); let last = last"
-          ><b>{{ u.fullName }}</b>{{ last ? '' : ', ' }}</ng-container>
-        {{ grantsAccessTo().length === 1 ? 'will be given' : 'will be given' }} access to this task when you post.
-      </span>
-    </p>
+  <!-- Where "the newest comments" ends: the page is scrolled to here. -->
+  @if (discussion()) { <span #end class="end" aria-hidden="true"></span> }
+</section>
 
-    <p class="error" *ngIf="error()">{{ error() }}</p>
+<!-- ── The author's picture, a link to their profile ───────────────────────── -->
+<ng-template #avatar let-c>
+  <a class="avatar" [routerLink]="['/profile', c.authorId]" [title]="c.authorName || ('Unknown' | t)"
+     [attr.aria-label]="c.authorName || ('Unknown' | t)">
+    <!-- referrerpolicy is not cosmetic: Google avatar hosts reject requests
+         that carry a Referer they do not recognise, so these load as broken
+         images without it. If one fails anyway, fall back to initials rather
+         than leaving a torn-image glyph in the thread. -->
+    @if (c.authorProfilePictureUrl && !avatarFailed(c.authorId)) {
+      <img [src]="c.authorProfilePictureUrl" alt="" referrerpolicy="no-referrer"
+           (error)="onAvatarError(c.authorId)" />
+    } @else {
+      <span aria-hidden="true">{{ initials(c.authorName) }}</span>
+    }
+  </a>
+</ng-template>
 
-    <div class="composer-actions">
-      <span class="shortcut">Ctrl + Enter to send</span>
-      <button type="button" class="send" [disabled]="posting() || !draft().trim()" (click)="post()">
-        {{ posting() ? 'Posting…' : 'Comment' }}
+<!-- ── Rewriting a comment ─────────────────────────────────────────────────── -->
+<ng-template #editBox let-c>
+  <!-- Editing rewrites the text only: the API takes no mention list on an edit,
+       so nobody new is notified or given access from here. -->
+  <div class="edit-box">
+    <textarea [id]="'comment-edit-' + c.id" rows="2" maxlength="2000" dir="auto" [attr.aria-label]="'Edit your comment' | t"
+              [value]="editDraft()" [disabled]="savingEdit()"
+              (input)="onEditInput($event)" (keydown)="onEditKeydown($event, c)"></textarea>
+    @if (editDraft().includes('@')) {
+      <p class="edit-note">
+        {{ 'Editing changes the text only. To notify someone new, mention them in a new comment.' | t }}
+      </p>
+    }
+    <div class="edit-actions">
+      <span class="shortcut">{{ 'Esc to cancel · Ctrl + Enter to save' | t }}</span>
+      <button type="button" class="edit-cancel" [disabled]="savingEdit()" (click)="cancelEdit()">{{ 'Cancel' | t }}</button>
+      <button type="button" class="edit-save" [disabled]="!canSaveEdit(c)" (click)="saveEdit(c)">
+        {{ savingEdit() ? ('Saving…' | t) : ('Save' | t) }}
       </button>
     </div>
   </div>
-</section>
+</ng-template>
+
+<!-- ── A comment of a discussion, or a reply to one ────────────────────────── -->
+<ng-template #row let-c>
+  <article class="comment-row" [id]="'comment-' + c.id" [class.focused]="focusedId() === c.id"
+           [class.sending]="c.state === 'sending'" [class.failed]="c.state === 'failed'">
+    <ng-container *ngTemplateOutlet="avatar; context: { $implicit: c }" />
+
+    <div class="body">
+      <p class="who">
+        <a class="name" [routerLink]="['/profile', c.authorId]" dir="auto">{{ c.authorName || ('Unknown' | t) }}</a>
+        @if (c.state === 'sending') {
+          <span class="when">{{ 'Sending…' | t }}</span>
+        } @else if (c.state === 'failed') {
+          <span class="when not-sent">{{ 'Not sent' | t }}</span>
+        } @else {
+          <time class="when" [attr.datetime]="c.createdAt" [title]="fullDate(c.createdAt)">{{ when(c.createdAt) }}</time>
+          @if (isEdited(c)) {
+            <span class="when" [title]="'Edited {when}' | t: { when: fullDate(c.updatedAt) }">· {{ 'edited' | t }}</span>
+          }
+        }
+      </p>
+
+      @if (editingId() === c.id) {
+        <ng-container *ngTemplateOutlet="editBox; context: { $implicit: c }" />
+      } @else {
+        <!-- One line on purpose: the text keeps its own line breaks (pre-wrap). -->
+        <p class="text" dir="auto">@for (part of parts(c); track $index) {@if (part.mentionOf) {<a class="mention" [routerLink]="['/profile', part.mentionOf.userId]">{{ part.text }}</a>} @else {<span>{{ part.text }}</span>}}</p>
+
+        <span class="row-actions">
+          @if (c.state === 'failed') {
+            <button type="button" class="link-btn" (click)="retry(c)">{{ 'Try again' | t }}</button>
+            <button type="button" class="link-btn danger" (click)="discard(c)">{{ 'Discard' | t }}</button>
+          } @else if (!c.state) {
+            <button type="button" class="link-btn" (click)="startReply(c)">{{ 'Reply' | t }}</button>
+            @if (canEdit(c)) {
+              <button type="button" class="link-btn" (click)="startEdit(c)">{{ 'Edit' | t }}</button>
+            }
+            @if (canDelete(c)) {
+              <button type="button" class="link-btn danger" (click)="remove(c)">{{ 'Delete' | t }}</button>
+            }
+          }
+        </span>
+      }
+    </div>
+  </article>
+</ng-template>

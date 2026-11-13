@@ -1,32 +1,39 @@
-<h3 class="item-title">
-  <mat-icon>notifications_none</mat-icon> Reminders
-</h3>
+<h3 class="item-title">{{ 'Reminders' | t }}</h3>
 
-<div role="list" class="reminder-list" *ngIf="list().length">
-  <div role="listitem" class="reminder-row" *ngFor="let reminder of list(); trackBy: trackById">
-    <span class="reminder-text">
-      <strong>{{ label(reminder) }}</strong>
-      <small>{{ ringsAt(reminder) }}</small>
-    </span>
-    <button type="button" class="row-remove" [disabled]="busy()" (click)="remove(reminder)"
-            [attr.aria-label]="'Remove reminder: ' + label(reminder)">
-      <mat-icon>close</mat-icon>
-    </button>
+@if (list().length) {
+  <div role="list" class="reminder-list">
+    @for (reminder of list(); track reminder.id) {
+      <div role="listitem" class="reminder-row">
+        <span class="reminder-text">
+          <strong>{{ label(reminder) }}</strong>
+          <small>{{ ringsAt(reminder) }}</small>
+        </span>
+        <button type="button" class="row-remove" [disabled]="busy()" (click)="remove(reminder)"
+                [attr.aria-label]="'Remove reminder: {label}' | t: { label: label(reminder) }">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </div>
+    }
   </div>
-</div>
+}
 
-<p class="item-empty" *ngIf="!loading() && !list().length">
-  No reminder set. Pick when you want to hear about it:
-</p>
+@if (!loading() && !list().length) {
+  <p class="item-empty">{{ 'No reminder set. Pick when you want to hear about it:' | t }}</p>
+}
 
-<div class="choice-row" *ngIf="!loading()" role="group" aria-label="Add a reminder">
-  <button type="button" class="choice" *ngFor="let choice of choices()"
-          [class.taken]="choice.taken"
-          [disabled]="choice.taken || busy() || isFull()"
-          (click)="add(choice.minutes)">
-    <mat-icon *ngIf="choice.taken">check</mat-icon>{{ choice.label }}
-  </button>
-</div>
+@if (!loading()) {
+  <div class="choice-row" role="group" [attr.aria-label]="'Add a reminder' | t">
+    @for (choice of choices(); track choice.minutes) {
+      <button type="button" class="choice" [class.taken]="choice.taken"
+              [disabled]="choice.taken || busy() || isFull()" (click)="add(choice.minutes)">
+        @if (choice.taken) {
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+        }
+        {{ choice.label }}
+      </button>
+    }
+  </div>
+}
 
-<p class="item-note" *ngIf="isFull()">That is the most reminders one item can have.</p>
-<p class="item-error" *ngIf="error()" role="alert">{{ error() }}</p>
+@if (isFull()) { <p class="item-note">{{ 'That is the most reminders one item can have.' | t }}</p> }
+@if (error()) { <p class="item-error" role="alert">{{ error() }}</p> }

@@ -1,237 +1,234 @@
-<div class="friends-page">
+<div class="people" [class.profile-only]="profileOnly()">
 
-  <!-- The title sits at the page edge like every other page's, not inside the menu. -->
-  <header class="page-header">
-    <h1 class="greeting">Friends</h1>
-    <p class="page-sub">Requests, people you may know and everyone you are connected with.</p>
-  </header>
-
-  <!-- ── Left menu ─────────────────────────────────────────────────────────── -->
-  <aside class="friends-nav">
-    <div class="search-field">
-      <mat-icon>search</mat-icon>
-      <input type="search" placeholder="Search people…" aria-label="Search people"
-             [ngModel]="searchText()" (ngModelChange)="onSearch($event)" />
-      <button type="button" class="search-clear" *ngIf="searchText()" (click)="clearSearch()" aria-label="Clear search">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-
-    <nav class="nav-list" role="tablist" aria-label="Friends sections">
-      <button type="button" role="tab" class="nav-row" *ngFor="let tab of tabs"
-              [class.active]="activeTab() === tab.key"
-              [attr.aria-selected]="activeTab() === tab.key"
-              (click)="setTab(tab.key)">
-        <span class="nav-icon"><mat-icon>{{ tab.icon }}</mat-icon></span>
-        <span class="nav-label">{{ tab.label }}</span>
-        <span class="nav-badge" *ngIf="tab.key === 'pending' && pendingCount() > 0">{{ pendingCount() }}</span>
-        <span class="nav-count" *ngIf="tab.key !== 'pending' && count(tab.key) > 0">{{ count(tab.key) }}</span>
-        <mat-icon class="nav-chevron">chevron_right</mat-icon>
-      </button>
-    </nav>
-  </aside>
-
-  <!-- ── Content ───────────────────────────────────────────────────────────── -->
-  <section class="friends-main">
-
-    <div class="error-banner" *ngIf="errorMessage()" role="alert">
-      <mat-icon>error_outline</mat-icon>
-      <span>{{ errorMessage() }}</span>
-      <button type="button" (click)="errorMessage.set('')" aria-label="Dismiss"><mat-icon>close</mat-icon></button>
-    </div>
-
-    <!-- Loading -->
-    <div class="card-grid" *ngIf="loading()">
-      <div class="person-card skeleton" *ngFor="let i of [1,2,3,4,5,6,7,8]">
-        <div class="sk-media"></div>
-        <div class="sk-body">
-          <div class="sk-line long"></div>
-          <div class="sk-line short"></div>
-          <div class="sk-btn"></div>
-          <div class="sk-btn"></div>
-        </div>
-      </div>
-    </div>
-
-    <ng-container *ngIf="!loading()">
-
-      <!-- HOME: requests first, then people you may know -->
-      <ng-container *ngIf="activeTab() === 'home'">
-
-        <section class="friends-section" *ngIf="homeRequests().length">
-          <header class="section-head">
-            <h2>Friend requests <span class="section-count">{{ visibleRequests().length }}</span></h2>
-            <button type="button" class="see-all" (click)="setTab('pending')">See all</button>
-          </header>
-          <div class="card-grid">
-            <ng-container *ngFor="let card of homeRequests(); trackBy: trackByUser"
-                          [ngTemplateOutlet]="cardTpl"
-                          [ngTemplateOutletContext]="{ $implicit: card, kind: 'request' }"></ng-container>
-          </div>
-        </section>
-
-        <section class="friends-section" *ngIf="homeSuggestions().length">
-          <header class="section-head">
-            <h2>People you may know</h2>
-            <button type="button" class="see-all" (click)="setTab('suggestions')">See all</button>
-          </header>
-          <div class="card-grid">
-            <ng-container *ngFor="let card of homeSuggestions(); trackBy: trackByUser"
-                          [ngTemplateOutlet]="cardTpl"
-                          [ngTemplateOutletContext]="{ $implicit: card, kind: 'suggestion' }"></ng-container>
-          </div>
-        </section>
-
-        <div class="state-card" *ngIf="homeIsEmpty()">
-          <div class="state-icon"><mat-icon>group_off</mat-icon></div>
-          <p class="state-title">{{ searchText().trim() ? 'No one matches that search' : 'Nothing new right now' }}</p>
-          <p class="state-sub">
-            {{ searchText().trim() ? 'Try a different name or email address.' : 'No requests are waiting and there are no new suggestions.' }}
-          </p>
-          <button type="button" class="primary-btn" (click)="setTab('friends')">See your friends</button>
-        </div>
-      </ng-container>
-
-      <!-- A single list -->
-      <ng-container *ngIf="activeTab() !== 'home'">
-        <section class="friends-section">
-          <header class="section-head">
-            <h2>
-              {{ sectionTitle() }}
-              <span class="section-count" *ngIf="sectionCards().length">{{ sectionCards().length }}</span>
-            </h2>
-            <span class="searching" *ngIf="searching()">Searching…</span>
-          </header>
-
-          <p class="section-note" *ngIf="activeTab() === 'blocked' && sectionCards().length">
-            Blocked people cannot send you friend requests. Unblocking someone does not make them a friend again.
-          </p>
-
-          <div class="card-grid" *ngIf="sectionCards().length">
-            <ng-container *ngFor="let card of sectionCards(); trackBy: trackByUser"
-                          [ngTemplateOutlet]="cardTpl"
-                          [ngTemplateOutletContext]="{ $implicit: card, kind: sectionKind() }"></ng-container>
-          </div>
-
-          <div class="state-card" *ngIf="!sectionCards().length">
-            <div class="state-icon"><mat-icon>{{ activeTab() === 'blocked' ? 'verified_user' : 'group_off' }}</mat-icon></div>
-            <p class="state-title">{{ emptyTitle() }}</p>
-            <p class="state-sub">{{ emptySub() }}</p>
-            <button type="button" class="primary-btn" *ngIf="activeTab() !== 'suggestions' && activeTab() !== 'blocked'"
-                    (click)="setTab('suggestions')">
-              Find people
-            </button>
-          </div>
-        </section>
-      </ng-container>
-
-    </ng-container>
-  </section>
-</div>
-
-<!-- ── One person ──────────────────────────────────────────────────────────── -->
-<ng-template #cardTpl let-card let-kind="kind">
-  <article class="person-card">
-
-    <!-- Large square picture; opens the profile -->
-    <button type="button" class="card-media" (click)="viewProfile(card)"
-            [attr.aria-label]="'Open ' + card.name + '\'s profile'">
-      <img *ngIf="avatarOf(card) as url; else initialsMedia" [src]="url" alt=""
-           referrerpolicy="no-referrer" (error)="onAvatarError(card)" />
-      <ng-template #initialsMedia>
-        <span class="media-initials" [style.--tint]="avatarColor(card)">{{ initials(card.name) }}</span>
-      </ng-template>
-    </button>
-
-    <!-- More: view profile / block -->
-    <div class="card-menu-wrap" *ngIf="kind !== 'blocked'">
-      <button type="button" class="card-more" (click)="toggleMenu(card, $event)"
-              [attr.aria-expanded]="openMenuId() === card.userId" aria-label="More options">
-        <mat-icon>more_horiz</mat-icon>
-      </button>
-      <div class="card-menu" *ngIf="openMenuId() === card.userId" (click)="$event.stopPropagation()">
-        <button type="button" (click)="viewProfile(card)">
-          <mat-icon>account_circle</mat-icon> View profile
-        </button>
-        <button type="button" class="danger" [disabled]="isBusy(card.userId)" (click)="block(card)">
-          <mat-icon>block</mat-icon> Block
-        </button>
-      </div>
-    </div>
-
-    <div class="card-body">
-      <button type="button" class="person-name" (click)="viewProfile(card)">{{ card.name }}</button>
-
-      <!-- Mutual friends when there are any, otherwise what else is known -->
-      <p class="person-sub" *ngIf="mutualsOf(card) as mutual; else plainSub">
-        <span class="mutual-faces" aria-hidden="true">
-          <ng-container *ngFor="let person of mutual.people">
-            <img *ngIf="person.profilePictureUrl; else mutualInitial" [src]="person.profilePictureUrl" alt=""
-                 referrerpolicy="no-referrer" />
-            <ng-template #mutualInitial>
-              <span class="face" [style.background]="avatarColor(person)">{{ initials(person.fullName).charAt(0) }}</span>
-            </ng-template>
-          </ng-container>
+  <!-- ── The lists ─────────────────────────────────────────────────────────── -->
+  <section class="list" [attr.aria-label]="'People list' | t">
+    <header class="list-head">
+      <div class="title-row">
+        <h1>{{ 'People' | t }}</h1>
+        <span class="title-tools">
+          <button type="button" class="add" [attr.aria-pressed]="adding()" (click)="toggleAdd()">
+            {{ (adding() ? 'Done' : 'Add friend') | t }}
+          </button>
+          <!-- Phones have no rail: the account menu holds the other sections. -->
+          <app-user-menu class="phone-menu" />
         </span>
-        <span>{{ mutualLabel(mutual) }}</span>
-      </p>
-      <ng-template #plainSub>
-        <p class="person-sub">{{ kind === 'blocked' ? 'Blocked' : (card.subtitle || '&nbsp;') }}</p>
-      </ng-template>
-
-      <!-- Suggestion: add / remove -->
-      <div class="card-actions" *ngIf="kind === 'suggestion'">
-        <button type="button" class="btn primary" *ngIf="!isRequested(card.userId)"
-                [disabled]="isBusy(card.userId)" (click)="sendRequest(card)">
-          <mat-icon>person_add</mat-icon>
-          {{ isBusy(card.userId) ? 'Sending…' : 'Add friend' }}
-        </button>
-        <button type="button" class="btn muted" *ngIf="isRequested(card.userId)" disabled>
-          <mat-icon>check</mat-icon> Request sent
-        </button>
-        <button type="button" class="btn subtle" (click)="removeSuggestion(card)">Remove</button>
       </div>
 
-      <!-- Received request: confirm / delete -->
-      <div class="card-actions" *ngIf="kind === 'request'">
-        <button type="button" class="btn primary" [disabled]="isBusy(card.userId)" (click)="accept(card)">
-          Confirm
-        </button>
-        <button type="button" class="btn subtle" [disabled]="isBusy(card.userId)" (click)="reject(card)">
-          Delete
-        </button>
-      </div>
+      <label class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <span class="mq-sr">{{ (adding() ? 'Search for people to add' : 'Search people') | t }}</span>
+        <input type="search" dir="auto" [placeholder]="(adding() ? 'Search by name or email' : 'Search by name or city') | t"
+               [value]="query()" (input)="onSearch($any($event.target).value)" />
+      </label>
 
-      <!-- Friend: profile / unfriend -->
-      <div class="card-actions" *ngIf="kind === 'friend'">
-        <!-- Opens the pop-up chat. Absent on an API build without chat; the profile button is then the main one. -->
-        <button type="button" class="btn primary" *ngIf="chat.available()" (click)="message(card)">
-          <mat-icon>chat</mat-icon> Message
-        </button>
-        <button type="button" class="btn" [class.primary]="!chat.available()" [class.subtle]="chat.available()"
-                (click)="viewProfile(card)">View profile</button>
-        <button type="button" class="btn subtle" [disabled]="isBusy(card.userId)" (click)="unfriend(card)">
-          Unfriend
-        </button>
-      </div>
+      @if (adding()) {
+        <p class="mode-title" role="status">
+          {{ (searching() ? 'Searching…' : showingResults() ? 'Search results' : 'People you may know') | t }}
+        </p>
+      } @else {
+        <div class="tabs" role="tablist" [attr.aria-label]="'Lists' | t">
+          @for (item of tabs(); track item.key) {
+            <button type="button" role="tab" [attr.aria-selected]="tab() === item.key" (click)="setTab(item.key)">{{ item.label }}</button>
+          }
+        </div>
+      }
+    </header>
 
-      <!-- Blocked: the way back -->
-      <div class="card-actions" *ngIf="kind === 'blocked'">
-        <button type="button" class="btn primary" [disabled]="isBusy(card.userId)" (click)="unblock(card)">
-          <mat-icon>lock_open</mat-icon>
-          {{ isBusy(card.userId) ? 'Unblocking…' : 'Unblock' }}
-        </button>
-      </div>
+    <div class="rows">
+      @if (error()) {
+        <p class="error" role="alert">
+          <span>{{ error() }}</span>
+          <button type="button" (click)="loadData()">{{ 'Try again' | t }}</button>
+        </p>
+      }
 
-      <!-- Sent request: cancel -->
-      <div class="card-actions" *ngIf="kind === 'sent'">
-        <button type="button" class="btn muted" disabled>
-          <mat-icon>schedule</mat-icon> Waiting for a reply
-        </button>
-        <button type="button" class="btn subtle" [disabled]="isBusy(card.userId)" (click)="cancelSent(card)">
-          {{ isBusy(card.userId) ? 'Cancelling…' : 'Cancel request' }}
-        </button>
-      </div>
+      @if (loading()) {
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="person ghost" aria-hidden="true">
+            <span class="ghost-dot"></span>
+            <span class="ghost-lines"><span></span><span></span></span>
+          </div>
+        }
+      } @else if (adding()) {
+        <!-- People to add: search results, or the suggestions. -->
+        @for (card of candidates(); track card.userId) {
+          <div class="person split" [class.on]="selectedId() === card.userId">
+            <button type="button" class="row-main" [attr.aria-pressed]="selectedId() === card.userId" (click)="select(card.userId)">
+              <app-chat-avatar [name]="card.name" [url]="card.avatarUrl" [size]="38" />
+              <span class="row-text">
+                <span class="row-name" dir="auto">{{ card.name }}</span>
+                <span class="row-line">{{ strangerLine(card) || ('On Miqat' | t) }}</span>
+              </span>
+            </button>
+            @if (isRequested(card.userId)) {
+              <span class="requested">{{ 'Requested' | t }}</span>
+            } @else {
+              <button type="button" class="mini" [disabled]="isBusy(card.userId)" (click)="sendRequest(card)"
+                      [attr.aria-label]="'Add {name}' | t: { name: card.name }">{{ 'Add' | t }}</button>
+              @if (!showingResults()) {
+                <button type="button" class="hide" (click)="hide(card)" [title]="'Hide this suggestion' | t"
+                        [attr.aria-label]="'Hide {name}' | t: { name: card.name }">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+              }
+            }
+          </div>
+        } @empty {
+          <span class="none">
+            {{ (showingResults() ? 'No one matches that search.' : 'No suggestions right now. Search for someone by name or email.') | t }}
+          </span>
+        }
+      } @else {
+        @switch (tab()) {
+          @case ('friends') {
+            <!-- Group chats, on a server that has them: opening one opens its chat window. -->
+            @if (chat.groupsAvailable()) {
+              <div class="section-head">
+                <span class="group-title">
+                  @if (chat.groups().length) {
+                    {{ 'Groups · {n}' | t: { n: chat.groups().length } }}
+                  } @else {
+                    {{ 'Groups' | t }}
+                  }
+                </span>
+                <button type="button" class="mini" (click)="newGroup()">{{ 'New group' | t }}</button>
+              </div>
+              @for (g of visibleGroups(); track g.id) {
+                <button type="button" class="person" [class.unread]="g.unreadCount > 0" (click)="openGroup(g)"
+                        [attr.aria-label]="groupLabel(g)">
+                  <app-chat-avatar [name]="g.name ?? ''" [group]="true" [size]="38" />
+                  <span class="row-text">
+                    <span class="row-name" dir="auto">{{ g.name }}</span>
+                    <span class="row-line" [class.live]="!!g.activeCall">{{ groupLine(g) }}</span>
+                  </span>
+                  @if (g.unreadCount) {
+                    <span class="unread-count">{{ unreadBadge(g.unreadCount) }}</span>
+                  }
+                </button>
+              }
+              @if (moreGroups() > 0) {
+                <button type="button" class="more-groups" (click)="allGroups.set(true)">{{ matchingGroups().length | tCount: 'Show all {n} groups' : 'Show all {n} groups' }}</button>
+              }
+              @if (!chat.groups().length) {
+                <span class="none tight">{{ 'No groups yet. Make one to chat and call with several friends at once.' | t }}</span>
+              } @else if (!matchingGroups().length) {
+                <span class="none tight">{{ 'No group matches that search.' | t }}</span>
+              }
+              <span class="group-title">{{ 'Friends' | t }}</span>
+            }
+
+            @for (f of visibleFriends(); track f.userId) {
+              <button type="button" class="person" [class.on]="selectedId() === f.userId"
+                      [attr.aria-pressed]="selectedId() === f.userId" (click)="select(f.userId)">
+                <span class="face">
+                  <app-chat-avatar [name]="f.name" [url]="f.avatarUrl" [size]="38" />
+                  <span class="presence" [class]="'presence ' + presence(f.userId)"></span>
+                </span>
+                <span class="row-text">
+                  <span class="row-name" dir="auto">{{ f.name }}</span>
+                  <span class="row-line">{{ friendLine(f) }}</span>
+                </span>
+                @if (localTime(f.userId); as time) {
+                  <span class="row-side">
+                    <span class="row-time">{{ time }}</span>
+                    <span class="row-city">{{ city(f.userId) }}</span>
+                  </span>
+                }
+              </button>
+            } @empty {
+              @if (query().trim()) {
+                <span class="none">{{ 'No one matches that search.' | t }}</span>
+              } @else {
+                <span class="none">{{ 'No friends yet. Use “Add friend” to find people.' | t }}</span>
+              }
+            }
+          }
+
+          @case ('requests') {
+            @for (r of visibleRequests(); track r.userId) {
+              <div class="box">
+                <button type="button" class="card-who" (click)="select(r.userId)">
+                  <app-chat-avatar [name]="r.name" [url]="r.avatarUrl" [size]="38" />
+                  <span class="row-text">
+                    <span class="row-name" dir="auto">{{ r.name }}</span>
+                    <span class="row-line wrap">{{ strangerLine(r) || ('Wants to be your friend' | t) }}</span>
+                  </span>
+                </button>
+                @if (answered().get(r.userId); as result) {
+                  <span class="result">
+                    {{ (result === 'accepted' ? 'You’re now friends with {name}.' : 'Request declined. {name} isn’t told.') | t: { name: firstName(r) } }}
+                  </span>
+                } @else {
+                  <span class="card-buttons">
+                    <button type="button" class="accept" [disabled]="isBusy(r.userId)" (click)="accept(r)">{{ 'Accept' | t }}</button>
+                    <button type="button" class="decline" [disabled]="isBusy(r.userId)" (click)="decline(r)">{{ 'Decline' | t }}</button>
+                  </span>
+                }
+              </div>
+            }
+
+            @if (visibleSent().length) {
+              <span class="group-title">{{ 'Sent@@requests' | t }}</span>
+              @for (s of visibleSent(); track s.userId) {
+                <div class="box flat">
+                  <button type="button" class="card-who" (click)="select(s.userId)">
+                    <app-chat-avatar [name]="s.name" [url]="s.avatarUrl" [size]="38" />
+                    <span class="row-text">
+                      <span class="row-name" dir="auto">{{ s.name }}</span>
+                      <span class="row-line">{{ requestedLine(s) }}</span>
+                    </span>
+                  </button>
+                  <button type="button" class="side-btn" [disabled]="isBusy(s.userId)" (click)="cancelSent(s)">{{ 'Cancel' | t }}</button>
+                </div>
+              }
+            }
+
+            @if (!visibleRequests().length && !visibleSent().length) {
+              <span class="none">
+                {{ (query().trim() ? 'No one matches that search.' : 'No requests. When someone asks to be your friend, it shows here.') | t }}
+              </span>
+            }
+          }
+
+          @case ('blocked') {
+            @for (b of visibleBlocked(); track b.userId) {
+              <div class="box flat">
+                <span class="card-who still">
+                  <app-chat-avatar class="muted" [name]="b.name" [url]="b.avatarUrl" [size]="38" />
+                  <span class="row-text">
+                    <span class="row-name" dir="auto">{{ b.name }}</span>
+                    <span class="row-line">{{ (unblocked().has(b.userId) ? 'Unblocked just now' : 'Blocked@@person') | t }}</span>
+                  </span>
+                </span>
+                @if (unblocked().has(b.userId)) {
+                  <button type="button" class="side-btn" [disabled]="isBusy(b.userId)" (click)="blockAgain(b)">{{ 'Block again' | t }}</button>
+                } @else {
+                  <button type="button" class="side-btn" [disabled]="isBusy(b.userId)" (click)="unblock(b)">{{ 'Unblock' | t }}</button>
+                }
+              </div>
+            } @empty {
+              <span class="none">{{ (query().trim() ? 'No one matches that search.' : 'You haven’t blocked anyone.') | t }}</span>
+            }
+            <span class="note">{{ 'Blocked people can’t send you friend requests or messages, and a friendship between you ends. They aren’t told.' | t }}</span>
+          }
+        }
+      }
     </div>
-  </article>
-</ng-template>
+  </section>
+
+  <!-- ── The selected person ───────────────────────────────────────────────── -->
+  <div class="profile-side">
+    @if (selectedId(); as id) {
+      <app-person-profile [userId]="id" (changed)="onRelationChange($event)" (back)="closeProfile()" />
+    } @else if (!loading()) {
+      <div class="nobody">
+        <span class="nobody-title">{{ (friends().length ? 'Pick someone' : 'No one here yet') | t }}</span>
+        <span>
+          {{ (friends().length
+            ? 'Their profile shows how your working days line up and what you have coming up together.'
+            : 'Add a friend to see how your working days line up and what you have coming up together.') | t }}
+        </span>
+      </div>
+    }
+  </div>
+</div>

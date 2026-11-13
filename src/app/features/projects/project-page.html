@@ -1,352 +1,368 @@
 <div class="project-page">
 
-  <!-- Loading -->
-  <div class="skeleton-page" *ngIf="loading()">
-    <div class="sk-block tall"></div>
-    <div class="sk-block"></div>
-    <div class="sk-block"></div>
-    <div class="sk-block"></div>
-  </div>
+  <!-- ── Page header ─────────────────────────────────────────────────────── -->
+  <header class="top">
+    <a class="back" routerLink="/tasks">
+      <svg class="mq-flip" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+      {{ 'Tasks' | t }}
+    </a>
+    <button type="button" class="search" (click)="quickAdd.openPalette()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <span class="search-text">{{ 'Search tasks or type a command' | t }}</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+    <a class="plan" routerLink="/dashboard">{{ 'Plan my day' | t }}</a>
+    @if (project()) {
+      <button type="button" class="new-task" (click)="newTask()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>{{ 'New task' | t }}
+      </button>
+    }
+    <app-user-menu />
+  </header>
 
-  <!-- Not found / hard error -->
-  <div class="state-card" *ngIf="!loading() && !project()">
-    <div class="state-icon"><mat-icon>folder_off</mat-icon></div>
-    <p class="state-title">Project unavailable</p>
-    <p class="state-sub">{{ errorMessage() || 'That project could not be found.' }}</p>
-    <a class="primary-btn" routerLink="/dashboard">Back to dashboard</a>
-  </div>
-
-  <ng-container *ngIf="!loading() && project() as p">
-
-    <!-- ── Cover + header ──────────────────────────────────────────────── -->
-    <div class="cover" [style.background]="'linear-gradient(120deg, ' + projectColor() + '33, transparent 70%)'"></div>
-
-    <header class="project-header">
-      <nav class="breadcrumbs">
-        <a routerLink="/dashboard">Dashboard</a>
-        <mat-icon>chevron_right</mat-icon>
-        <span>Projects</span>
-        <mat-icon>chevron_right</mat-icon>
-        <strong>{{ p.name }}</strong>
-      </nav>
-
-      <div class="title-row">
-        <span class="project-emblem" [style.background]="projectColor() + '22'"
-              [style.color]="projectColor()">{{ initials(p.name) }}</span>
-
-        <div class="title-text" *ngIf="!isEditingHeader()">
-          <h1 class="project-title">{{ p.name }}</h1>
-          <p class="project-desc">{{ p.description || 'No description yet.' }}</p>
-        </div>
-
-        <div class="title-edit" *ngIf="isEditingHeader()">
-          <input class="edit-input title" [(ngModel)]="headerDraft.name" placeholder="Project name" />
-          <textarea class="edit-input" rows="2" [(ngModel)]="headerDraft.description"
-                    placeholder="What is this project about?"></textarea>
-          <div class="edit-row">
-            <label>Colour <input type="color" [(ngModel)]="headerDraft.color" /></label>
-            <button type="button" class="primary-btn sm" (click)="saveHeader()">Save</button>
-            <button type="button" class="ghost-btn sm" (click)="toggleHeaderEdit()">Cancel</button>
-          </div>
-        </div>
-
-        <div class="header-actions" *ngIf="!isEditingHeader()">
-          <button type="button" class="ghost-btn sm" (click)="toggleHeaderEdit()">
-            <mat-icon>edit</mat-icon><span>Edit</span>
-          </button>
-          <button type="button" class="ghost-btn sm danger" (click)="deleteProject()">
-            <mat-icon>delete_outline</mat-icon><span>Delete</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Meta strip -->
-      <div class="meta-strip">
-        <div class="meta">
-          <mat-icon>person</mat-icon>
-          <span>{{ p.ownerName || 'Unknown owner' }}</span>
-        </div>
-        <div class="meta">
-          <mat-icon>calendar_today</mat-icon>
-          <span>Created {{ formatDate(p.createdAt) }}</span>
-        </div>
-        <div class="meta members-meta" (click)="activeSection.set('members')">
-          <div class="avatar-stack">
-            <span class="mini-avatar" *ngFor="let m of members().slice(0, 5)"
-                  [style.background]="avatarColor(m.userId)" [title]="m.fullName">
-              {{ initials(m.fullName) }}
-            </span>
-            <span class="mini-avatar more" *ngIf="members().length > 5">+{{ members().length - 5 }}</span>
-          </div>
-          <span>{{ members().length }} member{{ members().length === 1 ? '' : 's' }}</span>
-        </div>
-      </div>
-
-      <!-- Progress -->
-      <div class="progress-block">
-        <div class="progress-head">
-          <span class="progress-label">Progress</span>
-          <span class="progress-value">{{ stats().done }} / {{ stats().total }} done · {{ stats().percent }}%</span>
-        </div>
-        <div class="progress-track">
-          <div class="progress-fill" [style.width.%]="stats().percent" [style.background]="projectColor()"></div>
-        </div>
-        <p class="progress-warn" *ngIf="stats().overdue">
-          <mat-icon>error_outline</mat-icon> {{ stats().overdue }} task(s) overdue
-        </p>
-      </div>
-    </header>
-
-    <!-- Error banner (non-fatal) -->
-    <div class="error-banner" *ngIf="errorMessage() && project()" role="alert">
-      <mat-icon>error_outline</mat-icon>
-      <span>{{ errorMessage() }}</span>
-      <button type="button" (click)="errorMessage.set('')" aria-label="Dismiss"><mat-icon>close</mat-icon></button>
+  @if (loading()) {
+    <div class="body skeleton" aria-hidden="true">
+      <span class="bone tall"></span>
+      <span class="bone"></span>
+      <span class="bone"></span>
+      <span class="bone"></span>
     </div>
+  } @else if (!project()) {
+    <!-- Not found, or not a member -->
+    <div class="body state">
+      <h1>{{ 'Project unavailable' | t }}</h1>
+      <p>{{ errorMessage() || ('That project could not be found.' | t) }}</p>
+      <a class="btn-outline" routerLink="/tasks">{{ 'Back to tasks' | t }}</a>
+    </div>
+  } @else {
+    @if (project(); as p) {
+      <div class="body">
 
-    <!-- ── Section tabs ────────────────────────────────────────────────── -->
-    <nav class="section-tabs" role="tablist">
-      <button type="button" role="tab" [class.active]="activeSection() === 'tasks'"
-              [attr.aria-selected]="activeSection() === 'tasks'" (click)="activeSection.set('tasks')">
-        <mat-icon>table_rows</mat-icon> Tasks
-        <span class="count">{{ tasks().length }}</span>
-      </button>
-      <button type="button" role="tab" [class.active]="activeSection() === 'members'"
-              [attr.aria-selected]="activeSection() === 'members'" (click)="activeSection.set('members')">
-        <mat-icon>group</mat-icon> Members
-        <span class="count">{{ members().length }}</span>
-      </button>
-    </nav>
-
-    <!-- ── TASKS ───────────────────────────────────────────────────────── -->
-    <section *ngIf="activeSection() === 'tasks'">
-
-      <div class="toolbar">
-        <div class="view-switch">
-          <button type="button" [class.active]="view() === 'table'" (click)="view.set('table')">
-            <mat-icon>table_rows</mat-icon><span>Table</span>
-          </button>
-          <button type="button" [class.active]="view() === 'board'" (click)="view.set('board')">
-            <mat-icon>view_kanban</mat-icon><span>Board</span>
-          </button>
-        </div>
-
-        <div class="toolbar-spacer"></div>
-
-        <div class="search-field">
-          <mat-icon>search</mat-icon>
-          <input type="search" placeholder="Search tasks…" aria-label="Search tasks"
-                 [ngModel]="search()" (ngModelChange)="search.set($event)" />
-        </div>
-
-        <select aria-label="Filter by status" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
-          <option value="All">All statuses</option>
-          <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
-        </select>
-
-        <select *ngIf="view() === 'table'" aria-label="Group by"
-                [ngModel]="groupBy()" (ngModelChange)="groupBy.set($event)">
-          <option value="status">Group by status</option>
-          <option value="assignee">Group by assignee</option>
-          <option value="none">No grouping</option>
-        </select>
-
-        <button type="button" class="primary-btn" (click)="newTask()">
-          <mat-icon>add</mat-icon><span>New</span>
-        </button>
-      </div>
-
-      <!-- Empty -->
-      <div class="state-card" *ngIf="!filteredTasks().length">
-        <div class="state-icon"><mat-icon>checklist</mat-icon></div>
-        <p class="state-title">{{ tasks().length ? 'No tasks match those filters' : 'No tasks yet' }}</p>
-        <p class="state-sub">
-          {{ tasks().length ? 'Try clearing the search or status filter.'
-                            : 'Add the first task and the team can start tracking progress.' }}
-        </p>
-        <button type="button" class="primary-btn" (click)="newTask()">
-          <mat-icon>add</mat-icon> New task
-        </button>
-      </div>
-
-      <!-- Table view -->
-      <div class="table-wrap" *ngIf="view() === 'table' && filteredTasks().length">
-        <div class="db-group" *ngFor="let group of tableGroups()">
-          <header class="db-group-head" *ngIf="groupBy() !== 'none'">
-            <span class="group-dot" [style.background]="group.color"></span>
-            <h3>{{ group.title }}</h3>
-            <span class="group-count">{{ group.tasks.length }}</span>
-          </header>
-
-          <div class="table-scroll" *ngIf="group.tasks.length">
-            <table class="db-table">
-              <thead>
-                <tr>
-                  <th class="c-check"><span class="sr-only">Done</span></th>
-                  <th class="c-name">Name</th>
-                  <th class="c-status">Status</th>
-                  <th class="c-priority">Priority</th>
-                  <th class="c-assignee">Assignee</th>
-                  <th class="c-due">Due</th>
-                  <th class="c-tags">Tags</th>
-                  <th class="c-actions"><span class="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let task of group.tasks; trackBy: trackById" [class.saving]="isSaving(task.id)">
-                  <td class="c-check">
-                    <button type="button" class="check" [class.done]="task.status === 'Completed'"
-                            (click)="toggleDone(task)" [attr.aria-label]="'Toggle ' + task.title">
-                      <mat-icon>{{ task.status === 'Completed' ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-                    </button>
-                  </td>
-
-                  <td class="c-name">
-                    <button type="button" class="name-btn" (click)="openTask(task)">
-                      <span class="name" [class.done]="task.status === 'Completed'">{{ task.title }}</span>
-                      <span class="sub" *ngIf="task.description">{{ task.description }}</span>
-                    </button>
-                    <app-task-marks class="row-marks" [task]="task"></app-task-marks>
-                  </td>
-
-                  <td class="c-status">
-                    <select class="cell-select status tone-text tone-tint" [style.--tone]="statusColor(task.status)"
-                            [ngModel]="task.status" (ngModelChange)="setStatus(task, $event)"
-                            aria-label="Status">
-                      <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
-                    </select>
-                  </td>
-
-                  <td class="c-priority">
-                    <select class="cell-select priority tone-text tone-tint" [style.--tone]="priorityColor(task.priority)"
-                            [ngModel]="task.priority" (ngModelChange)="setPriority(task, $event)"
-                            aria-label="Priority">
-                      <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
-                    </select>
-                  </td>
-
-                  <td class="c-assignee">
-                    <select class="cell-select plain" [ngModel]="task.assignedToUserId || ''"
-                            (ngModelChange)="setAssignee(task, $event)" aria-label="Assignee">
-                      <option value="">Unassigned</option>
-                      <option *ngFor="let u of assignableUsers()" [value]="u.id">{{ u.name }}</option>
-                    </select>
-                  </td>
-
-                  <td class="c-due">
-                    <span class="due" [class.overdue]="isOverdue(task)">{{ formatDue(task.dueDate) }}</span>
-                  </td>
-
-                  <td class="c-tags">
-                    <span class="tag" *ngFor="let tag of tagList(task.tags)">{{ tag }}</span>
-                    <span class="muted" *ngIf="!tagList(task.tags).length">—</span>
-                  </td>
-
-                  <td class="c-actions">
-                    <button type="button" class="icon-btn danger" (click)="deleteTask(task, $event)"
-                            [attr.aria-label]="'Delete ' + task.title">
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <p class="db-group-empty" *ngIf="!group.tasks.length && groupBy() !== 'none'">Nothing here yet</p>
-        </div>
-      </div>
-
-      <!-- Board view -->
-      <div class="board" *ngIf="view() === 'board' && filteredTasks().length">
-        <section class="board-col" *ngFor="let col of boardColumns()">
-          <header class="board-head">
-            <span class="group-dot" [style.background]="col.color"></span>
-            <h3>{{ col.label }}</h3>
-            <span class="group-count">{{ col.tasks.length }}</span>
-          </header>
-          <div class="board-body">
-            <article class="board-card" *ngFor="let task of col.tasks; trackBy: trackById"
-                     [class.saving]="isSaving(task.id)" (click)="openTask(task)">
-              <span class="prio-bar" [style.background]="priorityColor(task.priority)"></span>
-              <h4>{{ task.title }}</h4>
-              <app-task-marks class="card-marks" [task]="task"></app-task-marks>
-              <div class="card-meta">
-                <span class="due" [class.overdue]="isOverdue(task)">{{ formatDue(task.dueDate) }}</span>
-                <span class="assignee" *ngIf="task.assignedToUserName">{{ task.assignedToUserName }}</span>
+        <!-- ── Title, progress, actions ────────────────────────────────── -->
+        <div class="head">
+          @if (!isEditingHeader()) {
+            <div class="head-title">
+              <span class="eyebrow-line">{{ ownerLine() }}</span>
+              <h1><span class="project-dot" [style.--tone]="p.color || null"></span><span dir="auto">{{ p.name }}</span></h1>
+              @if (p.description) {
+                <p class="description" dir="auto">{{ p.description }}</p>
+              } @else {
+                <p class="description">{{ 'No description yet.' | t }}</p>
+              }
+            </div>
+          } @else {
+            <form class="head-edit" (submit)="$event.preventDefault(); saveHeader()">
+              <label class="mq-sr" for="project-name">{{ 'Project name' | t }}</label>
+              <input id="project-name" class="name-input" type="text" maxlength="60" dir="auto" [placeholder]="'Project name' | t"
+                     [value]="draftName()" (input)="draftName.set(textOf($event))" />
+              <label class="mq-sr" for="project-description">{{ 'Description' | t }}</label>
+              <textarea id="project-description" rows="2" maxlength="200" dir="auto" [placeholder]="'What is this project about?' | t"
+                        [value]="draftDescription()" (input)="draftDescription.set(textOf($event))"></textarea>
+              <div class="edit-row">
+                <label class="colour">{{ 'Colour' | t }}
+                  <input type="color" [value]="draftColor()" (input)="pickColor(textOf($event))" />
+                </label>
+                <button type="submit" class="btn-primary" [disabled]="!draftName().trim()">{{ 'Save' | t }}</button>
+                <button type="button" class="btn-outline" (click)="toggleHeaderEdit()">{{ 'Cancel' | t }}</button>
               </div>
-            </article>
-            <p class="board-empty" *ngIf="!col.tasks.length">—</p>
+            </form>
+          }
+
+          <div class="done-card">
+            <div class="done-main">
+              <span class="done-row">
+                <span class="done-key">{{ 'Done@@progress' | t }}</span>
+                <span class="done-value">{{ doneLine() }}</span>
+              </span>
+              <span class="done-bar" role="progressbar" [attr.aria-label]="'Tasks done' | t" [attr.aria-valuenow]="stats().percent"
+                    aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="stats().percent"></span></span>
+            </div>
+            @if (stats().overdue) {
+              <span class="done-late">{{ '{n} late' | t: { n: stats().overdue } }}</span>
+            }
           </div>
-        </section>
-      </div>
-    </section>
 
-    <!-- ── MEMBERS ─────────────────────────────────────────────────────── -->
-    <section *ngIf="activeSection() === 'members'">
-      <div class="toolbar">
-        <h3 class="section-title">Team</h3>
-        <div class="toolbar-spacer"></div>
-        <select class="add-member" #picker (change)="addMember(picker.value); picker.value=''"
-                aria-label="Add a member">
-          <option value="">+ Add member</option>
-          <option *ngFor="let u of addableUsers()" [value]="u.id">{{ u.name }}</option>
-        </select>
-        <span class="hint">They'll get a notification.</span>
-      </div>
+          @if (!isEditingHeader()) {
+            <div class="head-actions">
+              <button type="button" class="people" (click)="showSection('members')" [attr.aria-label]="teamLabel()">
+                @for (member of members().slice(0, 4); track member.userId) {
+                  <span class="avatar" [title]="member.fullName">{{ initialsOf(member.fullName) }}</span>
+                }
+                @if (members().length > 4) {
+                  <span class="avatar more">+{{ members().length - 4 | num }}</span>
+                }
+                @if (!members().length) { <span class="people-none">{{ 'No members' | t }}</span> }
+              </button>
+              <button type="button" class="btn-outline" (click)="toggleHeaderEdit()">{{ 'Edit' | t }}</button>
+              <button type="button" class="btn-outline danger" (click)="deleteProject()">{{ 'Delete' | t }}</button>
+            </div>
+          }
+        </div>
 
-      <div class="state-card" *ngIf="!members().length">
-        <div class="state-icon"><mat-icon>group_add</mat-icon></div>
-        <p class="state-title">No members yet</p>
-        <p class="state-sub">Add teammates so they can pick up tasks in this project.</p>
-      </div>
+        <!-- Error (non-fatal) -->
+        @if (errorMessage()) {
+          <div class="notice" role="alert">
+            <span>{{ errorMessage() }}</span>
+            <button type="button" (click)="errorMessage.set('')" [attr.aria-label]="'Dismiss' | t">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        }
 
-      <div class="table-scroll" *ngIf="members().length">
-        <table class="db-table members-table">
-          <thead>
-            <tr>
-              <th class="c-name">Member</th>
-              <th>Email</th>
-              <th class="c-workload">Workload</th>
-              <th class="c-due">Joined</th>
-              <th class="c-actions"><span class="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of memberStats(); trackBy: trackByMember">
-              <td class="c-name">
-                <div class="member-cell">
-                  <img *ngIf="row.member.profilePictureUrl; else initialsAvatar"
-                       [src]="row.member.profilePictureUrl" [alt]="row.member.fullName" class="member-avatar" />
-                  <ng-template #initialsAvatar>
-                    <span class="member-avatar initials" [style.background]="avatarColor(row.member.userId)">
-                      {{ initials(row.member.fullName) }}
-                    </span>
-                  </ng-template>
-                  <span class="name">{{ row.member.fullName }}</span>
-                </div>
-              </td>
-              <td class="email">{{ row.member.email }}</td>
-              <td class="c-workload">
-                <div class="workload">
-                  <div class="mini-track">
-                    <div class="mini-fill" [style.width.%]="row.percent" [style.background]="projectColor()"></div>
-                  </div>
-                  <span class="workload-text">{{ row.done }}/{{ row.total }}</span>
-                </div>
-              </td>
-              <td class="c-due">{{ formatDate(row.member.joinedAt) }}</td>
-              <td class="c-actions">
-                <button type="button" class="icon-btn danger" (click)="removeMember(row.member)"
-                        [attr.aria-label]="'Remove ' + row.member.fullName">
-                  <mat-icon>person_remove</mat-icon>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+        <!-- ── Tasks / Members / Discussion, and the tools of each ──────── -->
+        <div class="toolbar">
+          <div class="seg" role="tablist" [attr.aria-label]="'Section' | t">
+            <button type="button" role="tab" [attr.aria-selected]="activeSection() === 'tasks'" (click)="showSection('tasks')">
+              {{ 'Tasks' | t }} <span class="seg-count">{{ tasks().length | num }}</span>
+            </button>
+            <button type="button" role="tab" [attr.aria-selected]="activeSection() === 'members'" (click)="showSection('members')">
+              {{ 'Members' | t }} <span class="seg-count">{{ members().length | num }}</span>
+            </button>
+            <!-- The count only when there is something to count. -->
+            <button type="button" role="tab" [attr.aria-selected]="activeSection() === 'discussion'" (click)="showSection('discussion')">
+              {{ 'Discussion' | t }} @if (commentCount()) { <span class="seg-count">{{ commentCount() | num }}</span> }
+            </button>
+          </div>
 
-  </ng-container>
+          @if (activeSection() === 'tasks') {
+            <div class="seg" role="group" [attr.aria-label]="'Layout' | t">
+              <button type="button" [attr.aria-pressed]="view() === 'table'" (click)="view.set('table')">{{ 'Table' | t }}</button>
+              <button type="button" [attr.aria-pressed]="view() === 'board'" (click)="view.set('board')">{{ 'Board' | t }}</button>
+            </div>
+
+            <span class="spacer"></span>
+
+            <label class="filter">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+              <span class="mq-sr">{{ 'Filter tasks' | t }}</span>
+              <input type="search" dir="auto" [placeholder]="'Filter tasks…' | t" [value]="search()" (input)="search.set(textOf($event))" />
+            </label>
+
+            <select class="tool-select" [attr.aria-label]="'Filter by status' | t" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+              <option value="All">{{ 'All statuses' | t }}</option>
+              @for (status of statuses; track status.value) {
+                <option [value]="status.value">{{ status.label }}</option>
+              }
+            </select>
+
+            @if (view() === 'table') {
+              <select class="tool-select" [attr.aria-label]="'Group by' | t" [ngModel]="groupBy()" (ngModelChange)="groupBy.set($event)">
+                <option value="status">{{ 'Group by status' | t }}</option>
+                <option value="assignee">{{ 'Group by assignee' | t }}</option>
+                <option value="none">{{ 'No grouping' | t }}</option>
+              </select>
+            }
+          } @else if (activeSection() === 'members') {
+            <span class="spacer"></span>
+            <select class="tool-select" #picker (change)="addMember(picker.value); picker.value = ''" [attr.aria-label]="'Add a member' | t">
+              <option value="">{{ '+ Add member' | t }}</option>
+              @for (user of addableUsers(); track user.id) {
+                <option [value]="user.id">{{ user.name }}</option>
+              }
+            </select>
+            <span class="hint">{{ 'They get a notification.' | t }}</span>
+          } @else if (discussionAvailable()) {
+            <span class="spacer"></span>
+            <span class="hint">{{ 'Only the people on this project can read and write here.' | t }}</span>
+          }
+        </div>
+
+        <!-- ── TASKS ────────────────────────────────────────────────────── -->
+        @if (activeSection() === 'tasks') {
+          @if (!filteredTasks().length) {
+            <div class="empty">
+              <p class="empty-title">{{ tasks().length ? ('No tasks match those filters.' | t) : ('No tasks yet.' | t) }}</p>
+              <p class="empty-text">
+                {{ tasks().length ? ('Clear the filter or choose another status.' | t)
+                                  : ('Add the first task and the team can start tracking progress.' | t) }}
+              </p>
+              <button type="button" class="btn-outline" (click)="newTask()">{{ 'New task' | t }}</button>
+            </div>
+          } @else if (view() === 'table') {
+            <div class="groups">
+              @for (group of tableGroups(); track group.key; let index = $index) {
+                <section class="group">
+                  @if (groupBy() !== 'none') {
+                    <header class="group-head">
+                      @if (group.status) { <span class="status-dot" [attr.data-status]="group.status"></span> }
+                      <h2 dir="auto">{{ group.title }}</h2>
+                      <span class="group-count">{{ group.rows.length | num }}</span>
+                    </header>
+                  }
+
+                  @if (group.rows.length) {
+                    <div class="table-scroll">
+                      <table class="task-table" [class.repeat]="index !== firstFilledGroup()">
+                        <thead>
+                          <tr>
+                            <th class="c-check"><span class="mq-sr">{{ 'Done@@status' | t }}</span></th>
+                            <th class="c-name">{{ 'Name' | t }}</th>
+                            <th class="c-status">{{ 'Status' | t }}</th>
+                            <th class="c-priority">{{ 'Priority' | t }}</th>
+                            <th class="c-assignee">{{ 'Assignee' | t }}</th>
+                            <th class="c-est">{{ 'Estimate' | t }}</th>
+                            <th class="c-due">{{ 'Due' | t }}</th>
+                            <th class="c-labels">{{ 'Labels' | t }}</th>
+                            <th class="c-actions"><span class="mq-sr">{{ 'Actions' | t }}</span></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (row of group.rows; track row.task.id) {
+                            <tr [class.done]="row.done">
+                              <td class="c-check">
+                                <button type="button" role="checkbox" class="box" [attr.data-priority]="row.task.priority"
+                                        [attr.aria-checked]="row.done"
+                                        [attr.aria-label]="row.done ? ('Mark not done: {title}' | t: { title: row.task.title }) : ('Complete: {title}' | t: { title: row.task.title })"
+                                        (click)="toggleDone(row.task)">
+                                  @if (row.done) {
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                                  }
+                                </button>
+                              </td>
+
+                              <td class="c-name">
+                                <span class="name-cell">
+                                  <button type="button" class="name-btn" dir="auto" (click)="openTask(row.task)">{{ row.task.title }}</button>
+                                  <app-task-marks [task]="row.task" />
+                                </span>
+                              </td>
+
+                              <td class="c-status">
+                                <select class="cell-select pill" [attr.data-status]="row.task.status"
+                                        [ngModel]="row.task.status" (ngModelChange)="setStatus(row.task, $event)"
+                                        [attr.aria-label]="'Status of {title}' | t: { title: row.task.title }">
+                                  @for (status of statuses; track status.value) {
+                                    <option [value]="status.value">{{ status.label }}</option>
+                                  }
+                                </select>
+                              </td>
+
+                              <td class="c-priority">
+                                <select class="cell-select pill" [attr.data-priority]="row.task.priority"
+                                        [ngModel]="row.task.priority" (ngModelChange)="setPriority(row.task, $event)"
+                                        [attr.aria-label]="'Priority of {title}' | t: { title: row.task.title }">
+                                  @for (priority of priorities; track priority) {
+                                    <option [value]="priority">{{ priorityName(priority) }}</option>
+                                  }
+                                </select>
+                              </td>
+
+                              <td class="c-assignee">
+                                <select class="cell-select" [ngModel]="row.task.assignedToUserId || ''"
+                                        (ngModelChange)="setAssignee(row.task, $event)"
+                                        [attr.aria-label]="'Assignee of {title}' | t: { title: row.task.title }">
+                                  <option value="">{{ 'Unassigned' | t }}</option>
+                                  @for (user of assignableUsers(); track user.id) {
+                                    <option [value]="user.id">{{ user.name }}</option>
+                                  }
+                                </select>
+                              </td>
+
+                              <td class="c-est">{{ row.est }}</td>
+
+                              <td class="c-due"><span class="due" [class.late]="row.late">{{ row.due }}</span></td>
+
+                              <td class="c-labels">
+                                @for (label of row.labels; track label) {
+                                  <span class="label" dir="auto">{{ label }}</span>
+                                }
+                              </td>
+
+                              <td class="c-actions">
+                                <button type="button" class="icon-btn danger" (click)="deleteTask(row.task)"
+                                        [attr.aria-label]="'Delete {title}' | t: { title: row.task.title }" [title]="'Delete' | t">
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg>
+                                </button>
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  } @else {
+                    <p class="group-empty">{{ 'Nothing here yet' | t }}</p>
+                  }
+                </section>
+              }
+            </div>
+          } @else {
+            <div class="board-scroll">
+              <app-task-board [tasks]="filteredTasks()" (pick)="openTask($event)" (openLogbook)="showDone()" />
+            </div>
+          }
+        }
+
+        <!-- ── MEMBERS ──────────────────────────────────────────────────── -->
+        @if (activeSection() === 'members') {
+          @if (!members().length) {
+            <div class="empty">
+              <p class="empty-title">{{ 'No members yet.' | t }}</p>
+              <p class="empty-text">{{ 'Add teammates so they can pick up tasks in this project.' | t }}</p>
+            </div>
+          } @else {
+            <div class="table-scroll">
+              <table class="task-table members-table">
+                <thead>
+                  <tr>
+                    <th class="c-name">{{ 'Member' | t }}</th>
+                    <th>{{ 'Email' | t }}</th>
+                    <th class="c-workload">{{ 'Workload' | t }}</th>
+                    <th class="c-due">{{ 'Joined' | t }}</th>
+                    <th class="c-actions"><span class="mq-sr">{{ 'Actions' | t }}</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of memberStats(); track row.member.userId) {
+                    <tr>
+                      <td class="c-name">
+                        <a class="member" [routerLink]="['/profile', row.member.userId]">
+                          @if (row.member.profilePictureUrl) {
+                            <img class="avatar" [src]="row.member.profilePictureUrl" alt="" referrerpolicy="no-referrer" />
+                          } @else {
+                            <span class="avatar">{{ initialsOf(row.member.fullName) }}</span>
+                          }
+                          <span class="member-name" dir="auto">{{ row.member.fullName }}</span>
+                        </a>
+                      </td>
+                      <td class="quiet"><span class="mq-ltr">{{ row.member.email }}</span></td>
+                      <td class="c-workload">
+                        <span class="workload">
+                          <span class="workload-bar"><span [style.width.%]="row.percent"></span></span>
+                          <span class="workload-text">{{ row.done + '/' + row.total | num }}</span>
+                        </span>
+                      </td>
+                      <td class="c-due quiet">{{ formatDate(row.member.joinedAt) }}</td>
+                      <td class="c-actions">
+                        <button type="button" class="icon-btn danger" (click)="removeMember(row.member)"
+                                [attr.aria-label]="'Remove {name}' | t: { name: row.member.fullName }" [title]="'Remove from the project' | t">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        <!-- ── DISCUSSION ───────────────────────────────────────────────── -->
+        <!-- What the people on the project write to each other. The thread is the one
+             the task panel uses (shared/comment-thread), in its discussion form. -->
+        @if (activeSection() === 'discussion') {
+          <section class="discussion" [attr.aria-label]="'Discussion' | t">
+            @if (discussionAvailable()) {
+              <app-comment-thread [projectId]="p.id" [focusCommentId]="focusComment()" (countChange)="commentCount.set($event)" />
+            } @else {
+              <!-- An older API build has no discussions: say so, rather than fail or spin. -->
+              <div class="empty" role="status">
+                <p class="empty-title">{{ 'The discussion is not available on this server yet.' | t }}</p>
+                <p class="empty-text">{{ 'This server runs an older build without project discussions. They will be here once the server is updated; nothing else on this page is affected.' | t }}</p>
+              </div>
+            }
+          </section>
+        }
+      </div>
+    }
+  }
 </div>

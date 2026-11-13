@@ -2,8 +2,11 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { t } from '../i18n/i18n';
 import { CallEndedEvent, CallIncomingEvent, RealtimeService } from './realtime.service';
 import { ChatConversation, ChatPerson } from './chat.service';
+import { CALLS_SUPPORTED, CallSetup, Ringer, openMedia, reasonOf, rtcConfiguration } from './call-media';
+import { GroupCallService } from './group-call.service';
 import { NoticeService } from './notice.service';
 
 /**
@@ -25,9 +28,6 @@ export interface CallState {
   cameraOff: boolean;
 }
 
-interface IceServer { urls: string[]; username?: string | null; credential?: string | null; }
-interface CallSetup { iceServers: IceServer[]; ringSeconds: number; }
-
 /** If the two browsers have not found each other this long after the answer, they will not. */
 const CONNECT_LIMIT_MS = 25_000;
 
@@ -39,17 +39,18 @@ const CONNECT_LIMIT_MS = 25_000;
  * browsers need to find each other; that goes through the live connection the
  * rest of the app already uses.
  *
- * One call at a time. The call screen (CallOverlay) draws what is here.
+ * One call at a time, counting the group calls of GroupCallService. The call
+ * screen (CallOverlay) draws what is here.
  */
 @Injectable({ providedIn: 'root' })
 export class CallService {
   private http = inject(HttpClient);
   private realtime = inject(RealtimeService);
   private notices = inject(NoticeService);
+  private groupCalls = inject(GroupCallService);
 
   /** False in a browser without calling, or on a page that is not served securely. */
-  readonly supported = typeof RTCPeerConnection !== 'undefined' &&
-    typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  readonly supported = CALLS_SUPPORTED;
 
   readonly call = signal<CallState | null>(null);
   /** Own microphone (and camera), once the browser has allowed them. */
@@ -85,11 +86,13 @@ export class CallService {
       this.realtime.callSignal$.subscribe(e => this.onSignal(e.callId, e.data)),
       this.realtime.callEnded$.subscribe(e => this.onEnded(e))
     ];
+    this.groupCalls.start(() => this.call() !== null);
   }
 
   /** Called on leaving the signed-in layout: a call does not survive signing out. */
   stop(): void {
     this.finish();
+    this.groupCalls.stop();
     this.subscriptions.forEach(s => s.unsubscribe());
     this.subscriptions = [];
   }
@@ -97,8 +100,10 @@ export class CallService {
   // ── Making a call ───────────────────────────────────────────────────────────
 
   async startCall(conversation: ChatConversation, video: boolean): Promise<void> {
-    if (this.call() || !this.supported) return;
+    if (this.call() || this.groupCalls.call() || !this.supported) return;
 
+    // A group call that rings here is let go: the user chose this call.
+    this.groupCalls.silence();
     const attempt = ++this.attempt;
     this.call.set({
       id: null, conversationId: conversation.id, peer: conversation.friend, video,
@@ -120,7 +125,7 @@ export class CallService {
       this.patch({ id, phase: 'calling' });
       this.ringer.start('outgoing');
       this.ringTimer = setTimeout(
-        () => this.finish(`${conversation.friend.fullName} did not answer.`),
+        () => this.finish(t('{name} did not answer.', { name: conversation.friend.fullName })),
         setup.ringSeconds * 1000);
     } catch (err) {
       if (attempt === this.attempt) this.finish(reasonOf(err), false);
@@ -155,7 +160,7 @@ export class CallService {
 
   private onIncoming(event: CallIncomingEvent): void {
     // Already busy here (the server refuses that too), or a browser that cannot take calls.
-    if (this.call() || !this.supported) return;
+    if (this.call() || this.groupCalls.call() || !this.supported) return;
 
     this.attempt++;
     this.call.set({
@@ -171,6 +176,7 @@ export class CallService {
 
     const attempt = ++this.attempt;
     this.ringer.stop();
+    this.groupCalls.silence();
     this.patch({ phase: 'connecting' });
 
     try {
@@ -218,7 +224,9 @@ export class CallService {
     const call = this.call();
     if (!call || call.id !== event.callId) return;
 
-    const said = event.reason === 'declined' && !call.incoming ? `${call.peer.fullName} declined the call.` : undefined;
+    const said = event.reason === 'declined' && !call.incoming
+      ? t('{name} declined the call.', { name: call.peer.fullName })
+      : undefined;
     this.finish(said, false);
   }
 
@@ -237,20 +245,14 @@ export class CallService {
     const hasSound = !!stream?.getAudioTracks().length;
     const hasPicture = !!stream?.getVideoTracks().length;
     this.patch({ muted: !hasSound, cameraOff: video && !hasPicture });
-    if (missing) this.notices.show({ icon: hasSound ? 'videocam_off' : 'mic_off', label: 'Call', text: missing });
+    if (missing) this.notices.show({ icon: hasSound ? 'videocam_off' : 'mic_off', label: t('Call'), text: missing });
 
     this.setup ??= await firstValueFrom(this.http.get<CallSetup>(`${environment.apiUrl}/api/Call/setup`));
     return attempt === this.attempt ? this.setup : null;
   }
 
   private connectPeer(setup: CallSetup): RTCPeerConnection {
-    const peer = new RTCPeerConnection({
-      iceServers: setup.iceServers.map(server => ({
-        urls: server.urls,
-        username: server.username ?? undefined,
-        credential: server.credential ?? undefined
-      }))
-    });
+    const peer = new RTCPeerConnection(rtcConfiguration(setup));
     this.peer = peer;
 
     const stream = this.localStream();
@@ -263,13 +265,13 @@ export class CallService {
 
       if (peer.connectionState === 'connected') this.becomeActive();
       else if (peer.connectionState === 'failed') {
-        this.finish('The call could not be connected. One of you may be on a network that blocks direct calls.');
+        this.finish(t('The call could not be connected. One of you may be on a network that blocks direct calls.'));
       }
     };
 
     clearTimeout(this.connectTimer);
     this.connectTimer = setTimeout(
-      () => this.finish('The call could not be connected. One of you may be on a network that blocks direct calls.'),
+      () => this.finish(t('The call could not be connected. One of you may be on a network that blocks direct calls.')),
       CONNECT_LIMIT_MS);
 
     // Whatever the other side sent while this one was getting ready.
@@ -368,121 +370,10 @@ export class CallService {
     this.call.set(null);
     this.seconds.set(0);
 
-    if (said) this.notices.show({ icon: 'call_end', label: 'Call', text: said });
+    if (said) this.notices.show({ icon: 'call_end', label: t('Call'), text: said });
   }
 
   private patch(change: Partial<CallState>): void {
     this.call.update(call => (call ? { ...call, ...change } : call));
-  }
-}
-
-/** What this device could open for a call, and a sentence about what it could not. */
-interface OpenedMedia {
-  stream: MediaStream | null;
-  missing?: string;
-}
-
-/**
- * Asks the browser for the microphone, and the camera for a video call.
- *
- * A call is not refused because a device is missing: a PC without a camera
- * joins a video call with sound only, and one without a microphone still sees
- * and hears the friend. Only a "no" from the user stops the call, because that
- * is theirs to change.
- */
-async function openMedia(video: boolean): Promise<OpenedMedia> {
-  const blocked = (err: unknown) => ['NotAllowedError', 'SecurityError'].includes((err as DOMException)?.name);
-
-  if (video) {
-    try {
-      return {
-        stream: await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
-        })
-      };
-    } catch (err) {
-      if (blocked(err)) throw new Error('Allow this site to use your camera and microphone in the browser, then try again.');
-      // No camera, or another app holds it: carry on with the microphone below.
-    }
-  }
-
-  try {
-    return {
-      stream: await navigator.mediaDevices.getUserMedia({ audio: true, video: false }),
-      missing: video ? 'Your camera could not be started, so you joined with sound only.' : undefined
-    };
-  } catch (err) {
-    if (blocked(err)) throw new Error('Allow this site to use your microphone in the browser, then try again.');
-  }
-
-  // No microphone either: a camera alone is still worth sending on a video call.
-  if (video) {
-    try {
-      return {
-        stream: await navigator.mediaDevices.getUserMedia({ audio: false, video: true }),
-        missing: 'Your microphone could not be started, so your friend cannot hear you.'
-      };
-    } catch { /* nothing to send at all */ }
-  }
-
-  return {
-    stream: null,
-    missing: 'No microphone could be started on this device, so your friend cannot hear you. You can still hear them.'
-  };
-}
-
-function reasonOf(err: unknown): string {
-  return err instanceof Error && err.message ? err.message : 'The call could not be started. Try again.';
-}
-
-/**
- * The ringing sounds, made by the browser itself so no sound file is needed:
- * a two-tone ring for an incoming call, a slower single tone while calling.
- * Browsers may keep a page silent until the user has clicked something on it;
- * the call still shows on screen then.
- */
-class Ringer {
-  private context?: AudioContext;
-  private timer?: ReturnType<typeof setInterval>;
-
-  start(kind: 'incoming' | 'outgoing'): void {
-    this.stop();
-    try {
-      this.context = new AudioContext();
-    } catch {
-      return;
-    }
-
-    const tones = kind === 'incoming' ? [[880, 0], [1108, 0.24]] : [[440, 0]];
-    const length = kind === 'incoming' ? 0.2 : 0.9;
-    const ring = () => tones.forEach(([frequency, delay]) => this.tone(frequency, delay, length));
-
-    ring();
-    this.timer = setInterval(ring, kind === 'incoming' ? 1500 : 3000);
-  }
-
-  stop(): void {
-    clearInterval(this.timer);
-    this.context?.close().catch(() => { /* already closed */ });
-    this.context = undefined;
-  }
-
-  private tone(frequency: number, delay: number, length: number): void {
-    const context = this.context;
-    if (!context) return;
-
-    const from = context.currentTime + delay;
-    const oscillator = context.createOscillator();
-    const volume = context.createGain();
-    oscillator.frequency.value = frequency;
-    // Fades in and out, so the tone does not click.
-    volume.gain.setValueAtTime(0, from);
-    volume.gain.linearRampToValueAtTime(0.12, from + 0.03);
-    volume.gain.linearRampToValueAtTime(0, from + length);
-
-    oscillator.connect(volume).connect(context.destination);
-    oscillator.start(from);
-    oscillator.stop(from + length + 0.02);
   }
 }

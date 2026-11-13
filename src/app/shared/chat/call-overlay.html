@@ -2,70 +2,73 @@
   @if (call.phase === 'ringing') {
     <!-- A friend is calling. -->
     <section class="incoming" role="alertdialog" aria-live="assertive"
-             [attr.aria-label]="status() + ' from ' + call.peer.fullName">
-      <span class="pulse">
-        <app-chat-avatar [name]="call.peer.fullName" [url]="call.peer.profilePictureUrl" [size]="56" />
+             [attr.aria-label]="incomingLabel()">
+      <span class="ring">
+        <app-chat-avatar [name]="call.peer.fullName" [url]="call.peer.profilePictureUrl" [size]="48" />
       </span>
       <div class="incoming-text">
-        <span class="incoming-name">{{ call.peer.fullName }}</span>
+        <span class="incoming-name"><bdi>{{ call.peer.fullName }}</bdi></span>
         <span class="incoming-status">
-          <mat-icon>{{ call.video ? 'videocam' : 'call' }}</mat-icon> {{ status() }}
+          <app-chat-icon [name]="call.video ? 'video' : 'phone'" [size]="14" /> {{ status() }}
         </span>
       </div>
-      <button type="button" class="round decline" (click)="calls.decline()" aria-label="Decline" title="Decline">
-        <mat-icon>call_end</mat-icon>
+      <button type="button" class="round decline" (click)="calls.decline()" [attr.aria-label]="'Decline' | t" [title]="'Decline' | t">
+        <app-chat-icon name="hang-up" [size]="20" />
       </button>
-      <button type="button" class="round accept" (click)="calls.accept()" aria-label="Accept" title="Accept">
-        <mat-icon>{{ call.video ? 'videocam' : 'call' }}</mat-icon>
+      <button type="button" class="round accept" (click)="calls.accept()" [attr.aria-label]="'Accept' | t" [title]="'Accept' | t">
+        <app-chat-icon [name]="call.video ? 'video' : 'phone'" [size]="20" />
       </button>
     </section>
   } @else {
     <!-- A call that is being made or is going on. -->
     <div class="backdrop"></div>
     <section class="stage" [class.video]="call.video" role="dialog" aria-modal="true"
-             [attr.aria-label]="'Call with ' + call.peer.fullName">
-      <!-- Always present: it also plays the friend's sound on a voice call. -->
-      <video #remote class="remote" [class.shown]="showsRemoteVideo()" autoplay playsinline></video>
-
-      @if (!showsRemoteVideo()) {
-        <div class="who">
-          <span [class.pulse]="call.phase !== 'active'">
-            <app-chat-avatar [name]="call.peer.fullName" [url]="call.peer.profilePictureUrl" [size]="112" />
-          </span>
-        </div>
-      }
-
+             [attr.aria-label]="'Call with {name}' | t: { name: call.peer.fullName }">
       <header class="top">
-        <span class="name">{{ call.peer.fullName }}</span>
+        <span class="name"><bdi>{{ call.peer.fullName }}</bdi></span>
         <span class="status" aria-live="polite">{{ status() }}</span>
       </header>
 
-      @if (call.video) {
-        <!-- Own picture, muted here so the user does not hear themselves. -->
-        <video #local class="local" [class.off]="call.cameraOff" autoplay playsinline muted [muted]="true"></video>
-      }
+      <div class="screen">
+        <!-- Always present: it also plays the friend's sound on a voice call. -->
+        <video #remote class="remote" [class.shown]="showsRemoteVideo()" autoplay playsinline></video>
+
+        @if (!showsRemoteVideo()) {
+          <span class="who" [class.ring]="call.phase !== 'active'">
+            <app-chat-avatar [name]="call.peer.fullName" [url]="call.peer.profilePictureUrl" [size]="112" />
+          </span>
+        }
+
+        @if (call.video) {
+          <!-- Own picture, muted here so the user does not hear themselves. -->
+          <video #local class="local" [class.off]="call.cameraOff" autoplay playsinline muted [muted]="true"></video>
+        }
+      </div>
 
       <footer class="controls">
         <button type="button" class="round" [class.on]="call.muted" (click)="calls.toggleMute()"
-                [attr.aria-label]="call.muted ? 'Unmute microphone' : 'Mute microphone'"
-                [attr.aria-pressed]="call.muted" [title]="call.muted ? 'Unmute' : 'Mute'">
-          <mat-icon>{{ call.muted ? 'mic_off' : 'mic' }}</mat-icon>
+                [attr.aria-label]="(call.muted ? 'Unmute microphone' : 'Mute microphone') | t"
+                [attr.aria-pressed]="call.muted" [title]="(call.muted ? 'Unmute' : 'Mute') | t">
+          <app-chat-icon [name]="call.muted ? 'mic-off' : 'mic'" [size]="20" />
         </button>
 
         @if (call.video) {
           <button type="button" class="round" [class.on]="call.cameraOff" (click)="calls.toggleCamera()"
-                  [attr.aria-label]="call.cameraOff ? 'Turn camera on' : 'Turn camera off'"
-                  [attr.aria-pressed]="call.cameraOff" [title]="call.cameraOff ? 'Camera on' : 'Camera off'">
-            <mat-icon>{{ call.cameraOff ? 'videocam_off' : 'videocam' }}</mat-icon>
+                  [attr.aria-label]="(call.cameraOff ? 'Turn camera on' : 'Turn camera off') | t"
+                  [attr.aria-pressed]="call.cameraOff" [title]="(call.cameraOff ? 'Camera on' : 'Camera off') | t">
+            <app-chat-icon [name]="call.cameraOff ? 'video-off' : 'video'" [size]="20" />
           </button>
         }
 
         <button type="button" class="round decline" (click)="calls.hangUp()"
-                [attr.aria-label]="call.phase === 'active' ? 'Hang up' : 'Cancel call'"
-                [title]="call.phase === 'active' ? 'Hang up' : 'Cancel'">
-          <mat-icon>call_end</mat-icon>
+                [attr.aria-label]="(call.phase === 'active' ? 'Hang up' : 'Cancel call') | t"
+                [title]="(call.phase === 'active' ? 'Hang up' : 'Cancel') | t">
+          <app-chat-icon name="hang-up" [size]="20" />
         </button>
       </footer>
     </section>
   }
 }
+
+<!-- The calls of a group: the invitation and the grid of people. -->
+<app-group-call-overlay />

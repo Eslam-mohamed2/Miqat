@@ -1,13 +1,23 @@
 @use '../../../styles/tokens' as *;
 
-// Unread counts use one red everywhere, readable on both themes.
-$badge-bg: #e5484d;
+// The chat corner, in the language of design/miqat-2.0 (same surfaces, hairlines,
+// radii and type as People): a round accent button, the docked chats above it and
+// the chat list as a raised card.
+
+:host {
+  line-height: normal;
+}
+
+// Bootstrap gives paragraphs and headings a bottom margin; nothing here wants one.
+p, h1, h2, h3 {
+  margin: 0;
+}
 
 // The corner of the screen the chat lives in. Above page content and the
 // context notice (880), below menus, side panels (900+) and dialogs (1000).
 .dock {
   position: fixed;
-  right: 24px;
+  inset-inline-end: 24px;
   bottom: 24px;
   z-index: 885;
   display: flex;
@@ -16,6 +26,8 @@ $badge-bg: #e5484d;
   // Only the bubbles, windows and list take clicks; the gaps between them
   // belong to the page underneath.
   pointer-events: none;
+  // The avatars here sit on raised cards, so their online dot is cut out of that colour.
+  --avatar-ring: #{$mq-card-5};
 }
 
 .windows {
@@ -37,70 +49,67 @@ $badge-bg: #e5484d;
 .head {
   position: relative;
   display: flex;
-  animation: head-in 0.22s ease-out;
-
-  @include reduced-motion { animation: none; }
-}
-
-@keyframes head-in {
-  from { opacity: 0; transform: scale(0.5); }
-  to   { opacity: 1; transform: none; }
+  animation: mq-settle $mq-t-arrive $mq-ease-calm;
 }
 
 .head-btn,
 .launcher {
   position: relative;
   padding: 0;
-  border: 0;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transition: transform $mq-t-press $mq-ease-quick, box-shadow $mq-t-change $mq-ease-calm;
+  @include mq-focus(3px);
 
-  &:hover { transform: scale(1.07); }
-  &:focus-visible { outline: 2px solid $teal-primary; outline-offset: 3px; }
-
-  @include reduced-motion { transition: none; }
+  &:active { transform: scale(.96); }
 }
 
 .head-btn {
   display: flex;
-  background: $bg-card;
+  border: 3px solid $mq-card-5;
+  background: $mq-card-5;
+  box-shadow: 0 0 0 1px $mq-line-2, 0 12px 28px mq-shadow(.4);
 
-  // The chat whose window is open wears a ring.
-  .head.active & { box-shadow: 0 0 0 3px $teal-primary, 0 6px 18px rgba(0, 0, 0, 0.32); }
+  // The chat whose window is open wears the accent.
+  .head.active & { box-shadow: 0 0 0 1.5px $mq-accent, 0 12px 28px mq-shadow(.4); }
 }
 
 .launcher {
-  width: 56px;
-  height: 56px;
-  background: $teal-primary;
-  color: $btn-quick-add-text;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  background: $mq-accent;
+  color: $mq-on-accent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 14px 32px mq-shadow(.45);
 
-  mat-icon { font-size: 26px; width: 26px; height: 26px; }
+  &:hover { filter: brightness(1.06); }
 }
 
-.badge {
+// How many are unread.
+.count {
   position: absolute;
-  top: -3px;
-  right: -3px;
-  min-width: 20px;
-  height: 20px;
+  top: -4px;
+  inset-inline-end: -4px;
+  box-sizing: border-box;
+  min-width: 18px;
+  height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: $badge-bg;
-  color: #fff;
-  font-size: 11px;
+  background: $mq-text;
+  color: $mq-bg;
+  font-size: 10.5px;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 18px;
   text-align: center;
-  box-shadow: 0 0 0 2px $bg-app;
+  box-shadow: 0 0 0 2px $mq-bg;
 
   &.inline {
     position: static;
+    background: $mq-accent;
+    color: $mq-on-accent;
     box-shadow: none;
   }
 }
@@ -109,98 +118,110 @@ $badge-bg: #e5484d;
 .head-close {
   position: absolute;
   top: -6px;
-  left: -6px;
-  width: 22px;
-  height: 22px;
+  inset-inline-start: -6px;
+  width: 20px;
+  height: 20px;
   padding: 0;
-  border: 1px solid $border-input;
+  border: 1px solid $mq-line-2;
   border-radius: 50%;
-  background: $bg-card;
-  color: $text-secondary;
+  background: $mq-card-5;
+  color: $mq-text-4;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.12s ease;
+  transition: opacity $mq-t-press $mq-ease-quick;
+  @include mq-focus;
 
-  mat-icon { font-size: 14px; width: 14px; height: 14px; }
-
-  &:hover { color: $text-primary; background: $bg-card-hover; }
+  &:hover { color: $mq-text; background: $mq-hover; }
 
   .head:hover &,
   &:focus-visible { opacity: 1; }
 
-  @include touch { opacity: 1; }
+  @include touch {
+    opacity: 1;
+
+    // A finger gets a larger area than the 20px circle.
+    &::after { content: ''; position: absolute; inset: -12px; }
+  }
 }
 
 // The newest unread message, shown beside its bubble.
 .peek {
   position: absolute;
-  right: calc(100% + 12px);
+  inset-inline-end: calc(100% + 12px);
   top: 50%;
   transform: translateY(-50%);
   max-width: min(230px, calc(100vw - 110px));
-  padding: 7px 12px;
-  border: 1px solid $border-input;
-  border-radius: 16px 16px 4px 16px;
-  background: $bg-card;
-  color: $text-primary;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 8px 12px;
+  border: 1px solid $mq-line-2;
+  border-radius: 12px;
+  background: $mq-card-5;
+  color: $mq-text;
+  font-family: inherit;
+  font-size: 12.5px;
+  @include mq-ellipsis;
   cursor: pointer;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 16px 40px mq-shadow(.5);
+  animation: mq-fade $mq-t-change $mq-ease-calm;
 }
 
 // ── Chat list ─────────────────────────────────────────────────────────────────
 
 .panel {
   position: absolute;
-  right: 70px;
+  inset-inline-end: 66px;
   bottom: 0;
   z-index: 1;
+  box-sizing: border-box;
   width: 340px;
   max-height: min(560px, calc(100vh - 48px));
   display: flex;
   flex-direction: column;
-  padding: 16px 8px 8px;
-  background: $bg-card;
-  border: 1px solid $border-input;
-  border-radius: $radius-card;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
+  gap: 12px;
+  padding: 18px 10px 10px;
+  background: $mq-card-5;
+  border: 1px solid $mq-line-2;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px mq-shadow(.55);
   pointer-events: auto;
-  animation: panel-in 0.16s ease-out;
-
-  @include reduced-motion { animation: none; }
+  animation: mq-settle $mq-t-change $mq-ease-calm;
 
   h3 {
-    margin: 0 8px 12px;
-    font-size: 20px;
-    font-weight: 800;
-    color: $text-primary;
+    @include mq-serif(30px);
   }
 }
 
-@keyframes panel-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none; }
+.panel-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 8px;
+}
+
+.new-group {
+  @include mq-btn-outline(32px, 0 12px, 9px);
+  gap: 7px;
+  font-size: 12.5px;
 }
 
 .search {
+  box-sizing: border-box;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 8px 8px;
+  gap: 10px;
+  margin: 0 8px;
   padding: 0 12px;
-  height: 38px;
-  border-radius: 999px;
-  background: $bg-input;
-  border: 1px solid $border-input;
-  color: $text-muted;
-
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  height: 40px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  color: $mq-muted;
+  transition: border-color $mq-t-press $mq-ease-quick;
 
   input {
     flex: 1;
@@ -208,20 +229,21 @@ $badge-bg: #e5484d;
     border: 0;
     outline: 0;
     background: transparent;
-    color: $text-primary;
+    color: $mq-text;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 13.5px;
 
-    &::placeholder { color: $text-muted; }
+    &::placeholder { color: $mq-placeholder; opacity: 1; }
+    &::-webkit-search-cancel-button { display: none; }
   }
 
-  &:focus-within { border-color: $teal-primary; }
+  &:focus-within { border-color: $mq-accent; }
 }
 
 .error {
-  margin: 0 8px 8px;
+  margin: 0 8px;
   font-size: 12.5px;
-  color: $text-danger;
+  color: $mq-late;
 }
 
 .list {
@@ -231,28 +253,51 @@ $badge-bg: #e5484d;
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  @include mq-scroll;
 }
 
 .item {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   border: 0;
-  border-radius: $radius-btn;
+  border-radius: 12px;
   background: transparent;
   color: inherit;
-  text-align: left;
+  font-family: inherit;
+  text-align: start;
   cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus(-2px);
 
-  &:hover,
-  &:focus-visible { background: $bg-card-hover; outline: none; }
+  &:hover { background: $mq-hover-2; }
 
-  &.unread {
-    .item-name { font-weight: 800; }
-    .item-last { color: $text-primary; font-weight: 600; }
+  &.unread .item-last { color: $mq-text; font-weight: 600; }
+}
+
+// A chat and, beside it, "Join" while a call is going on in that group.
+.item-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .item {
+    flex: 1;
+    min-width: 0;
+    width: auto;
   }
+}
+
+.join {
+  @include mq-btn-primary(30px, 0 14px, 999px);
+  flex-shrink: 0;
+  margin-inline-end: 6px;
+  font-size: 12px;
 }
 
 .item-text {
@@ -265,20 +310,25 @@ $badge-bg: #e5484d;
 
 .item-name,
 .item-last {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include mq-ellipsis;
 }
 
 .item-name {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: $text-primary;
+  color: $mq-text;
 }
 
 .item-last {
-  font-size: 13px;
-  color: $text-secondary;
+  font-size: 12px;
+  color: $mq-muted;
+
+}
+
+// A call is going on in this group (also when the chat has unread messages).
+.item .item-last.live {
+  color: $mq-green;
+  font-weight: 600;
 }
 
 .item-side {
@@ -290,50 +340,44 @@ $badge-bg: #e5484d;
 }
 
 .item-time {
-  font-size: 12px;
-  color: $text-muted;
+  font-size: 11px;
+  color: $mq-muted;
 }
 
 .group-title {
-  margin: 10px 8px 4px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: $text-muted;
+  @include mq-eyebrow;
+  margin: 10px 10px 4px;
 }
 
 .empty {
-  margin: 24px 16px;
+  margin: 20px 10px;
   font-size: 13px;
-  color: $text-muted;
-  text-align: center;
+  line-height: 1.5;
+  color: $mq-muted;
 }
 
 // ── Smaller screens ───────────────────────────────────────────────────────────
 
-// Clear of the floating "Menu" button at the bottom centre (see sidebar.scss).
-@include below($bp-laptop) {
-  .dock {
-    right: 16px;
-    bottom: 76px;
-  }
-
-  .panel { max-height: min(560px, calc(100vh - 100px)); }
-}
-
-// A phone shows one chat at a time, across the screen; the bubbles step aside
+// Phones: clear of the floating tab bar (68px tall, 16px from the bottom; see
+// sidebar.scss). One chat at a time, across the screen; the bubbles step aside
 // while it is open (the window has its own minimise and close).
 @include below($bp-tablet) {
+  .dock {
+    inset-inline-end: 16px;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .launcher { width: 48px; height: 48px; }
+
   .windows {
     position: fixed;
     left: 8px;
     right: 8px;
-    bottom: 72px;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
 
     app-chat-window {
       width: 100%;
-      height: min(540px, calc(100dvh - 96px));
+      height: min(540px, calc(100dvh - 120px - env(safe-area-inset-bottom, 0px)));
     }
   }
 
@@ -343,8 +387,12 @@ $badge-bg: #e5484d;
     position: fixed;
     left: 8px;
     right: 8px;
-    bottom: 144px;
+    bottom: calc(156px + env(safe-area-inset-bottom, 0px));
     width: auto;
-    max-height: calc(100dvh - 168px);
+    max-height: calc(100dvh - 180px - env(safe-area-inset-bottom, 0px));
   }
+
+  .item { min-height: 58px; }
+  .search { height: 44px; }
+  .new-group, .join { height: 44px; }
 }

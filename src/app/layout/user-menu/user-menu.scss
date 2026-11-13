@@ -1,0 +1,86 @@
+@use '../../../styles/tokens' as *;
+
+:host {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+.avatar {
+  box-sizing: border-box;
+  width: var(--size, 34px);
+  height: var(--size, 34px);
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid $mq-accent-line;
+  background: transparent;
+  color: $mq-accent-text;
+  font-size: calc(var(--size, 34px) * .353);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: color-mix(in srgb, var(--mq-accent) 12%, transparent); }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 900;
+  width: 264px;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px 6px;
+  min-width: 0;
+
+  strong { font-size: 13px; font-weight: 600; color: $mq-text; @include mq-ellipsis; }
+  small  { font-size: 12px; color: $mq-muted; @include mq-ellipsis; }
+
+  // The name and the email address keep their own reading direction (so a long one
+  // is cut at its end), but stay at the menu's start edge like everything else.
+  strong, small {
+    text-align: left;
+    @include mq-rtl { text-align: right; }
+  }
+}
+
+a.mq-menu-item {
+  text-decoration: none;
+}
+
+.theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px;
+  padding-inline-start: 10px;
+
+  > span { font-size: 13px; font-weight: 500; color: $mq-text-3; }
+
+  .mq-seg > button { height: 26px; padding: 0 9px; font-size: 12px; }
+}
+
+.phone-only {
+  display: none;
+}
+
+@include below($bp-tablet) {
+  .phone-only { display: block; }
+}

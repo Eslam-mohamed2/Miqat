@@ -1,0 +1,79 @@
+// Shared by the screens outside the app shell: the landing page (header, page,
+// footer), the sign-in screens and the public booking page.
+@use '../../styles/tokens' as *;
+
+/// The landing page is drawn for a 1440px window. On a wider one it grows with the
+/// window, keeping the design's proportions, instead of sitting in a narrow column.
+@mixin grow-with-window {
+  @media (min-width: 1584px) { zoom: 1.1; }
+  @media (min-width: 1728px) { zoom: 1.2; }
+  @media (min-width: 1920px) { zoom: 1.3333; }
+  @media (min-width: 2160px) { zoom: 1.5; }
+  @media (min-width: 2560px) { zoom: 1.7777; }
+  @media (min-width: 2880px) { zoom: 2; }
+}
+
+/// The root of a screen outside the app shell: it states the page colours and type itself.
+@mixin public-page($font-size: 15px) {
+  display: block;
+  box-sizing: border-box;
+  background: $mq-bg;
+  color: $mq-text;
+  font-family: $mq-font;
+  font-size: $font-size;
+  line-height: normal;
+  font-feature-settings: 'tnum' 1;
+  text-align: start;
+}
+
+/// The colour of a link or a link-shaped button, held in every state: only another
+/// `link-color` (for example in its `:hover` rule) changes it.
+@mixin link-color($color) {
+  color: $color !important;
+}
+
+/// The Miqat mark and word, as the first thing in a header.
+@mixin brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+  @include link-color($mq-text);
+  @include mq-focus(4px);
+  @include touch-area(8px, 4px);
+
+  svg {
+    flex-shrink: 0;
+    color: $mq-accent-text;
+  }
+
+  span {
+    font-family: $mq-serif;
+    font-size: 28px;
+    line-height: 1;
+  }
+}
+
+/// On a touch screen, a target a finger can hit (44px), without changing how the
+/// control looks: an unseen area around it takes the tap.
+@mixin touch-area($block: 12px, $inline: 8px) {
+  @include touch {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: (-$block) (-$inline);
+    }
+  }
+}
+
+/// Text only a screen reader gets.
+@mixin sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

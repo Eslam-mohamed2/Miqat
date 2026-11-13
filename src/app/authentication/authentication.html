@@ -1,151 +1,111 @@
-<div class="m-0 p-0 position-relative">
-  <div class="row d-flex m-0 p-0">
-    <div class="col-12 col-lg-4 p-0 order-2 order-lg-1">
-      <div class="auth-container">
-        <!-- Error & Success Messages -->
-        <div *ngIf="errorMessage" class="alert alert-danger w-80 text-center py-2">{{ errorMessage }}</div>
-        <div *ngIf="successMessage" class="alert alert-success w-80 text-center py-2">{{ successMessage }}</div>
-        <div class="mobile-container">
-          <form *ngIf="activeForm === 'login'" [formGroup]="loginForm" (ngSubmit)="onLogin()"
-            class="form-container m-0 w-80">
-            <div class="mb-3">
-              <label for="loginEmail" class="form-label fw-medium">Email</label>
-              <input id="loginEmail" type="email" formControlName="email" class="form-control rounded-0"
-                [ngClass]="{'is-invalid': isFieldInvalid(loginForm, 'email')}" />
-              <div class="invalid-feedback">A valid email is required.</div>
-            </div>
-            <div class="mb-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <label for="loginPassword" class="form-label fw-medium mb-0">Password</label>
-              </div>
-              <div class="position-relative">
-                <input id="loginPassword" [type]="showPassword ? 'text' : 'password'" formControlName="password"
-                  class="form-control rounded-0 pe-5"
-                  [ngClass]="{'is-invalid': isFieldInvalid(loginForm, 'password')}" />
-                <i class="fa-solid position-absolute top-50 translate-middle-y end-0 me-3"
-                  style="cursor: pointer; z-index: 10;"
-                  [ngClass]="showPassword ? 'fa-eye-slash text-muted' : 'fa-eye text-muted'"
-                  (click)="togglePassword()"></i>
-              </div>
-              <div *ngIf="isFieldInvalid(loginForm, 'password')" class="text-danger mt-1" style="font-size: 0.875em;">
-                Password must be at least 6 characters.</div>
-            </div>
-            <div class="d-flex justify-content-center">
-              <button type="submit" class="btn text-white bg-image py-2 px-5 my-2 d-flex align-items-center"
-                [disabled]="isLoading">
-                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"
-                  aria-hidden="true"></span>
-                {{ isLoading ? 'Processing...' : 'Login' }}
-              </button>
-            </div>
-            <div class="d-flex justify-content-center mt-1">
-              <a routerLink="/authentication/forgot-password"
-                class="text-decoration-none small text-muted fw-medium">Forgot Password?</a>
-            </div>
+@let creating = activeForm() === 'register';
 
-            <div class="d-flex justify-content-center flex-column align-items-center mt-3">
-              <div class="text-muted small mb-2">Or continue with</div>
-              <div class="w-100 d-flex justify-content-center google-btn-wrapper">
-                <asl-google-signin-button type="standard" size="large" [width]="300"></asl-google-signin-button>
-              </div>
-            </div>
-          </form>
+<app-auth-shell [step]="creating ? 0 : null">
+  <div class="step">
+    <div class="head">
+      <h1>{{ (creating ? 'Create your account.' : 'Welcome back.') | t }}</h1>
+      <p>{{ (creating ? 'Two minutes, then your week is ready.' : 'Pick up where your day left off.') | t }}</p>
+    </div>
 
-          <form *ngIf="activeForm === 'register'" [formGroup]="registerForm" (ngSubmit)="onRegister()"
-            class="form-container w-80 align-content-center">
-            <div class="mb-3">
-              <label for="fullName" class="form-label fw-medium">Full Name</label>
-              <input type="text" id="fullName" formControlName="fullName" class="form-control rounded-0"
-                [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'fullName')}" />
-              <div class="invalid-feedback">Full name is required (min 3 chars).</div>
-            </div>
-            <div class="mb-3">
-              <label for="email" class="form-label fw-medium">Email address</label>
-              <input type="email" id="email" formControlName="email" class="form-control rounded-0"
-                [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'email')}" />
-              <div class="invalid-feedback">A valid email is required.</div>
-            </div>
-            <div class="mb-3">
-              <label for="password" class="form-label fw-medium">Password</label>
-              <div class="position-relative">
-                <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password"
-                  class="form-control rounded-0 pe-5"
-                  [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'password')}" />
-                <i class="fa-solid position-absolute top-50 translate-middle-y end-0 me-3"
-                  style="cursor: pointer; z-index: 10;"
-                  [ngClass]="showPassword ? 'fa-eye-slash text-muted' : 'fa-eye text-muted'"
-                  (click)="togglePassword()"></i>
-              </div>
-              <div *ngIf="isFieldInvalid(registerForm, 'password')" class="text-danger mt-1" style="font-size: 0.8rem;">
-                Minimum 8 chars with uppercase, number, and special character.</div>
-            </div>
-            <div class="mb-3">
-              <label for="phoneNumber" class="form-label fw-medium">Phone Number</label>
-              <input type="text" id="phoneNumber" formControlName="phoneNumber" class="form-control rounded-0"
-                [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'phoneNumber')}" />
-              <div class="invalid-feedback">Phone number is required.</div>
-            </div>
-            <div class="mb-3">
-              <label for="country" class="form-label fw-medium">Country</label>
-              <input type="text" id="country" formControlName="country" class="form-control rounded-0"
-                [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'country')}" />
-              <div class="invalid-feedback">Country is required.</div>
-            </div>
-            <div class="mb-3">
-              <label for="timeZone" class="form-label fw-medium">Time Zone</label>
-              <select id="timeZone" formControlName="timeZone" class="form-select rounded-0"
-                [ngClass]="{'is-invalid': isFieldInvalid(registerForm, 'timeZone')}">
-                <option value="">Select Time Zone</option>
-                <option value="UTC+0">UTC</option>
-                <option value="UTC+2">Cairo (UTC+2)</option>
-                <option value="UTC+3">Riyadh (UTC+3)</option>
-                <option value="UTC+5:30">India (UTC+5:30)</option>
-                <option value="UTC-5">New York (UTC-5)</option>
-              </select>
-              <div class="invalid-feedback">Time Zone is required.</div>
-            </div>
-            <div class="d-flex justify-content-center">
-              <button type="submit" class="btn text-white bg-image py-2 px-5 my-2 d-flex align-items-center"
-                [disabled]="isLoading">
-                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"
-                  aria-hidden="true"></span>
-                {{ isLoading ? 'Processing...' : 'Register' }}
-              </button>
-            </div>
+    @if (errorMessage()) {
+      <div class="notice error" role="alert">{{ errorMessage() }}</div>
+    }
+    @if (successMessage()) {
+      <div class="notice ok" role="status">{{ successMessage() }}</div>
+    }
 
-            <div class="d-flex justify-content-center flex-column align-items-center mt-3">
-              <div class="text-muted small mb-2">Or continue with</div>
-              <div class="w-100 d-flex justify-content-center google-btn-wrapper">
-                <asl-google-signin-button type="standard" size="large" [width]="300"></asl-google-signin-button>
-              </div>
-            </div>
-          </form>
-          <div class="switch-wrapper mt-2">
-            <div class="switch">
-              <div class="switch-indicator" [class.move-right]="activeForm === 'register'">
-                {{ activeForm | titlecase }}
-              </div>
-              <button type="button" [class.active]="activeForm === 'login'" (click)="switchForm('login')">
-                Login
-              </button>
-              <button type="button" [class.active]="activeForm === 'register'" (click)="switchForm('register')">
-                Register
-              </button>
-            </div>
-          </div>
-        </div>
+    <div class="google">
+      <button type="button" class="google-btn" [disabled]="isGoogleLoading()" (click)="onGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path class="gm-1" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.4 3-7.4z"></path><path class="gm-2" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"></path><path class="gm-3" d="M6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9z"></path><path class="gm-4" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.8 9.4 6 12 6z"></path></svg>
+        {{ (isGoogleLoading() ? 'Signing in with Google…' : 'Continue with Google') | t }}
+      </button>
+      <!-- Google's own button, drawn by its script. It stays out of sight; the button above presses it. -->
+      <div #googleHost class="google-real" aria-hidden="true">
+        <asl-google-signin-button type="standard" size="large" [width]="300" [locale]="googleLocale"></asl-google-signin-button>
       </div>
     </div>
-    <div class="d-none d-lg-block col-lg-8 p-0 order-lg-2 auth-clock-col">
-      <app-flip-clock></app-flip-clock>
 
+    <div class="divider"><span></span>{{ 'or with email' | t }}<span></span></div>
 
+    @if (creating) {
+      <form class="fields" [formGroup]="registerForm" (ngSubmit)="onRegister()" novalidate>
+        <label class="field">{{ 'Full name' | t }}
+          <input id="fullName" type="text" dir="auto" autocomplete="name" [placeholder]="'Eslam Mohamed' | t" formControlName="fullName"
+            [attr.aria-invalid]="isFieldInvalid(registerForm, 'fullName')" aria-describedby="fullName-error">
+          @if (isFieldInvalid(registerForm, 'fullName')) {
+            <span id="fullName-error" class="field-error">{{ 'Full name is required (at least {n} characters).' | t: { n: 3 } }}</span>
+          }
+        </label>
 
-    </div>
+        <label class="field">{{ 'Email' | t }}
+          <input id="email" type="email" dir="ltr" autocomplete="email" placeholder="you@company.com" formControlName="email"
+            [attr.aria-invalid]="isFieldInvalid(registerForm, 'email')" aria-describedby="email-error">
+          @if (isFieldInvalid(registerForm, 'email')) {
+            <span id="email-error" class="field-error">{{ 'A valid email is required.' | t }}</span>
+          }
+        </label>
+
+        <div class="field">
+          <span class="field-top">
+            <label class="field-label" for="password">{{ 'Password' | t }}</label>
+          </span>
+          <span class="secret">
+            <input id="password" [type]="showPassword() ? 'text' : 'password'" dir="ltr" autocomplete="new-password"
+              [placeholder]="'At least {n} characters' | t: { n: 8 }" formControlName="password"
+              [attr.aria-invalid]="isFieldInvalid(registerForm, 'password')" aria-describedby="password-error">
+            <button type="button" [attr.aria-label]="(showPassword() ? 'Hide password' : 'Show password') | t"
+              [attr.aria-pressed]="showPassword()" (click)="togglePassword()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </span>
+          @if (isFieldInvalid(registerForm, 'password')) {
+            <span id="password-error" class="field-error">{{ passwordError() }}</span>
+          }
+        </div>
+
+        <button type="submit" class="submit" [disabled]="isLoading()">{{ (isLoading() ? 'Creating your account…' : 'Continue') | t }}</button>
+      </form>
+    } @else {
+      <form class="fields" [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
+        <label class="field">{{ 'Email' | t }}
+          <input id="loginEmail" type="email" dir="ltr" autocomplete="email" placeholder="you@company.com" formControlName="email"
+            [attr.aria-invalid]="isFieldInvalid(loginForm, 'email')" aria-describedby="loginEmail-error">
+          @if (isFieldInvalid(loginForm, 'email')) {
+            <span id="loginEmail-error" class="field-error">{{ 'A valid email is required.' | t }}</span>
+          }
+        </label>
+
+        <div class="field">
+          <span class="field-top">
+            <label class="field-label" for="loginPassword">{{ 'Password' | t }}</label>
+            <button type="button" class="text-link" (click)="forgotPassword()">{{ 'Forgot password?' | t }}</button>
+          </span>
+          <span class="secret">
+            <input id="loginPassword" [type]="showPassword() ? 'text' : 'password'" dir="ltr" autocomplete="current-password"
+              [placeholder]="'At least {n} characters' | t: { n: 8 }" formControlName="password"
+              [attr.aria-invalid]="isFieldInvalid(loginForm, 'password')" aria-describedby="loginPassword-error">
+            <button type="button" [attr.aria-label]="(showPassword() ? 'Hide password' : 'Show password') | t"
+              [attr.aria-pressed]="showPassword()" (click)="togglePassword()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </span>
+          @if (isFieldInvalid(loginForm, 'password')) {
+            <span id="loginPassword-error" class="field-error">{{ 'Password must be at least {n} characters.' | t: { n: 6 } }}</span>
+          }
+        </div>
+
+        <button type="submit" class="submit enter" [disabled]="isLoading()">
+          {{ (isLoading() ? 'Signing in…' : 'Sign in') | t }}
+          @if (!isLoading()) {
+            <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          }
+        </button>
+      </form>
+    }
+
+    <p class="switch-line">
+      {{ (creating ? 'Already have an account?' : 'New to Miqat?') | t }}
+      <button type="button" class="text-link" (click)="switchForm(creating ? 'login' : 'register')">{{ (creating ? 'Sign in' : 'Create an account') | t }}</button>
+    </p>
   </div>
-  <div class="custom-desgin">
-    <a routerLink="/home" aria-label="Back to home"><i class="fa-solid fa-house"></i></a>
-  </div>
-
-  <!-- Modal removed, we use the /verify-otp screen instead -->
-</div>
+</app-auth-shell>

@@ -1,0 +1,36 @@
+@if (chosen().length) {
+  <div class="chips" role="list" [attr.aria-label]="'Chosen people' | t">
+    @for (p of chosen(); track p.id) {
+      <span class="chip" role="listitem">
+        <span class="chip-name"><bdi>{{ p.fullName }}</bdi></span>
+        <button type="button" (click)="toggle(p.id)" [attr.aria-label]="'Take out {name}' | t: { name: p.fullName }"
+                [title]="'Take out' | t">
+          <app-chat-icon name="close" [size]="10" />
+        </button>
+      </span>
+    }
+  </div>
+}
+
+<label class="search">
+  <app-chat-icon name="search" [size]="15" />
+  <input type="search" [placeholder]="'Search friends' | t" [attr.aria-label]="'Search friends' | t"
+         [attr.dir]="search() ? 'auto' : null"
+         [value]="search()" (input)="search.set($any($event.target).value)" />
+</label>
+
+<div class="options" role="listbox" aria-multiselectable="true" [attr.aria-label]="'Friends' | t">
+  @for (p of matching(); track p.id) {
+    <button type="button" class="option" role="option" [attr.aria-selected]="isChosen(p.id)" (click)="toggle(p.id)">
+      <app-chat-avatar [name]="p.fullName" [url]="p.profilePictureUrl" [online]="chat.isOnline(p.id)" [size]="32" />
+      <span class="option-name"><bdi>{{ p.fullName }}</bdi></span>
+      <span class="tick">
+        @if (isChosen(p.id)) {
+          <app-chat-icon name="check" [size]="12" />
+        }
+      </span>
+    </button>
+  } @empty {
+    <p class="none">{{ search().trim() ? ('No friend matches that name.' | t) : emptyText() }}</p>
+  }
+</div>

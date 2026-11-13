@@ -1,70 +1,32 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { MiqatLogo } from '../shared/logo/miqat-logo';
+
+import { Language, currentLanguage, setLanguage } from '../core/i18n/i18n';
+import { TPipe } from '../core/i18n/t.pipe';
 import { ThemeService } from '../core/services/theme.service';
+
+/** The top bar of the landing page (design/miqat-2.0: V2-Landing). */
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule], // gives access to *ngFor, *ngIf, routerLink, etc.
+  imports: [RouterLink, MiqatLogo, TPipe],
   templateUrl: './header.html',
-  styleUrl: './header.scss'
+  styleUrl: './header.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class Header implements OnInit, OnDestroy {
-  time: string = '';
-  isMenuOpen = false;
-  Timer = inject(ChangeDetectorRef);
+export class Header {
+  /** The language the switch leads to: Arabic from English, English from Arabic. */
+  readonly other: Language = currentLanguage() === 'ar' ? 'en' : 'ar';
 
-  toggleMenu() {
-    this.isMenuOpen = !this.isMenuOpen;
-    this.Timer.detectChanges();
+  constructor() {
+    // Creating the service applies the saved theme. The landing page is the first
+    // thing a visitor loads, and nothing else on it asks for the service.
+    inject(ThemeService);
   }
 
-
-
-  clocks = [
-    'assets/SVG icons/clock-slash-svgrepo-com.svg',
-    'assets/SVG icons/clock-two-thirty-svgrepo-com.svg',
-    '../../assets/SVG icons/clock-lines-svgrepo-com.svg',
-    'assets/SVG icons/clock-slash-svgrepo-com.svg',
-    'assets/SVG icons/clock-two-thirty-svgrepo-com.svg',
-    '../../assets/SVG icons/clock-lines-svgrepo-com.svg',
-    'assets/SVG icons/clock-slash-svgrepo-com.svg',
-    'assets/SVG icons/clock-two-thirty-svgrepo-com.svg',
-    '../../assets/SVG icons/clock-lines-svgrepo-com.svg'
-  ];
-  constructor(private router: Router, public themeService: ThemeService) { }
-  private intervalId: any;
-
-  goToLogin() {
-    this.router.navigate(['/authentication'], { queryParams: { form: 'login' } });
-  }
-
-  goToRegister() {
-    this.router.navigate(['/authentication'], { queryParams: { form: 'register' } });
-  }
-
-  ngOnInit(): void {
-    this.updateTime();
-    this.intervalId = setInterval(() => this.updateTime(), 6000);
-  }
-
-  ngOnDestroy(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
-  }
-
-  private updateTime(): void {
-    const now = new Date();
-    const hours = this.padZero(now.getHours());
-    const minutes = this.padZero(now.getMinutes());
-    this.time = `${hours}:${minutes}`;
-    this.Timer.detectChanges();
-  }
-
-  private padZero(num: number): string {
-    return num < 10 ? '0' + num : num.toString();
+  /** Saves the choice and reloads the page in the other language. */
+  switchLanguage(): void {
+    setLanguage(this.other);
   }
 }

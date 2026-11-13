@@ -1,36 +1,57 @@
-import { Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { GroupService } from '../../core/services/group.service';
-import { TaskService } from '../../core/services/task.service';
-import { RealtimeService } from '../../core/services/realtime.service';
-import { FriendService } from '../../core/services/friend.service';
-import { UserService } from '../../core/services/user.service';
+
 import { AuthService } from '../../core/services/auth.service';
-import { TaskWindowComponent } from '../dashboard/task-window/task-window';
-import { GroupDto, MemberDto, TaskDto } from '../../models/api.models';
+import { FriendService } from '../../core/services/friend.service';
+import { GroupService } from '../../core/services/group.service';
+import { QuickAddService } from '../../core/services/quick-add.service';
+import { RealtimeService } from '../../core/services/realtime.service';
+import { TaskService } from '../../core/services/task.service';
+import { UserService } from '../../core/services/user.service';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { formatNumber, locale, t, tCount } from '../../core/i18n/i18n';
+import { NumPipe, TPipe } from '../../core/i18n/t.pipe';
+import { estimateMinutes, formatEstimate, visibleTags } from '../../core/utils/task-estimate';
+import { UserMenu } from '../../layout/user-menu/user-menu';
+import { GroupDto, MemberDto, TaskDto } from '../../models/api.models';
+import { CommentThread } from '../../shared/comment-thread/comment-thread';
 import { TaskMarks } from '../../shared/task-marks/task-marks';
+import { TaskWindowComponent } from '../dashboard/task-window/task-window';
+import { TaskBoard } from '../tasks/task-board/task-board';
+import { TasksStore } from '../tasks/tasks-store';
+import { PRIORITIES, STATUSES, dueLabel, initials, isDone, isLate, priorityLabel } from '../tasks/task-view';
 
 type ViewMode = 'table' | 'board';
 type GroupBy = 'none' | 'status' | 'assignee';
+type Section = 'tasks' | 'members' | 'discussion';
 
-interface StatusMeta { value: string; label: string; color: string; }
-
+/**
+ * A project as a page of its own: its tasks as a table or a board, its members
+ * and their workload, the discussion between them, its progress, and the
+ * controls to rename or delete it.
+ *
+ * The discussion has an address of its own, /projects/:id/discussion: the same
+ * page with that section open. /projects/:id opens the tasks.
+ *
+ * No design file draws it; it follows the Tasks and Board screens (design/miqat-2.0).
+ */
 @Component({
   selector: 'app-project-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, RouterLink, TaskMarks],
+  imports: [FormsModule, RouterLink, UserMenu, TaskMarks, TaskBoard, CommentThread, TPipe, NumPipe],
+  providers: [TasksStore],
   templateUrl: './project-page.html',
-  styleUrl: './project-page.scss'
+  styleUrl: './project-page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProjectPage implements OnInit {
+  readonly store = inject(TasksStore);
+  readonly quickAdd = inject(QuickAddService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private groupService = inject(GroupService);
@@ -38,44 +59,50 @@ export class ProjectPage implements OnInit {
   private friendService = inject(FriendService);
   private userService = inject(UserService);
   private authService = inject(AuthService);
-  private dialog = inject(MatDialog);
   private realtime = inject(RealtimeService);
+  private dialog = inject(MatDialog);
   private destroyRef = inject(DestroyRef);
 
   /** Values match the backend TaskStatus enum exactly. */
-  readonly statuses: StatusMeta[] = [
-    { value: 'Pending',     label: 'Pending',     color: '#f4a835' },
-    { value: 'In_progress', label: 'In Progress', color: '#7c8ef5' },
-    { value: 'Completed',   label: 'Completed',   color: '#2ec4a0' },
-    { value: 'On_hold',     label: 'On Hold',     color: '#8b8b8b' },
-    { value: 'Cancelled',   label: 'Cancelled',   color: '#ef4444' }
-  ];
+  readonly statuses = STATUSES;
+  readonly priorities = PRIORITIES;
 
-  readonly priorities = ['Low', 'Medium', 'High', 'Critical'];
+  readonly projectId = signal('');
+  readonly project = signal<GroupDto | null>(null);
+  /** The project's tasks, kept by the store so the board and the table share them. */
+  readonly tasks = this.store.tasks;
+  readonly members = signal<MemberDto[]>([]);
+  /** Friends and teammates, used as the pool of people who can be added to the project. */
+  readonly allUsers = signal<{ id: string; name: string }[]>([]);
 
-  projectId = signal('');
-  project = signal<GroupDto | null>(null);
-  tasks = signal<TaskDto[]>([]);
-  members = signal<MemberDto[]>([]);
-  /** Friends, used as the pool of people who can be added to the project. */
-  allUsers = signal<{ id: string; name: string }[]>([]);
+  readonly loading = signal(true);
+  readonly errorMessage = signal('');
 
-  loading = signal(true);
-  errorMessage = signal('');
-  savingIds = signal<ReadonlySet<string>>(new Set());
+  readonly view = signal<ViewMode>('table');
+  readonly groupBy = signal<GroupBy>('status');
+  readonly search = signal('');
+  readonly statusFilter = signal('All');
+  readonly activeSection = signal<Section>('tasks');
 
-  view = signal<ViewMode>('table');
-  groupBy = signal<GroupBy>('status');
-  search = signal('');
-  statusFilter = signal('All');
-  activeSection = signal<'tasks' | 'members'>('tasks');
+  /** Comments and replies in the discussion. Null until the project says, or when its server has no discussions. */
+  readonly commentCount = signal<number | null>(null);
+  /** A comment to open the discussion on, named by the link that brought the user here (?comment=). */
+  readonly focusComment = signal<string | null>(null);
+  /**
+   * An API build without discussions leaves the count out of the project. The
+   * section is still offered there; opening it says what is missing.
+   */
+  readonly discussionAvailable = computed(() => this.project()?.commentCount !== undefined);
 
-  isEditingHeader = signal(false);
-  headerDraft = { name: '', description: '', color: '#2ec4a0' };
+  readonly isEditingHeader = signal(false);
+  readonly draftName = signal('');
+  readonly draftDescription = signal('');
+  readonly draftColor = signal('');
+  private colorPicked = false;
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
-  filteredTasks = computed(() => {
+  readonly filteredTasks = computed(() => {
     const term = this.search().trim().toLowerCase();
     const status = this.statusFilter();
 
@@ -83,79 +110,88 @@ export class ProjectPage implements OnInit {
       if (status !== 'All' && task.status !== status) return false;
       if (!term) return true;
       return (task.title ?? '').toLowerCase().includes(term)
-        || (task.tags ?? '').toLowerCase().includes(term)
+        || visibleTags(task.tags).some(tag => tag.toLowerCase().includes(term))
         || (task.assignedToUserName ?? '').toLowerCase().includes(term);
     });
   });
 
   /**
-   * The table's row groups. Notion always shows every configured group even when
-   * empty, so a column you can drop into never disappears.
+   * The table's row groups. Every status keeps its group even when empty, so a
+   * group never disappears while tasks move between them.
    */
-  tableGroups = computed(() => {
+  readonly tableGroups = computed(() => {
+    const zone = this.store.zone();
+    const now = this.store.now();
+    const hour24 = this.store.hour24();
+
+    const rows = (tasks: TaskDto[]) => tasks.map(task => ({
+      task,
+      done: isDone(task),
+      est: formatEstimate(estimateMinutes(task)),
+      due: dueLabel(task, zone, now, hour24),
+      late: isLate(task, now),
+      labels: visibleTags(task.tags).slice(0, 3)
+    }));
     const tasks = this.filteredTasks();
 
     if (this.groupBy() === 'status') {
       return this.statuses.map(status => ({
         key: status.value,
         title: status.label,
-        color: status.color,
-        tasks: tasks.filter(t => t.status === status.value)
+        status: status.value,
+        rows: rows(tasks.filter(task => task.status === status.value))
       }));
     }
 
     if (this.groupBy() === 'assignee') {
-      const names = Array.from(new Set(tasks.map(t => t.assignedToUserName || 'Unassigned')));
+      const nobody = t('Unassigned');
+      const names = Array.from(new Set(tasks.map(task => task.assignedToUserName || nobody)));
       return names.sort().map(name => ({
         key: name,
         title: name,
-        color: '#7c8ef5',
-        tasks: tasks.filter(t => (t.assignedToUserName || 'Unassigned') === name)
+        status: null,
+        rows: rows(tasks.filter(task => (task.assignedToUserName || nobody) === name))
       }));
     }
 
-    return [{ key: 'all', title: 'All tasks', color: '#2ec4a0', tasks }];
+    return [{ key: 'all', title: t('All tasks'), status: null, rows: rows(tasks) }];
   });
 
-  boardColumns = computed(() =>
-    this.statuses.map(status => ({
-      ...status,
-      tasks: this.filteredTasks().filter(t => t.status === status.value)
-    }))
-  );
+  /** The first group with rows: its table is the one that prints the column headings. */
+  readonly firstFilledGroup = computed(() => this.tableGroups().findIndex(group => group.rows.length > 0));
 
-  stats = computed(() => {
+  readonly stats = computed(() => {
     const all = this.tasks();
-    const done = all.filter(t => t.status === 'Completed').length;
+    const done = all.filter(isDone).length;
+    const now = this.store.now();
     return {
       total: all.length,
       done,
-      overdue: all.filter(t => this.isOverdue(t)).length,
+      overdue: all.filter(task => isLate(task, now)).length,
       percent: all.length ? Math.round((done / all.length) * 100) : 0
     };
   });
 
   /**
    * Who can be assigned a task: the project's own members. That is the correct
-   * semantics for a team board — you hand work to people on the project — and it
+   * semantics for a team board (you hand work to people on the project) and it
    * sidesteps GET /api/User, which is admin-only and 403s for everyone else.
    */
-  assignableUsers = computed(() =>
-    this.members().map(member => ({ id: member.userId, name: member.fullName }))
-  );
+  readonly assignableUsers = computed(() =>
+    this.members().map(member => ({ id: member.userId, name: member.fullName })));
 
-  /** Friends not already in the project, for the add-member picker. */
-  addableUsers = computed(() => {
-    const memberIds = new Set(this.members().map(m => m.userId));
+  /** Contacts not already in the project, for the add-member picker. */
+  readonly addableUsers = computed(() => {
+    const memberIds = new Set(this.members().map(member => member.userId));
     return this.allUsers().filter(user => !memberIds.has(user.id));
   });
 
-  /** Per-member workload, so a lead can see distribution at a glance. */
-  memberStats = computed(() => {
+  /** Per-member workload, so a lead can see the distribution at a glance. */
+  readonly memberStats = computed(() => {
     const tasks = this.tasks();
     return this.members().map(member => {
-      const assigned = tasks.filter(t => t.assignedToUserId === member.userId);
-      const done = assigned.filter(t => t.status === 'Completed').length;
+      const assigned = tasks.filter(task => task.assignedToUserId === member.userId);
+      const done = assigned.filter(isDone).length;
       return {
         member,
         total: assigned.length,
@@ -165,35 +201,92 @@ export class ProjectPage implements OnInit {
     });
   });
 
+  readonly createdLabel = computed(() => this.formatDate(this.project()?.createdAt ?? ''));
+
+  /** "Project · owned by Sara Ali · created 3 Nov 2026", above the name. */
+  readonly ownerLine = computed(() => {
+    const owner = this.project()?.ownerName || t('an unknown owner');
+    const date = this.createdLabel();
+    return date
+      ? t('Project · owned by {owner} · created {date}', { owner, date })
+      : t('Project · owned by {owner}', { owner });
+  });
+
+  /** "40% · 4 of 10 tasks", on the progress card. */
+  readonly doneLine = computed(() => {
+    const stats = this.stats();
+    return t('{percent} · {done} of {total} tasks', {
+      percent: formatNumber(stats.percent / 100, { style: 'percent' }), done: stats.done, total: stats.total
+    });
+  });
+
+  readonly teamLabel = computed(() =>
+    tCount(this.members().length, '{n} member: show the team', '{n} members: show the team'));
+
   ngOnInit() {
-    // Only changes belonging to this project matter here.
-    this.realtime.taskChanged$
+    this.route.paramMap
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(event => {
-        if (event.groupId && event.groupId === this.projectId()) this.reloadTasks();
+      .subscribe(params => {
+        const id = params.get('id');
+        if (!id) {
+          void this.router.navigate(['/tasks']);
+          return;
+        }
+        // The address says whether the discussion is open; Tasks and Members share the other one.
+        if (params.get('section') === 'discussion') this.activeSection.set('discussion');
+        else if (this.activeSection() === 'discussion') this.activeSection.set('tasks');
+
+        // Changing section keeps the page: only another project is loaded.
+        if (id === this.projectId()) return;
+        this.activeSection.update(section => (section === 'discussion' ? section : 'tasks'));
+        this.projectId.set(id);
+        this.load(id);
       });
 
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (!id) {
-        this.router.navigate(['/dashboard']);
-        return;
-      }
-      this.projectId.set(id);
-      this.load(id);
-    });
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(query => {
+        const comment = query.get('comment');
+        this.focusComment.set(comment);
+        // A link to a comment means the discussion, also when its address does not say so.
+        const params = this.route.snapshot.paramMap;
+        if (comment && params.get('id') && params.get('section') !== 'discussion') {
+          void this.router.navigate(['/projects', params.get('id'), 'discussion'], { queryParams: { comment }, replaceUrl: true });
+        }
+      });
+
+    // The count on the Discussion tab follows the discussion, whichever section is open.
+    this.realtime.projectCommentChanged$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(event => {
+        if (event?.groupId === this.projectId() && typeof event.total === 'number' && this.discussionAvailable()) {
+          this.commentCount.set(event.total);
+        }
+      });
+  }
+
+  /** Opens a section. The discussion has its own address, so it can be linked to and reloaded. */
+  showSection(section: Section) {
+    this.activeSection.set(section);
+    const onDiscussion = this.route.snapshot.paramMap.get('section') === 'discussion';
+    if ((section === 'discussion') === onDiscussion) return;
+    void this.router.navigate(section === 'discussion'
+      ? ['/projects', this.projectId(), 'discussion']
+      : ['/projects', this.projectId()]);
   }
 
   load(id: string) {
     this.loading.set(true);
     this.errorMessage.set('');
+    this.commentCount.set(null);
+    // The tasks: loaded, kept current over the live channel and changed through the store.
+    this.store.start(() => this.taskService.getTasksByGroup(id));
 
     // One pass so the page renders complete rather than filling in piecemeal.
     // Each stream degrades to an empty value so a single failure cannot blank
-    // the whole workspace.
+    // the whole page.
     forkJoin({
       project: this.groupService.getGroupById(id).pipe(catchError(() => of(null))),
-      tasks: this.taskService.getTasksByGroup(id).pipe(catchError(() => of([] as TaskDto[]))),
       members: this.groupService.getMembers(id).pipe(catchError(() => of([] as MemberDto[]))),
       // People who can be added: friends and teammates from other projects
       // (GET /api/User/contacts). The full user list is admin-only. An API build
@@ -206,28 +299,22 @@ export class ProjectPage implements OnInit {
     }).subscribe({
       next: result => {
         if (!result.project) {
-          this.errorMessage.set('That project could not be found.');
+          this.project.set(null);
+          this.errorMessage.set(t('That project could not be found.'));
           this.loading.set(false);
           return;
         }
         this.project.set(result.project);
-        this.tasks.set(result.tasks ?? []);
+        this.commentCount.set(result.project.commentCount ?? null);
         this.members.set(result.members ?? []);
         this.allUsers.set(result.users ?? []);
         this.resetHeaderDraft();
         this.loading.set(false);
       },
       error: err => {
-        this.errorMessage.set(apiErrorMessage(err, 'Could not load this project.'));
+        this.errorMessage.set(apiErrorMessage(err, t('Could not load this project.')));
         this.loading.set(false);
       }
-    });
-  }
-
-  private reloadTasks() {
-    this.taskService.getTasksByGroup(this.projectId()).subscribe({
-      next: tasks => this.tasks.set(tasks ?? []),
-      error: () => { /* keep what is on screen */ }
     });
   }
 
@@ -235,7 +322,7 @@ export class ProjectPage implements OnInit {
     this.groupService.getMembers(this.projectId()).subscribe({
       next: members => {
         this.members.set(members);
-        this.project.update(p => (p ? { ...p, memberCount: members.length } : p));
+        this.project.update(project => (project ? { ...project, memberCount: members.length } : project));
       },
       error: () => { /* keep what is on screen */ }
     });
@@ -243,86 +330,52 @@ export class ProjectPage implements OnInit {
 
   // ── Task edits ─────────────────────────────────────────────────────────────
 
-  /**
-   * Inline cell edit. The row updates first and rolls back if the write fails,
-   * so the table never shows a value the server rejected.
-   */
-  patchTask(task: TaskDto, changes: Partial<TaskDto>) {
-    const previous = { ...task };
-    const updated = { ...task, ...changes };
-
-    this.tasks.update(list => list.map(t => (t.id === task.id ? updated : t)));
-    this.setSaving(task.id, true);
-    this.errorMessage.set('');
-
-    this.taskService.updateTask(task.id, updated).subscribe({
-      next: () => this.setSaving(task.id, false),
-      error: err => {
-        this.tasks.update(list => list.map(t => (t.id === task.id ? previous : t)));
-        this.setSaving(task.id, false);
-        this.errorMessage.set(apiErrorMessage(err, 'Could not save that change.'));
-      }
-    });
-  }
-
   setStatus(task: TaskDto, status: string) {
-    if (task.status !== status) this.patchTask(task, { status });
+    this.store.setStatus(task, status);
   }
 
   setPriority(task: TaskDto, priority: string) {
-    if (task.priority !== priority) this.patchTask(task, { priority });
+    this.store.setPriority(task, priority);
   }
 
   setAssignee(task: TaskDto, userId: string) {
-    const name = this.assignableUsers().find(u => u.id === userId)?.name ?? '';
-    this.patchTask(task, { assignedToUserId: userId, assignedToUserName: name });
+    const name = this.assignableUsers().find(user => user.id === userId)?.name ?? '';
+    void this.store.save(task, {
+      assignedToUserId: (userId || null) as unknown as string,
+      assignedToUserName: name
+    });
   }
 
   toggleDone(task: TaskDto) {
-    this.setStatus(task, task.status === 'Completed' ? 'Pending' : 'Completed');
+    this.store.toggleDone(task);
   }
 
   newTask() {
-    const ref = this.dialog.open(TaskWindowComponent, {
-      width: '600px',
-      maxWidth: '95vw',
-      disableClose: true,
-      panelClass: 'custom-dialog-container',
-      autoFocus: false,
-      data: { groupId: this.projectId() }
-    });
-    ref.afterClosed().subscribe(result => { if (result) this.reloadTasks(); });
+    this.dialog
+      .open(TaskWindowComponent, {
+        width: '600px',
+        maxWidth: '95vw',
+        disableClose: true,
+        panelClass: 'custom-dialog-container',
+        autoFocus: false,
+        data: { groupId: this.projectId() }
+      })
+      .afterClosed()
+      .subscribe(result => { if (result) this.store.reload(true); });
   }
 
-  /** Opening a task goes to its own page; the dialog is only for quick edits. */
+  /** A task opens in Tasks, with its detail panel. */
   openTask(task: TaskDto) {
-    this.router.navigate(['/tasks', task.id]);
+    void this.router.navigate(['/tasks', task.id]);
   }
 
-  editTask(task: TaskDto) {
-    const ref = this.dialog.open(TaskWindowComponent, {
-      width: '600px',
-      maxWidth: '95vw',
-      disableClose: true,
-      panelClass: 'custom-dialog-container',
-      autoFocus: false,
-      data: { task }
-    });
-    ref.afterClosed().subscribe(result => { if (result) this.reloadTasks(); });
+  deleteTask(task: TaskDto) {
+    void this.store.remove(task);
   }
 
-  deleteTask(task: TaskDto, event?: Event) {
-    event?.stopPropagation();
-    if (!confirm(`Delete "${task.title}"?`)) return;
-
-    const snapshot = this.tasks();
-    this.tasks.update(list => list.filter(t => t.id !== task.id));
-    this.taskService.deleteTask(task.id).subscribe({
-      error: err => {
-        this.tasks.set(snapshot);
-        this.errorMessage.set(apiErrorMessage(err, 'Could not delete that task.'));
-      }
-    });
+  showDone() {
+    this.view.set('table');
+    this.statusFilter.set('Completed');
   }
 
   // ── Members ────────────────────────────────────────────────────────────────
@@ -332,20 +385,20 @@ export class ProjectPage implements OnInit {
     this.errorMessage.set('');
     this.groupService.addMember(this.projectId(), userId).subscribe({
       next: () => this.reloadMembers(),
-      error: err => this.errorMessage.set(apiErrorMessage(err, 'Could not add that member.'))
+      error: err => this.errorMessage.set(apiErrorMessage(err, t('Could not add that member.')))
     });
   }
 
   removeMember(member: MemberDto) {
-    if (!confirm(`Remove ${member.fullName} from this project?`)) return;
+    if (!confirm(t('Remove {name} from this project?', { name: member.fullName }))) return;
 
     const snapshot = this.members();
-    this.members.update(list => list.filter(m => m.userId !== member.userId));
+    this.members.update(list => list.filter(item => item.userId !== member.userId));
     this.groupService.removeMember(this.projectId(), member.userId).subscribe({
       next: () => this.reloadMembers(),
       error: err => {
         this.members.set(snapshot);
-        this.errorMessage.set(apiErrorMessage(err, 'Could not remove that member.'));
+        this.errorMessage.set(apiErrorMessage(err, t('Could not remove that member.')));
       }
     });
   }
@@ -354,129 +407,80 @@ export class ProjectPage implements OnInit {
 
   toggleHeaderEdit() {
     if (this.isEditingHeader()) this.resetHeaderDraft();
-    this.isEditingHeader.update(v => !v);
+    this.isEditingHeader.update(editing => !editing);
   }
 
   private resetHeaderDraft() {
-    const p = this.project();
-    this.headerDraft = {
-      name: p?.name ?? '',
-      description: p?.description ?? '',
-      color: p?.color || '#2ec4a0'
-    };
+    const project = this.project();
+    this.draftName.set(project?.name ?? '');
+    this.draftDescription.set(project?.description ?? '');
+    // A colour field cannot be empty: a project without a colour starts at the accent.
+    this.draftColor.set(project?.color || this.accentColor());
+    this.colorPicked = false;
+  }
+
+  pickColor(color: string) {
+    this.draftColor.set(color);
+    this.colorPicked = true;
+  }
+
+  /** The theme's accent as the browser reports it. */
+  private accentColor(): string {
+    return getComputedStyle(document.documentElement).getPropertyValue('--mq-accent').trim();
   }
 
   saveHeader() {
-    const p = this.project();
-    if (!p || !this.headerDraft.name.trim()) return;
+    const project = this.project();
+    const name = this.draftName().trim();
+    if (!project || !name) return;
 
-    const updated = { ...p, ...this.headerDraft };
+    const updated: GroupDto = {
+      ...project, name, description: this.draftDescription().trim(),
+      // A project with no colour keeps none unless one was actually chosen.
+      color: this.colorPicked ? this.draftColor() : project.color
+    };
     this.project.set(updated);
     this.isEditingHeader.set(false);
 
-    this.groupService.updateGroup(p.id, updated).subscribe({
+    this.groupService.updateGroup(project.id, updated).subscribe({
       error: err => {
-        this.project.set(p);
-        this.errorMessage.set(apiErrorMessage(err, 'Could not save the project.'));
+        this.project.set(project);
+        this.errorMessage.set(apiErrorMessage(err, t('Could not save the project.')));
       }
     });
   }
 
   deleteProject() {
-    const p = this.project();
-    if (!p) return;
-    if (!confirm(`Delete "${p.name}" and everything in it? This cannot be undone.`)) return;
+    const project = this.project();
+    if (!project) return;
+    if (!confirm(t('Delete “{name}” and everything in it? This cannot be undone.', { name: project.name }))) return;
 
-    this.groupService.deleteGroup(p.id).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
-      error: err => this.errorMessage.set(apiErrorMessage(err, 'Could not delete this project.'))
+    this.groupService.deleteGroup(project.id).subscribe({
+      next: () => void this.router.navigate(['/tasks']),
+      error: err => this.errorMessage.set(apiErrorMessage(err, t('Could not delete this project.')))
     });
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  private setSaving(id: string, saving: boolean) {
-    this.savingIds.update(current => {
-      const next = new Set(current);
-      if (saving) next.add(id); else next.delete(id);
-      return next;
-    });
-  }
-
-  isSaving(id: string): boolean { return this.savingIds().has(id); }
-
-  statusLabel(value: string): string {
-    return this.statuses.find(s => s.value === value)?.label ?? value ?? '—';
-  }
-
-  statusColor(value: string): string {
-    return this.statuses.find(s => s.value === value)?.color ?? '#8b8b8b';
-  }
-
-  priorityColor(priority: string): string {
-    switch (priority) {
-      case 'Critical': return '#ef4444';
-      case 'High':     return '#f4845f';
-      case 'Medium':   return '#f4a835';
-      default:         return '#2ec4a0';
-    }
-  }
-
-  projectColor(): string {
-    return this.project()?.color || '#2ec4a0';
-  }
-
-  initials(name: string): string {
-    return (name || '?').split(' ').filter(Boolean).slice(0, 2)
-      .map(word => word[0]).join('').toUpperCase();
-  }
-
-  avatarColor(key: string): string {
-    const palette = ['#7c8ef5', '#2ec4a0', '#f4a835', '#f4845f', '#ef4444', '#9b6dff'];
-    let hash = 0;
-    for (const char of key || '') hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-    return palette[hash % palette.length];
-  }
-
-  isOverdue(task: TaskDto): boolean {
-    if (!task.dueDate || task.status === 'Completed' || task.status === 'Cancelled') return false;
-    return new Date(task.dueDate).getTime() < Date.now();
-  }
-
-  formatDue(dateStr: string): string {
-    if (!dateStr) return '—';
-    const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return '—';
-
-    const days = Math.round(
-      (this.startOfDay(date) - this.startOfDay(new Date())) / 86_400_000
-    );
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Tomorrow';
-    if (days === -1) return 'Yesterday';
-    if (days < 0) return `${Math.abs(days)}d overdue`;
-
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  initialsOf(name: string | null | undefined): string {
+    return initials(name);
   }
 
   formatDate(dateStr: string): string {
-    if (!dateStr) return '—';
+    if (!dateStr) return '';
     const date = new Date(dateStr);
     return Number.isNaN(date.getTime())
-      ? '—'
-      : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      ? ''
+      : date.toLocaleDateString(locale(), { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
-  tagList(tags: string): string[] {
-    return (tags ?? '').split(',').map(t => t.trim()).filter(Boolean).slice(0, 3);
+  /** A priority's name in the interface language; the value sent to the API stays as it is. */
+  priorityName(priority: string): string {
+    return priorityLabel(priority);
   }
 
-  private startOfDay(date: Date): number {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  textOf(event: Event): string {
+    return (event.target as HTMLInputElement).value;
   }
-
-  trackById(_index: number, task: TaskDto): string { return task.id; }
-
-  /** memberStats() yields wrapper rows, so this keys off the nested member. */
-  trackByMember(_index: number, row: { member: MemberDto }): string { return row.member.userId; }
 }

@@ -1,0 +1,284 @@
+@use '../../../styles/tokens' as *;
+
+// The members of a group, laid over the messages of its chat window.
+:host {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  background: $mq-card-5;
+  line-height: normal;
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+  --avatar-ring: #{$mq-card-5};
+}
+
+p {
+  margin: 0;
+}
+
+.bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 4px;
+}
+
+.bar-title {
+  @include mq-eyebrow;
+}
+
+.icon-btn {
+  @include mq-icon-btn(32px, 9px);
+
+  &:hover:not(:disabled) { background: $mq-hover-2; }
+}
+
+.error {
+  flex-shrink: 0;
+  margin: 0 14px 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: $mq-late;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  @include mq-scroll;
+}
+
+// ── The group itself ──────────────────────────────────────────────────────────
+
+.about {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 8px;
+}
+
+.about-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.about-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: $mq-text;
+  overflow-wrap: anywhere;
+}
+
+.about-count {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.rename {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 4px 8px;
+
+  input {
+    @include mq-field(38px);
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+.primary { @include mq-btn-primary(34px, 0 14px, 9px); }
+.quiet { @include mq-btn-ghost(34px, 0 12px, 9px); }
+
+.danger-btn {
+  @include mq-btn-outline(34px, 0 14px, 9px);
+  border-color: color-mix(in srgb, var(--mq-late) 55%, transparent);
+  color: $mq-late;
+
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--mq-late) 12%, transparent); color: $mq-late; }
+}
+
+.add-row {
+  @include mq-btn-ghost(46px, 0 4px, 10px);
+  flex-shrink: 0;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  color: $mq-accent-text;
+
+  &:hover:not(:disabled) { background: $mq-hover-2; color: $mq-accent-text; }
+}
+
+.add-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px dashed $mq-accent-line;
+}
+
+// ── People ────────────────────────────────────────────────────────────────────
+
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 4px;
+}
+
+.person-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.person-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: $mq-text;
+
+  .name { @include mq-ellipsis; }
+}
+
+.you {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: $mq-chip;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: $mq-text-4;
+}
+
+.person-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: $mq-accent-text;
+}
+
+// What an admin can do with one person, under their row.
+.person-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 0 4px 6px;
+  margin-inline-start: 50px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: $mq-hover;
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+}
+
+.ask {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: $mq-text-3;
+}
+
+.person-actions .ask {
+  flex-basis: 100%;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: $mq-accent-text;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  @include mq-focus;
+
+  &.danger { color: $mq-late; }
+  &:disabled { opacity: .5; cursor: default; }
+}
+
+// ── Adding people ─────────────────────────────────────────────────────────────
+
+.adding {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 4px 12px 8px;
+
+  app-friend-picker { flex: 1; }
+}
+
+// ── Leaving, and the buttons of "Add people" ──────────────────────────────────
+
+.foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px 10px;
+  border-top: 1px solid $mq-line;
+
+  &.asking {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.foot-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.leave {
+  @include mq-btn-ghost(34px, 0 10px, 9px);
+  margin-inline-end: auto;
+  color: $mq-late;
+
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--mq-late) 12%, transparent); color: $mq-late; }
+}
+
+@include below($bp-tablet) {
+  .icon-btn { width: 40px; height: 40px; }
+  .primary, .quiet, .danger-btn, .leave { height: 44px; }
+  .rename input { height: 44px; font-size: 16px; }
+  .link { min-height: 32px; }
+}

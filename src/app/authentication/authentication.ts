@@ -1,49 +1,60 @@
-import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import {
-  ReactiveFormsModule, FormBuilder,
-  FormGroup, Validators
-} from '@angular/forms';
-import { Router, ActivatedRoute, RouterModule } from '@angular/router';
-import { AuthService } from '../core/services/auth.service';
-import { FlipClock } from '../flip-clock/flip-clock';
-import { finalize, Subscription } from 'rxjs';
-import { SocialAuthService, GoogleLoginProvider, SocialUser, GoogleSigninButtonDirective } from '@abacritt/angularx-social-login';
+  ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, PLATFORM_ID, inject, signal, viewChild
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { PLATFORM_ID } from '@angular/core';
-import { passwordValidators } from '../core/validators/password.validators';
-import { apiErrorMessage } from '../core/http/api-error';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { GoogleSigninButtonDirective, SocialAuthService, SocialUser } from '@abacritt/angularx-social-login';
+import { Subscription, finalize } from 'rxjs';
 
+import { isArabic, t } from '../core/i18n/i18n';
+import { TPipe } from '../core/i18n/t.pipe';
+import { AuthService } from '../core/services/auth.service';
+import { browserTimeZone } from '../core/utils/time-zone';
+import { passwordErrorMessage, passwordValidators } from '../core/validators/password.validators';
+import { AuthShell } from './auth-shell/auth-shell';
+import { authError, rawServerAnswer } from './server-text';
+
+/** Sign in and create an account (design/miqat-2.0: V2-SignIn). */
 @Component({
   selector: 'authentication',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, FlipClock, GoogleSigninButtonDirective],
+  imports: [ReactiveFormsModule, GoogleSigninButtonDirective, AuthShell, TPipe],
   templateUrl: './authentication.html',
-  styleUrl: './authentication.scss'
+  styleUrl: './authentication.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Authentication implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private cdr = inject(ChangeDetectorRef);
   private platformId = inject(PLATFORM_ID);
-  private socialAuthService = inject(SocialAuthService); // ✅ inject directly
+  private socialAuthService = inject(SocialAuthService);
 
-  activeForm: 'login' | 'register' = 'login';
-  isLoading = false;
+  /** Google's own button: its script draws it here, out of sight (see onGoogleLogin). */
+  private googleHost = viewChild<ElementRef<HTMLElement>>('googleHost');
+
+  // Signals, because the app runs without Zone.js: a plain field written from a
+  // subscription does not reach the screen.
+  readonly activeForm = signal<'login' | 'register'>('login');
+  readonly isLoading = signal(false);
   /**
    * Kept separate from `isLoading`. The email/password submit buttons bind to
    * `isLoading`, and Google's library can emit a restored credential on page load
    * with no user interaction - sharing one flag left both buttons permanently
    * disabled before the user clicked anything.
    */
-  isGoogleLoading = false;
-  errorMessage = '';
-  successMessage = '';
-  showPassword = false;
+  readonly isGoogleLoading = signal(false);
+  readonly errorMessage = signal('');
+  readonly successMessage = signal('');
+  readonly showPassword = signal(false);
+
+  /** The language Google draws its own button in: the interface's when that is Arabic, else its default. */
+  readonly googleLocale = isArabic() ? 'ar' : '';
+
   /** Where authGuard bounced the user from, so login can send them back. */
-  private returnUrl = '/dashboard';
+  private returnUrl = '/calendar';
   /** authState replays, so the same credential must not retrigger a sign-in. */
   private handledGoogleToken: string | null = null;
   private googleAuthSub?: Subscription;
@@ -54,25 +65,10 @@ export class Authentication implements OnInit, OnDestroy {
   ngOnInit(): void {
     const path = this.route.snapshot.routeConfig?.path;
     if (path === 'register') {
-      this.activeForm = 'register';
+      this.activeForm.set('register');
     } else if (path === 'login') {
-      this.activeForm = 'login';
+      this.activeForm.set('login');
     }
-
-    this.route.queryParams.subscribe(params => {
-      if (params['form'] === 'register') {
-        this.activeForm = 'register';
-      } else if (params['form'] === 'login') {
-        this.activeForm = 'login';
-      }
-      this.returnUrl = params['returnUrl'] || '/dashboard';
-
-      if (params['verified']) {
-        this.successMessage = 'Your email is verified. You can sign in now.';
-      } else if (params['reset']) {
-        this.successMessage = 'Your password has been reset. You can sign in now.';
-      }
-    });
 
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -82,11 +78,35 @@ export class Authentication implements OnInit, OnDestroy {
     this.registerForm = this.fb.group({
       fullName: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', passwordValidators],
-      phoneNumber: ['', [Validators.required]],
-      country: ['', [Validators.required]],
-      timeZone: ['', [Validators.required]]
+      password: ['', passwordValidators]
     });
+
+    this.route.queryParams.subscribe(params => {
+      if (params['form'] === 'register') {
+        this.activeForm.set('register');
+      } else if (params['form'] === 'login') {
+        this.activeForm.set('login');
+      }
+      this.returnUrl = params['returnUrl'] || '/calendar';
+
+      // "Get started" on the landing page hands over the address typed there.
+      if (params['email']) {
+        this.loginForm.patchValue({ email: params['email'] });
+        this.registerForm.patchValue({ email: params['email'] });
+      }
+
+      if (params['verified']) {
+        this.successMessage.set(t('Your email is verified. You can sign in now.'));
+      } else if (params['reset']) {
+        this.successMessage.set(t('Your password has been reset. You can sign in now.'));
+      }
+    });
+
+    // Someone who is already signed in has nothing to do here.
+    if (this.authService.isLoggedIn()) {
+      this.router.navigateByUrl(this.returnUrl, { replaceUrl: true });
+      return;
+    }
 
     if (isPlatformBrowser(this.platformId)) {
       this.googleAuthSub = this.socialAuthService.authState.subscribe((user: SocialUser) => {
@@ -102,15 +122,20 @@ export class Authentication implements OnInit, OnDestroy {
   }
 
   switchForm(form: 'login' | 'register'): void {
-    this.activeForm = form;
-    this.errorMessage = '';
-    this.successMessage = '';
+    this.activeForm.set(form);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.showPassword.set(false);
     this.loginForm.reset();
     this.registerForm.reset();
   }
 
   togglePassword(): void {
-    this.showPassword = !this.showPassword;
+    this.showPassword.update(shown => !shown);
+  }
+
+  forgotPassword(): void {
+    this.router.navigate(['/authentication/forgot-password']);
   }
 
   onLogin(): void {
@@ -118,31 +143,27 @@ export class Authentication implements OnInit, OnDestroy {
       this.loginForm.markAllAsTouched();
       return;
     }
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
     this.authService.login(this.loginForm.value).pipe(
-      finalize(() => {
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      })
+      finalize(() => this.isLoading.set(false))
     ).subscribe({
       next: () => {
         // A 200 with no usable token would otherwise navigate to a dashboard that
         // 401s on every request. Fail loudly here instead.
         if (!this.authService.isLoggedIn()) {
-          this.errorMessage = 'Login succeeded but no session token was returned. Please try again.';
+          this.errorMessage.set(t('Login succeeded but no session token was returned. Please try again.'));
           return;
         }
         this.router.navigateByUrl(this.returnUrl);
       },
       error: (err) => {
-        const message = this.extractErrorMessage(err, 'Login failed. Please try again.');
-
         // The account exists but its email was never confirmed. The code can only
         // be entered (or asked for again) on the OTP screen, so an error message
         // here was a dead end: the user could neither sign in nor verify.
-        if (err?.status === 401 && /not verified/i.test(message)) {
+        // The check reads the API's own English, whatever language the screen is in.
+        if (err?.status === 401 && /not verified/i.test(rawServerAnswer(err))) {
           this.router.navigate(['/authentication/verify-otp'], {
             queryParams: {
               email: this.loginForm.value.email,
@@ -153,7 +174,7 @@ export class Authentication implements OnInit, OnDestroy {
           return;
         }
 
-        this.errorMessage = message;
+        this.errorMessage.set(authError(err, 'Login failed. Please try again.'));
       }
     });
   }
@@ -163,23 +184,24 @@ export class Authentication implements OnInit, OnDestroy {
       this.registerForm.markAllAsTouched();
       return;
     }
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
-    this.authService.register(this.registerForm.value).pipe(
-      finalize(() => {
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      })
+    const { fullName, email, password } = this.registerForm.value;
+
+    // The form asks for a name, an address and a password. The time zone is the
+    // device's, and is confirmed on "Set up your week"; phone and country are
+    // optional and live in Settings.
+    this.authService.register({
+      fullName, email, password, phoneNumber: '', country: '', timeZone: browserTimeZone()
+    }).pipe(
+      finalize(() => this.isLoading.set(false))
     ).subscribe({
       next: () => {
         // Route is 'authentication/verify-otp' — '/verify-otp' matches nothing and
         // used to drop registration into a router error.
         this.router.navigate(['/authentication/verify-otp'], {
-          queryParams: {
-            email: this.registerForm.value.email,
-            purpose: 'EmailVerification'
-          }
+          queryParams: { email, purpose: 'EmailVerification' }
         });
       },
       error: (err) => {
@@ -189,61 +211,54 @@ export class Authentication implements OnInit, OnDestroy {
         // it would be a dead end — send them where the button is.
         if (err?.status === 502) {
           this.router.navigate(['/authentication/verify-otp'], {
-            queryParams: {
-              email: this.registerForm.value.email,
-              purpose: 'EmailVerification',
-              sendFailed: '1'
-            }
+            queryParams: { email, purpose: 'EmailVerification', sendFailed: '1' }
           });
           return;
         }
-        this.errorMessage = this.extractErrorMessage(err, 'Registration failed. Please try again.');
-        console.error('Registration error details:', err);
+        this.errorMessage.set(authError(err, 'Registration failed. Please try again.'));
       }
     });
   }
 
+  /**
+   * "Continue with Google". Only Google's own button can start its sign-in, and that
+   * button cannot be styled, so it is kept out of sight and pressed from here. The
+   * credential comes back through `authState`, as it always did.
+   */
   onGoogleLogin(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      // Explicit user action, so allow a retry of a token that already failed.
-      // Passive re-emissions still can't loop, because only this path clears it.
-      this.handledGoogleToken = null;
-      this.socialAuthService.signIn(GoogleLoginProvider.PROVIDER_ID)
-        .then((user: SocialUser) => {
-          if (user && user.idToken) {
-            this.handleGoogleLogin(user.idToken);
-          }
-        })
-        .catch((err: any) => {
-          console.error('Google Sign In Error', err);
-          this.errorMessage = 'Google sign-in failed. Please try again.';
-          this.cdr.detectChanges();
-        });
+    // Explicit user action, so allow a retry of a token that already failed.
+    // Passive re-emissions still can't loop, because only this path clears it.
+    this.handledGoogleToken = null;
+
+    const button = this.googleHost()?.nativeElement.querySelector<HTMLElement>('div[role="button"]');
+    if (!button) {
+      this.errorMessage.set(t('Google sign-in is not available right now. Use your email and password instead.'));
+      return;
     }
+    this.errorMessage.set('');
+    button.click();
   }
 
   private handleGoogleLogin(token: string) {
     // authState replays the last credential to every new subscriber and re-emits
     // when Google restores a session, so the same token can arrive several times.
-    if (this.isGoogleLoading || this.handledGoogleToken === token) return;
+    if (this.isGoogleLoading() || this.handledGoogleToken === token) return;
     this.handledGoogleToken = token;
 
-    this.isGoogleLoading = true;
-    this.errorMessage = '';
+    this.isGoogleLoading.set(true);
+    this.errorMessage.set('');
     this.authService.googleLogin({ token }).pipe(
-      finalize(() => { this.isGoogleLoading = false; this.cdr.detectChanges(); })
+      finalize(() => this.isGoogleLoading.set(false))
     ).subscribe({
       next: () => {
         if (!this.authService.isLoggedIn()) {
-          this.errorMessage = 'Google login succeeded but no session token was returned.';
-          this.cdr.detectChanges();
+          this.errorMessage.set(t('Google login succeeded but no session token was returned.'));
           return;
         }
         this.router.navigateByUrl(this.returnUrl);
       },
       error: (err) => {
-        this.errorMessage = this.extractErrorMessage(err, 'Google login failed.');
-        this.cdr.detectChanges();
+        this.errorMessage.set(authError(err, 'Google login failed.'));
       }
     });
   }
@@ -253,7 +268,8 @@ export class Authentication implements OnInit, OnDestroy {
     return !!(control && control.invalid && control.touched);
   }
 
-  private extractErrorMessage(err: any, defaultMsg: string): string {
-    return apiErrorMessage(err, defaultMsg);
+  /** What is wrong with the password typed on the sign-up form. */
+  passwordError(): string {
+    return passwordErrorMessage(this.registerForm.get('password')?.errors ?? null);
   }
 }

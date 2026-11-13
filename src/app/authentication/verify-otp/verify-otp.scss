@@ -1,2 +1,67 @@
-// Page layout (including the one-time-code boxes) is shared with the other auth pages.
-@use '../auth-layout';
+@use '../../../styles/tokens' as *;
+@use '../auth-layout' as *;
+
+@include auth-form;
+
+.step { gap: 22px; }
+
+.head p { line-height: 1.6; }
+
+.code {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    float: none;
+    width: auto;
+    margin: 0;
+    padding: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: normal;
+    color: $mq-text-3;
+  }
+}
+
+.otp-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.otp-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 58px;
+  padding: 1px 2px;
+  border-radius: 12px;
+  border: 1px solid $mq-line-4;
+  background: $mq-card-2;
+  color: $mq-text;
+  font-family: $mq-serif;
+  font-size: 30px;
+  text-align: center;
+  transition: border-color $mq-t-press $mq-ease-quick, box-shadow $mq-t-press $mq-ease-quick;
+
+  &:focus {
+    outline: none;
+    border: 1.5px solid $mq-accent-text;
+    box-shadow: 0 0 0 4px color-mix(in srgb, #{$mq-accent} 15%, transparent);
+  }
+}
+
+.after {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+  color: $mq-muted;
+
+  .quiet-link { font-size: 13px; }
+}

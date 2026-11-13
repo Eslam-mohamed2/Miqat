@@ -1,248 +1,212 @@
 @use '../../../../styles/tokens' as *;
 
+
+// The task dialog. No design file draws it, so it takes its look from the design's
+// dialogs (V2-QuickAdd): a serif title, quiet labels, fields on the field surface,
+// and the accent only on the action.
+:host {
+  display: block;
+}
+
 .task-window {
-  // Fills the dialog panel instead of setting its own width. It used to be
-  // min(550px, 95vw) inside a 600px panel, which left ~50px of dead space and
-  // made the whole dialog look shifted off-centre.
+  // Fills the dialog panel instead of setting its own width.
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-height: min(88dvh, 760px);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border-radius: 20px;
-
-  // Header stays put and only the form body scrolls, so the Cancel/Create
-  // buttons remain reachable on short screens.
-  display: flex;
-  flex-direction: column;
+  max-height: min(88dvh, 780px);
+  margin: 0;
+  background: $mq-card-2;
+  color: $mq-text;
+  font-size: 13px;
+  // The header and the buttons stay put and only the fields scroll, so
+  // "Cancel" and "Create task" remain reachable on short screens.
   overflow: hidden;
-  font-family: "Outfit", "Inter", sans-serif;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.05));
-  border-radius: 20px !important;
 
-  @supports not (max-height: 88dvh) { max-height: min(88vh, 760px); }
-
-  .glass-header { flex-shrink: 0; }
-
-  .modal-body {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  @at-root body.dark-mode & {
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .form-control,
-  .form-select {
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle, #e0e0e0);
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-    background-color: var(--bg-app);
-    color: var(--text-primary);
-
-    @at-root body.dark-mode & {
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    &:focus {
-      border-color: #2ec4a0;
-      box-shadow: 0 0 0 4px rgba(46, 196, 160, 0.15);
-      background-color: var(--bg-card);
-      outline: none;
-    }
-  }
-
-  .form-label {
-    font-size: 0.82rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted, #4a5c59);
-    margin-bottom: 0.5rem;
-  }
-
-  .bg-image {
-    /* background: var(--font-Main); */
-    color: white !important;
-    border: none;
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
-    background-color: rgb(69 211 178);
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(46, 196, 160, 0.35);
-      color: white;
-    }
-  }
-
-  .btn-light {
-    background-color: var(--bg-app);
-    border: 1px solid var(--border-subtle, #e0e0e0);
-    color: var(--text-primary);
-    transition: background-color 0.2s;
-
-    @at-root body.dark-mode & {
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    &:hover {
-      background-color: rgba(128, 128, 128, 0.1);
-    }
-  }
+  @supports not (max-height: 88dvh) { max-height: min(88vh, 780px); }
 }
 
-@include below($bp-tablet-sm) {
-  .task-window {
-    width: 100%;
-    max-width: 100%;
-    max-height: 88dvh;
-    border-radius: 16px !important;
-
-    .glass-header {
-      padding: 1rem !important;
-    }
-
-    .modal-body {
-      padding: 1rem !important;
-    }
-
-    .d-flex.justify-content-end {
-      flex-direction: column-reverse;
-      gap: 0.75rem;
-
-      .btn {
-        width: 100%;
-        margin: 0 !important;
-      }
-    }
-  }
-}
-
-
-
-
-// ── Discussion thread ───────────────────────────────────────────────────────
-.comments-section {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-subtle, #e5e7eb);
-}
-
-.comments-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 0.6rem;
-
-  .comments-count {
-    background: var(--bg-card-hover);
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 700;
-    border-radius: 20px;
-    padding: 1px 8px;
-  }
-}
-
-.comments-hint {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin: 0 0 0.5rem;
-}
-
-.comment-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  // The thread scrolls on its own so a long discussion cannot push the
-  // composer and the form's buttons out of the dialog.
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.comment-row {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.comment-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+// ── Heading: what this is, and the title typed large ────────────────────────
+.window-head {
   flex-shrink: 0;
-  object-fit: cover;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 14px 16px 22px;
+  border-bottom: 1px solid $mq-line-b;
 
-  &.initials {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--teal-glow);
-    color: var(--teal-primary);
-    font-size: 12px;
-    font-weight: 800;
-  }
+  :host-context([dir='rtl']) & { padding: 18px 22px 16px 14px; }
 }
 
-.comment-body {
+.head-text {
   flex: 1;
   min-width: 0;
-  background: var(--bg-app);
-  border: 1px solid var(--border-subtle, #e5e7eb);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eyebrow {
+  @include mq-eyebrow;
+}
+
+.title-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: $mq-text;
+  font-family: $mq-serif;
+  font-size: 30px;
+  line-height: 1.15;
+  transition: border-color $mq-t-press $mq-ease-quick;
+
+  &::placeholder { color: $mq-placeholder; opacity: 1; }
+  &:focus { outline: none; }
+  &:focus-visible { border-bottom-color: $mq-accent; }
+  &.invalid { border-bottom-color: $mq-late; }
+}
+
+.field-error,
+.error {
+  font-size: 12px;
+  font-weight: 600;
+  color: $mq-late;
+}
+
+.error {
+  padding: 10px 12px;
   border-radius: 10px;
-  padding: 8px 10px;
+  background: color-mix(in srgb, #{$mq-late} 10%, transparent);
+  border: 1px solid color-mix(in srgb, #{$mq-late} 30%, transparent);
 }
 
-.comment-head {
+.icon-btn {
+  @include mq-icon-btn;
+
+  @include touch {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.window-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 22px;
+  @include mq-scroll;
+}
+
+.window-foot {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid $mq-line-b;
+}
 
-  strong { font-size: 0.82rem; color: var(--text-primary); }
+.btn-cancel {
+  @include mq-btn-outline;
+}
 
-  .comment-time {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    flex: 1;
+.btn-save {
+  @include mq-btn-primary;
+  min-width: 124px;
+}
+
+// ── Fields ──────────────────────────────────────────────────────────────────
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+
+  @include below($bp-phone-lg) { grid-template-columns: minmax(0, 1fr); }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  > label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: $mq-text-4;
   }
 
-  .comment-delete {
-    background: transparent;
-    border: 0;
-    color: var(--text-muted);
+  .optional { color: $mq-muted; }
+}
+
+.date-time {
+  display: grid;
+  // The time field is wide enough for "11:30 PM" on a 12-hour clock.
+  grid-template-columns: minmax(0, 1fr) 122px;
+  gap: 6px;
+}
+
+input[type='text']:not(.title-input),
+input[type='date'],
+input[type='time'],
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  // Native date and time pickers follow the theme.
+  color-scheme: inherit;
+  @include mq-field;
+
+  // 16px keeps iOS from zooming the page when a field takes focus.
+  @include touch {
+    height: 44px;
     font-size: 16px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-
-    &:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
   }
 }
 
-.comment-text {
-  margin: 3px 0 0;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
+select {
+  cursor: pointer;
 }
 
-.comment-composer {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  margin-top: 0.75rem;
+textarea {
+  height: auto;
+  min-height: 76px;
+  padding: 9px 12px;
+  line-height: 1.5;
+  resize: vertical;
 
-  textarea { flex: 1; resize: vertical; min-height: 44px; }
+  @include touch { height: auto; }
+}
+
+.hint {
+  margin-top: -8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: $mq-muted;
+}
+
+// ── The task's comments, under the fields ───────────────────────────────────
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid $mq-line-b;
+}
+
+.open-full {
+  align-self: flex-start;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $mq-accent-text;
+  border-radius: 4px;
+  @include mq-focus;
 }

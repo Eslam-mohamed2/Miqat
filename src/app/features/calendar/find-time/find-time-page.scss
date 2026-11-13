@@ -1,0 +1,652 @@
+@use '../../../../styles/tokens' as *;
+@use '../calendar' as cal;
+
+// design/miqat-2.0: V2-FindTime / L-FindTime.
+:host {
+  @include cal.vars;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: $mq-bg;
+  color: $mq-text;
+}
+
+:host-context([data-theme='light']) {
+  @include cal.vars-light;
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 22px;
+  padding: 14px 24px;
+  border-bottom: 1px solid $mq-line;
+}
+
+// 36px plus its border, as the design file draws it.
+.back {
+  @include mq-icon-btn(38px);
+  border: 1px solid $mq-line-2;
+}
+
+.heading {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: $mq-accent-text;
+}
+
+// The design's 30px title line, as a field. The padding keeps the letters' tails
+// from being cut and the margin takes it back, so the header keeps its height.
+.title {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  margin-block: -4px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: $mq-text;
+  font-family: $mq-serif;
+  font-size: 30px;
+  line-height: 30px;
+  transition: box-shadow $mq-t-press $mq-ease-quick;
+
+  &::placeholder { color: $mq-placeholder; opacity: 1; }
+  &:focus { outline: none; }
+  &:focus-visible { box-shadow: 0 1px 0 $mq-accent; }
+}
+
+.durations {
+  @include mq-seg;
+  margin-inline-start: auto;
+
+  button {
+    @include mq-seg-item(30px, 0 12px);
+    font-weight: 600;
+  }
+}
+
+.head-note {
+  font-size: 12.5px;
+  color: $mq-muted;
+}
+
+// ── Columns ─────────────────────────────────────────────────────────────────
+.body {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.main {
+  flex: 999 1 640px;
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 24px;
+}
+
+// ── Days ────────────────────────────────────────────────────────────────────
+.days {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  height: 84px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid $mq-line-b;
+  background: $mq-card;
+  color: $mq-text;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color $mq-t-press $mq-ease-quick, background $mq-t-change $mq-ease-calm;
+  @include mq-focus;
+
+  &:hover { border-color: $mq-line-5; }
+
+  &[aria-selected='true'] {
+    border-color: $mq-accent-text;
+    background: color-mix(in srgb, #{$mq-accent} 8%, #{$mq-card});
+  }
+}
+
+.day-dow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: $mq-muted;
+}
+
+.day-num {
+  font-family: $mq-serif;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.day-count {
+  max-width: 100%;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: $mq-accent-text;
+  @include mq-ellipsis;
+
+  &.quiet { color: $mq-muted; }
+}
+
+// ── Who is busy when ────────────────────────────────────────────────────────
+.board {
+  overflow-x: auto;
+  border: 1px solid $mq-line;
+  border-radius: 16px;
+  background: $mq-canvas;
+  transition: opacity $mq-t-change $mq-ease-calm;
+  @include mq-scroll;
+
+  // While the times are looked up, what is shown is the last answer.
+  &.loading { opacity: .6; }
+}
+
+.board-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 760px;
+  padding: 14px 16px 16px;
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+
+  &:first-child { align-items: flex-end; }
+
+  &.everyone {
+    padding-top: 6px;
+    border-top: 1px solid $mq-line;
+  }
+}
+
+.who {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 210px;
+  padding-inline-end: 12px;
+
+  &:hover .remove,
+  &:focus-within .remove { opacity: 1; }
+}
+
+.who-all {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.avatar {
+  @include mq-avatar(30px);
+  font-size: 10.5px;
+  object-fit: cover;
+}
+
+.who-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.who-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  @include mq-ellipsis;
+}
+
+.who-note {
+  font-size: 11px;
+  color: $mq-muted;
+  @include mq-ellipsis;
+
+  // An email address reads left to right and still sits under the name.
+  &.mq-ltr { @include mq-rtl { text-align: right; } }
+}
+
+.all-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: $mq-accent-text;
+}
+
+.remove {
+  @include mq-icon-btn(24px, 7px);
+  opacity: 0;
+  transition: opacity $mq-t-press $mq-ease-quick;
+
+  &:hover:not(:disabled) { color: $mq-late; }
+  &:focus-visible { opacity: 1; }
+
+  @include touch {
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+  }
+}
+
+.ticks {
+  position: relative;
+  flex: 1;
+  height: 16px;
+}
+
+.tick {
+  position: absolute;
+  bottom: 0;
+  font-size: 10.5px;
+  color: $mq-muted;
+  white-space: nowrap;
+  transform: translateX(-50%);
+
+  // The hour sits centred on its mark from either side.
+  @include mq-rtl { transform: translateX(50%); }
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  height: 40px;
+  border-radius: 8px;
+  background: $mq-field;
+  overflow: hidden;
+}
+
+.off,
+.busy,
+.free,
+.prayer,
+.band,
+.chip {
+  position: absolute;
+}
+
+.off {
+  top: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(135deg, #{$mq-line-b} 0 4px, #{$mq-field} 4px 8px);
+}
+
+.busy {
+  top: 6px;
+  bottom: 6px;
+  border-radius: 6px;
+  background: $mq-line-5;
+}
+
+.free {
+  top: 8px;
+  bottom: 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #{$mq-accent} 26%, transparent);
+}
+
+.prayer {
+  top: 0;
+  bottom: 0;
+  border-inline-start: 1px dotted $mq-accent-text;
+  opacity: .7;
+}
+
+.band {
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  background: color-mix(in srgb, #{$mq-accent} 14%, transparent);
+  border-inline: 1px solid $mq-accent-text;
+  transition: inset-inline-start $mq-t-arrive $mq-ease-calm, width $mq-t-arrive $mq-ease-calm;
+}
+
+.chip {
+  top: 6px;
+  bottom: 6px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // 84px with a 24-hour label, as designed; a 12-hour label needs more.
+  min-width: max-content;
+  padding: 0 9px;
+  border-radius: 7px;
+  background: $mq-accent;
+  color: $mq-on-accent;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: inset-inline-start $mq-t-arrive $mq-ease-calm, width $mq-t-arrive $mq-ease-calm;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 6px 0 0;
+  padding-inline-start: 210px;
+  font-size: 11.5px;
+  color: $mq-muted;
+
+  > span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.key {
+  width: 14px;
+  height: 8px;
+  border-radius: 3px;
+}
+
+.key-busy { background: $mq-line-5; }
+.key-off { background: repeating-linear-gradient(135deg, #{$mq-line-b} 0 3px, #{$mq-field} 3px 6px); }
+
+.key-prayer {
+  width: 1px;
+  height: 12px;
+  border-radius: 0;
+  border-inline-start: 1px dotted $mq-accent-text;
+}
+
+// ── Add a person ────────────────────────────────────────────────────────────
+.add {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px dashed $mq-line-3;
+  transition: border-color $mq-t-press $mq-ease-quick;
+
+  &:focus-within { border-color: $mq-accent-text; }
+
+  > svg { flex-shrink: 0; color: $mq-muted; }
+
+  input {
+    flex: 1;
+    min-width: 180px;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: $mq-text;
+    font: inherit;
+    font-size: 13px;
+
+    &::placeholder { color: $mq-placeholder; opacity: 1; }
+
+    @include touch { min-height: 32px; font-size: 16px; }
+  }
+}
+
+.add-note {
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+.add-none {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+.people-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  inset-inline-start: 0;
+  z-index: 5;
+  width: min(360px, 100%);
+}
+
+.person-option {
+  min-height: 46px;
+}
+
+// ── Best times ──────────────────────────────────────────────────────────────
+.side {
+  flex: 1 1 340px;
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 20px;
+  border-inline-start: 1px solid $mq-line;
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid $mq-line-b;
+  background: $mq-card;
+  color: $mq-text;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color $mq-t-press $mq-ease-quick, background $mq-t-change $mq-ease-calm;
+  @include mq-focus;
+
+  &:hover { border-color: $mq-line-5; }
+
+  &[aria-pressed='true'] {
+    border-color: $mq-accent-text;
+    background: color-mix(in srgb, #{$mq-accent} 8%, #{$mq-card});
+  }
+}
+
+.option-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.option-when {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.rank {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: $mq-line;
+  color: $mq-text-3;
+  font-size: 10.5px;
+  font-weight: 700;
+
+  &.best {
+    background: $mq-accent;
+    color: $mq-on-accent;
+  }
+}
+
+.option-why {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: $mq-muted;
+}
+
+.none,
+.error {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: $mq-text-3;
+}
+
+.error { color: $mq-late; }
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  span {
+    height: 62px;
+    border-radius: 12px;
+    background: $mq-card;
+    border: 1px solid $mq-line-b;
+    animation: breathe 1.6s ease-in-out infinite;
+
+    &:nth-child(2) { animation-delay: .2s; }
+    &:nth-child(3) { animation-delay: .4s; }
+  }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: .45; }
+  50% { opacity: .9; }
+}
+
+.send {
+  @include mq-btn-primary(44px, 0 14px, 11px);
+  font-size: 14px;
+}
+
+.share {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: $mq-field;
+  border: 1px solid $mq-line-b;
+}
+
+.share-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.share-title {
+  @include mq-eyebrow;
+}
+
+.copy {
+  @include mq-btn-outline(28px, 0 10px, 7px);
+  font-size: 12px;
+
+  @include touch { height: 40px; }
+}
+
+.share-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: $mq-text-3;
+  white-space: pre-line;
+}
+
+// A booking link needs a public page the API does not have: drawn as designed, switched off.
+.booking {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid $mq-line-2;
+
+  svg { flex-shrink: 0; color: $mq-muted; opacity: .5; }
+}
+
+.booking-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.booking-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: $mq-text-3;
+}
+
+.booking-state {
+  font-size: 12px;
+  line-height: 1.45;
+  color: $mq-muted;
+}
+
+// ── Narrow pages ────────────────────────────────────────────────────────────
+@include below($bp-laptop) {
+  .side { border-inline-start: 0; border-top: 1px solid $mq-line; }
+}
+
+@include below($bp-tablet) {
+  .head { padding: 14px 16px; }
+  .main { padding: 18px 16px; }
+  .side { padding: 18px 16px; }
+
+  .durations {
+    margin-inline-start: 0;
+
+    button { height: 38px; }
+  }
+
+  .back {
+    width: 44px;
+    height: 44px;
+  }
+
+  // Five days do not fit side by side on a phone: they scroll.
+  .days {
+    grid-template-columns: repeat(5, minmax(96px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+}

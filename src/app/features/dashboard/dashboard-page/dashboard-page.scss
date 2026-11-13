@@ -1,218 +1,666 @@
 @use '../../../../styles/tokens' as *;
 
-.page-header {
+// "Plan my day" (design/miqat-2.0: V2-PlanDay).
+
+:host {
+  // A suggested block is hatched in the accent: fainter on the dark theme than on the light one.
+  --plan-hatch-a: 13%;
+  --plan-hatch-b: 5%;
+  --plan-dash: color-mix(in srgb, #{$mq-accent} 60%, transparent);
+  --plan-prayer: color-mix(in srgb, #{$mq-accent} 55%, transparent);
+  // The time in a meeting block: its colour mixed toward the text colour.
+  --plan-time-mix: 70%;
+
+  display: block;
+  min-height: 100%;
+}
+
+:host-context(html[data-theme='light']) {
+  --plan-hatch-a: 26%;
+  --plan-hatch-b: 10%;
+  --plan-dash: #{$mq-accent-text};
+  --plan-prayer: #{$mq-accent-text};
+  --plan-time-mix: 45%;
+}
+
+@keyframes plan-breathe { 0%, 100% { opacity: .45; } 50% { opacity: .9; } }
+
+.plan {
+  min-height: 100%;
   display: flex;
-  justify-content: space-between;
-  padding-bottom: 24px;
-
-  .header-left {
-    .greeting {
-      font-size: 28px;
-      font-weight: 700;
-      color: $text-primary;
-    }
-    .subtitle {
-      font-size: 14px;
-      color: $text-secondary;
-      margin-top: 4px;
-    }
-  }
-
-  .header-right {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 10px;
-
-    mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-
-    .btn-ghost:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
-}
-
-// The range button's menu.
-.range-wrap {
-  position: relative;
-}
-
-.range-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 30;
-  min-width: 180px;
-  padding: 6px;
-  background: $bg-card;
-  border: 1px solid $border-input;
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
-}
-
-.range-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 8px 10px;
-  background: none;
-  border: 0;
-  border-radius: 6px;
+  flex-direction: column;
+  background: $mq-bg;
+  color: $mq-text;
   font-size: 13px;
-  text-align: left;
-  color: $text-primary;
-  cursor: pointer;
+}
 
-  mat-icon {
-    color: $teal-primary;
+// ── Header ──────────────────────────────────────────────────────────────────
+.plan-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 28px;
+  padding: 14px 24px;
+  border-bottom: 1px solid $mq-line;
+}
+
+.back {
+  flex-shrink: 0;
+  // 36px inside its hairline, as the design measures it.
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid $mq-line-2;
+  color: $mq-text-4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background $mq-t-press $mq-ease-quick, color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: $mq-hover; color: $mq-text; }
+}
+
+.head-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  h1 { @include mq-serif(30px, 1); }
+}
+
+.head-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: $mq-accent-text;
+}
+
+.steps {
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding-block: 0;
+  padding-inline: 6px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $mq-muted;
+  transition: background $mq-t-change $mq-ease-calm, color $mq-t-change $mq-ease-calm;
+
+  &.done { color: $mq-text-3; }
+  &.now { background: $mq-selected; color: $mq-text; }
+}
+
+.step-dot {
+  // 20px inside its hairline; a step that is done or current has no hairline.
+  width: 20px;
+  height: 20px;
+  box-sizing: content-box;
+  border-radius: 50%;
+  border: 1px solid $mq-line-3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: $mq-muted;
+  transition: background $mq-t-change $mq-ease-calm, color $mq-t-change $mq-ease-calm;
+
+  .done & {
+    border: 0;
+    background: color-mix(in srgb, #{$mq-accent} 20%, transparent);
+    color: $mq-accent-text;
   }
 
-  &:hover,
-  &.active {
-    background: $bg-card-hover;
+  .now & {
+    border: 0;
+    background: $mq-accent;
+    color: $mq-on-accent;
   }
 }
 
-// ── At a glance ─────────────────────────────────────────────────────────────
-.glance-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+.commit {
+  @include mq-btn-primary(40px, 0 18px, 10px);
+  font-size: 13.5px;
 }
 
-.glance-tile {
+// ── Columns ─────────────────────────────────────────────────────────────────
+.plan-body {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: normal;
+}
+
+.choose {
+  flex: 1 1 340px;
+  min-width: 0;
+  box-sizing: border-box;
+  border-inline-end: 1px solid $mq-line;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.col-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  span { font-size: 12.5px; color: $mq-muted; }
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-title {
+  padding: 0 2px;
+  @include mq-eyebrow(11px);
+
+  &.late { color: $mq-late; }
+}
+
+.pick {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
-  padding: 12px 16px;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-  background: $bg-card;
-  font: inherit;
-  text-align: left;
+  margin: 0;
+  padding: 10px;
+  border-radius: 11px;
+  border: 1px solid $mq-line;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background $mq-t-press $mq-ease-quick;
 
-  &:hover {
-    background: $bg-card-hover;
-    border-color: $border-input;
-  }
+  &:hover { background: $mq-card-5; }
 
-  &:focus-visible {
-    outline: 2px solid $teal-primary;
-    outline-offset: 2px;
+  input {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: $mq-accent;
+    // The design's empty box is white on both themes.
+    color-scheme: light;
+    cursor: pointer;
+    @include mq-focus;
   }
 }
 
-.glance-icon {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: $teal-glow;
-  color: $text-active;
-
-  mat-icon { font-size: 20px; width: 20px; height: 20px; }
-}
-
-.glance-text {
+.pick-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 3px;
 }
 
-.glance-value {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.15;
-  color: $text-primary;
-  font-variant-numeric: tabular-nums;
+.pick-title {
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
-.glance-label {
+.pick-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+.pick-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--tone, #{$mq-line-6});
+}
+
+.pick-due {
+  margin-inline-start: 6px;
+  font-weight: 600;
+  color: $mq-muted;
+
+  &.late { color: $mq-late; }
+}
+
+.pick-est {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: $mq-text-3;
+  background: $mq-hover;
+  border-radius: 6px;
+  padding: 3px 7px;
+
+  // No estimate on the task: the half hour is an assumption, and looks like one.
+  &.assumed {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px $mq-line-3;
+    color: $mq-muted;
+  }
+}
+
+.quiet-btn {
+  @include mq-btn-ghost(32px, 0 10px, 8px);
+  align-self: flex-start;
+  font-size: 12px;
+}
+
+.quiet-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: $mq-accent-text;
+  @include mq-focus;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   font-size: 12.5px;
-  color: $text-secondary;
+  line-height: 1.5;
+  color: $mq-muted;
+}
+
+// While the day loads: the shapes of the rows, breathing.
+.wait {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  i {
+    height: 56px;
+    border-radius: 11px;
+    background: $mq-hover;
+    animation: plan-breathe 1.6s ease-in-out infinite;
+
+    &:nth-child(2) { animation-delay: .15s; }
+    &:nth-child(3) { animation-delay: .3s; }
+    &:nth-child(4) { animation-delay: .45s; }
+  }
+
+  &.brief i {
+    height: 12px;
+    border-radius: 6px;
+
+    &:nth-child(2) { width: 70%; }
+  }
+}
+
+// ── The day ─────────────────────────────────────────────────────────────────
+.day {
+  flex: 999 1 460px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.day-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+
+  > span { font-size: 12px; color: $mq-muted; }
+}
+
+.shuffle {
+  @include mq-btn-outline(34px, 0 12px, 9px);
+  margin-inline-start: auto;
+  font-size: 12.5px;
+}
+
+.timeline {
+  display: flex;
+  background: $mq-canvas;
+  border: 1px solid $mq-line;
+  border-radius: 16px;
+  padding-block: 12px;
+  padding-inline: 0 12px;
+}
+
+.hours {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+
+  span {
+    position: absolute;
+    inset-inline-end: 10px;
+    font-size: 10.5px;
+    color: $mq-muted;
+    white-space: nowrap;
+  }
+}
+
+.grid {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid $mq-hover;
+}
+
+.prayer-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dotted var(--plan-prayer);
+  z-index: 3;
+}
+
+.prayer-tag {
+  position: absolute;
+  inset-inline-end: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: $mq-accent-text;
+  background: $mq-canvas;
+  border-radius: 5px;
+  padding: 1px 6px;
+  z-index: 4;
   white-space: nowrap;
+}
+
+.block {
+  // Room kept on the far side for the prayer-time tags.
+  --room: 98px;
+
+  position: absolute;
+  inset-inline: 6px var(--room);
+  box-sizing: border-box;
+  padding: 0 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
+  z-index: 2;
+  transition: top $mq-t-arrive $mq-ease-calm;
 
-// Overdue is the one number that asks for action, so it is the one that is red -
-// and only while there is something overdue.
-.glance-tile[data-tone='warn']:not(.zero) {
-  .glance-value { color: $text-danger; }
-  .glance-icon {
-    background: color-mix(in srgb, var(--text-danger) 14%, transparent);
-    color: $text-danger;
+  &[data-kind='meeting'] {
+    // Meetings at the same time stand side by side, 4px apart.
+    --lane-width: calc((100% - 6px - var(--room) - (var(--lanes, 1) - 1) * 4px) / var(--lanes, 1));
+
+    inset-inline: calc(6px + (var(--lane-width) + 4px) * var(--lane, 0)) auto;
+    width: var(--lane-width);
+    background: color-mix(in srgb, var(--tone, #{$mq-accent}) 18%, var(--mq-event-base));
+    border: 1px solid color-mix(in srgb, var(--tone, #{$mq-accent}) 30%, transparent);
+
+    .block-time { color: color-mix(in srgb, var(--tone, #{$mq-accent}) var(--plan-time-mix), #{$mq-text}); }
+  }
+
+  &[data-kind='lunch'] {
+    background: $mq-card-2;
+    border: 1px solid $mq-chip;
+
+    .block-time { color: $mq-muted; }
+  }
+
+  &[data-kind='task'] {
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, #{$mq-accent} var(--plan-hatch-a), var(--mq-event-base)) 0 5px,
+      color-mix(in srgb, #{$mq-accent} var(--plan-hatch-b), var(--mq-event-base)) 5px 10px
+    );
+    border: 1px dashed var(--plan-dash);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    animation: mq-settle $mq-t-arrive $mq-ease-calm both;
+    @include mq-focus;
+
+    .block-time { color: $mq-accent-text; }
+
+    // A whole plan arriving: one block after the other, 120 ms apart.
+    &.staggered { animation-delay: calc(var(--order, 0) * 120ms); }
+
+    &.dragging {
+      z-index: 6;
+      cursor: grabbing;
+      box-shadow: 0 18px 30px mq-shadow(.55);
+      transition: none;
+    }
+
+    // Only a dragged block that has just landed uses the spring.
+    &.landed { animation: mq-land $mq-t-arrive $mq-ease-spring; }
   }
 }
 
-.quick-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+.block-time {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
 }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 20px;
-  align-items: start;
+.block-title {
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  @include mq-ellipsis;
 }
 
-.left-col {
+.block-tag {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  font-size: 11px;
+  color: $mq-text-4;
+  white-space: nowrap;
+}
+
+.now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.now-dot {
+  width: 8px;
+  height: 8px;
+  margin-inline-start: -4px;
+  border-radius: 50%;
+  background: $mq-accent;
+}
+
+.now-rule {
+  flex: 1;
+  height: 1.5px;
+  background: $mq-accent;
+}
+
+// ── Workload and guardrails ─────────────────────────────────────────────────
+.side {
+  flex: 1 1 300px;
+  min-width: 0;
+  box-sizing: border-box;
+  border-inline-start: 1px solid $mq-line;
+  padding: 22px 20px;
   display: flex;
   flex-direction: column;
-  // Grid items default to min-width: auto, so the chart's fixed-size SVG pushed the
-  // whole page wider than a small phone.
-  min-width: 0;
+  gap: 22px;
 }
 
-.right-col {
+.workload {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 12px;
 }
 
+.total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.total-number {
+  @include mq-serif(52px, 1);
+}
+
+.total-of {
+  font-size: 13px;
+  color: $mq-muted;
+}
+
+.meter {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: $mq-hover;
+
+  span { transition: width 400ms $mq-ease-calm, background-color 400ms $mq-ease-calm; }
+}
+
+.meter-meetings { background: $mq-blue; }
+.meter-tasks { background: $mq-accent; }
+.meter-tasks.over { background: $mq-late; }
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+
+  > span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.swatch {
+  box-sizing: content-box;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+
+  &.meetings { background: $mq-blue; }
+  &.tasks { background: $mq-accent; }
+  &.free { background: $mq-hover; border: 1px solid $mq-line-3; }
+}
+
+.legend-value {
+  margin-inline-start: auto;
+  color: $mq-text-3;
+}
+
+.verdict {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $mq-green;
+
+  &.bad { color: $mq-late; }
+}
+
+.guardrails {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  h2 { margin: 0 0 6px; }
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid $mq-hover;
+}
+
+.rule-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12.5px;
+}
+
+.rule-hint {
+  font-size: 11px;
+  color: $mq-muted;
+}
+
+.switch {
+  @include mq-switch;
+}
+
+.yesterday {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: $mq-field;
+  border: 1px solid $mq-line-b;
+}
+
+.yesterday-title {
+  @include mq-eyebrow(11px);
+}
+
+.yesterday-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: $mq-text-3;
+}
+
+// ── Narrow screens: the columns stack ───────────────────────────────────────
 @include below($bp-laptop) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-  .right-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+  .choose { border-inline-end: 0; }
+  .side { border-inline-start: 0; border-top: 1px solid $mq-line; }
+  .yesterday { margin-top: 0; }
 }
 
 @include below($bp-tablet) {
-  .glance-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .quick-actions-grid { grid-template-columns: 1fr; }
-  .right-col { grid-template-columns: 1fr; }
-}
-
-@include below($bp-tablet-sm) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  // The header stacks, so the menu opens from the button's left edge instead.
-  .range-menu {
-    right: auto;
-    left: 0;
-  }
+  .plan-head { padding: 14px 16px; gap: 12px 14px; }
+  .steps { order: 3; width: 100%; margin: 0; }
+  .commit { margin-inline-start: auto; }
+  .choose,
+  .side { padding: 18px 16px; }
+  .day { padding: 18px 16px; }
+  .block { --room: 84px; }
+  .pick { min-height: 44px; }
+  .shuffle { height: 44px; }
+  .back { width: 44px; height: 44px; }
 }

@@ -1,641 +1,505 @@
 @use '../../../styles/tokens' as *;
 
-// Layout: a menu column on the left, cards on the right - the arrangement people
-// know from social apps. Below the laptop width the menu becomes a row of pills.
-.friends-page {
-  // No outer padding here: the app shell's .page-content is the one place that sets
-  // the page gutter, so every page starts at the same distance from the sidebar.
-  max-width: 1500px;
-  margin: 0 auto;
-  padding-bottom: 2rem;
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 20px 28px;
-  align-items: start;
-
-  @include below($bp-desktop) { grid-template-columns: 250px minmax(0, 1fr); gap: 16px 20px; }
-  @include below($bp-laptop)  { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+// People (design/miqat-2.0, V2-People): the lists on the left, one profile on the right.
+:host {
+  display: block;
+  height: 100%;
+  // The design files use the font's own line height, not Bootstrap's 1.5.
+  line-height: normal;
 }
 
-// Spans both columns, so the title lines up with every other page's.
-.page-header {
-  grid-column: 1 / -1;
-
-  .greeting {
-    font-size: 2rem;
-    font-weight: 800;
-    color: $text-primary;
-    margin: 0;
-
-    @include below($bp-tablet-sm) { font-size: 1.5rem; }
-  }
-
-  .page-sub {
-    margin: 6px 0 0;
-    font-size: 0.9rem;
-    color: $text-secondary;
-  }
+// Bootstrap gives paragraphs and headings a bottom margin; nothing here wants one.
+p, h1, h2, h3 {
+  margin: 0;
 }
 
-// ── Left menu ───────────────────────────────────────────────────────────────
-.friends-nav {
-  position: sticky;
-  top: 0;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-  padding: 14px;
-
-  @include below($bp-laptop) {
-    position: static;
-    background: transparent;
-    border: 0;
-    padding: 0;
-  }
+.people {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
 }
 
-.search-field {
+// ── Left column ──────────────────────────────────────────────────────────────
+.list {
+  box-sizing: border-box;
+  flex: 0 0 360px;
+  min-width: 0;
+  min-height: 0;
+  border-inline-end: 1px solid $mq-line;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-head {
+  padding: 20px 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+
+  h1 { @include mq-serif(40px); }
+}
+
+.title-tools {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: $bg-input;
-  border: 1px solid $border-input;
-  border-radius: 999px;
-  padding: 0 14px;
+  gap: 10px;
+}
+
+.phone-menu {
+  display: none;
+}
+
+.add {
+  @include mq-btn-outline(34px, 0 12px, 9px);
+  font-size: 12.5px;
+
+  &[aria-pressed='true'] { background: $mq-seg-on; color: $mq-text; }
+}
+
+.search {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  // 40px inside its hairline, as the design draws it.
   height: 42px;
-  margin-bottom: 14px;
-  transition: $transition-std;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  color: $mq-muted;
+  transition: border-color $mq-t-press $mq-ease-quick;
 
-  &:focus-within {
-    border-color: $teal-primary;
-    box-shadow: 0 0 0 3px $teal-glow;
-  }
+  &:focus-within { border-color: $mq-accent; }
 
-  mat-icon { font-size: 20px; width: 20px; height: 20px; color: $text-secondary; flex-shrink: 0; }
+  svg { flex-shrink: 0; }
 
   input {
     flex: 1;
     min-width: 0;
-    // Fills the pill, so a tap anywhere in it lands in the box.
-    align-self: stretch;
     background: transparent;
     border: 0;
     outline: none;
-    color: $text-primary;
-    font-size: 0.9rem;
+    color: $mq-text;
+    font: inherit;
+    font-size: 13.5px;
 
-    &::placeholder { color: $text-muted; }
-    // The page supplies its own clear button.
+    &::placeholder { color: $mq-placeholder; opacity: 1; }
     &::-webkit-search-cancel-button { display: none; }
-  }
-
-  .search-clear {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    cursor: pointer;
-
-    mat-icon { font-size: 16px; width: 16px; height: 16px; }
-    &:hover { background: $bg-card-hover; }
   }
 }
 
-.nav-list {
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 3px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+
+  button {
+    @include mq-seg-item(32px, 0 4px, 7px);
+    font-weight: 600;
+    min-width: 0;
+  }
+}
+
+.mode-title {
+  @include mq-eyebrow;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 2px;
+}
+
+.rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 10px 16px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-
-  @include below($bp-laptop) {
-    flex-direction: row;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-  }
+  @include mq-scroll;
 }
 
-.nav-row {
+// ── A person in the list ─────────────────────────────────────────────────────
+.person {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  padding: 8px 8px;
+  padding: 10px;
+  border-radius: 12px;
   border: 0;
-  border-radius: 10px;
   background: transparent;
-  color: $text-primary;
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-align: left;
+  color: inherit;
+  font: inherit;
+  text-align: start;
   cursor: pointer;
-  transition: $transition-std;
+  transition: background $mq-t-press $mq-ease-quick, box-shadow $mq-t-change $mq-ease-calm;
+  @include mq-focus(-2px);
 
-  &:hover { background: $bg-card-hover; }
-  &:focus-visible { outline: 2px solid $teal-primary; outline-offset: 2px; }
+  &:hover { background: $mq-card-2; }
 
-  .nav-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: $bg-input;
-    color: $text-primary;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: $transition-std;
+  &.on {
+    background: $mq-card-5;
+    box-shadow: inset 2px 0 0 $mq-accent;
 
-    mat-icon { font-size: 20px; width: 20px; height: 20px; }
-  }
-
-  .nav-label { flex: 1; min-width: 0; white-space: nowrap; }
-
-  .nav-badge {
-    min-width: 22px;
-    height: 22px;
-    padding: 0 7px;
-    border-radius: 999px;
-    // Deep enough for the white number on it (4.8:1; #ef4444 was 3.8:1).
-    background: #dc2626;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 800;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .nav-count {
-    font-size: 12px;
-    font-weight: 700;
-    color: $text-secondary;
-  }
-
-  .nav-chevron {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: $text-muted;
-  }
-
-  &.active {
-    background: $bg-active-nav;
-
-    .nav-icon {
-      background: $teal-primary;
-      color: $btn-quick-add-text;
-    }
-  }
-
-  // As pills in a row.
-  @include below($bp-laptop) {
-    width: auto;
-    flex-shrink: 0;
-    padding: 6px 14px 6px 6px;
-    border: 1px solid $border-card;
-    border-radius: 999px;
-    background: $bg-card;
-
-    .nav-icon { width: 30px; height: 30px; mat-icon { font-size: 18px; width: 18px; height: 18px; } }
-    .nav-chevron { display: none; }
-
-    &.active { border-color: $teal-primary; }
+    @include mq-rtl { box-shadow: inset -2px 0 0 $mq-accent; }
   }
 }
 
-// ── Content ─────────────────────────────────────────────────────────────────
-.friends-main { min-width: 0; }
-
-.friends-section + .friends-section {
-  margin-top: 28px;
-  padding-top: 24px;
-  border-top: 1px solid $border-subtle;
+// A row with its own button beside the person ("Add").
+.person.split {
+  cursor: default;
+  padding: 0;
+  padding-inline-end: 10px;
+  gap: 8px;
 }
 
+.row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  @include mq-focus(-2px);
+}
+
+.face {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.presence {
+  position: absolute;
+  inset-inline-end: -1px;
+  bottom: -1px;
+  // 11px inside a 2px ring of the page colour.
+  box-sizing: content-box;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid $mq-bg;
+  background: $mq-placeholder;
+
+  &.online { background: $mq-green; }
+  &.busy { background: $mq-late; }
+}
+
+.row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: start;
+}
+
+.row-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  @include mq-ellipsis;
+}
+
+.row-line {
+  font-size: 12px;
+  color: $mq-muted;
+  @include mq-ellipsis;
+
+  &.wrap { white-space: normal; }
+}
+
+.row-side {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.row-time {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.row-city {
+  font-size: 11px;
+  color: $mq-muted;
+}
+
+.mini {
+  @include mq-btn-outline(30px, 0 12px, 8px);
+  font-size: 12px;
+}
+
+.hide {
+  @include mq-icon-btn(28px, 8px);
+}
+
+.requested {
+  font-size: 12px;
+  font-weight: 600;
+  color: $mq-muted;
+}
+
+.none {
+  padding: 20px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: $mq-muted;
+}
+
+// ── Requests and blocked people ──────────────────────────────────────────────
+.box {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 6px;
+  border-radius: 14px;
+  border: 1px solid $mq-chip;
+  background: $mq-card;
+  animation: mq-rise $mq-t-arrive $mq-ease-calm backwards;
+
+  // One line: the person, then one button.
+  &.flat {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 14px;
+  }
+}
+
+.card-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  @include mq-focus;
+
+  &.still { cursor: default; }
+}
+
+.card-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.accept { @include mq-btn-primary(36px, 0 12px, 9px); font-size: 12.5px; }
+.decline { @include mq-btn-outline(36px, 0 12px, 9px); font-size: 12.5px; }
+.side-btn { @include mq-btn-outline(32px, 0 12px, 8px); font-size: 12px; }
+
+.result {
+  font-size: 12.5px;
+  color: $mq-green;
+}
+
+.group-title {
+  @include mq-eyebrow;
+  padding: 12px 6px 6px;
+}
+
+// ── Groups, above the friends ────────────────────────────────────────────────
 .section-head {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  min-height: 36px;
-
-  h2 {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: $text-primary;
-  }
-
-  .section-count {
-    font-size: 12px;
-    font-weight: 700;
-    color: $text-secondary;
-    background: $bg-card;
-    border: 1px solid $border-card;
-    border-radius: 999px;
-    padding: 1px 9px;
-  }
-
-  .see-all {
-    background: transparent;
-    border: 0;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: $teal-primary;
-    cursor: pointer;
-    // Next to a long heading on a small phone it used to break into "See / all".
-    white-space: nowrap;
-    flex-shrink: 0;
-
-    &:hover { background: $bg-card-hover; }
-  }
-
-  .searching {
-    font-size: 0.85rem;
-    color: $text-secondary;
-  }
-}
-
-.error-banner {
-  display: flex;
-  align-items: center;
   gap: 10px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: $text-primary;
-  border-radius: $radius-btn;
-  padding: 10px 14px;
-  font-size: 0.875rem;
-  margin-bottom: 16px;
+  padding-inline-end: 6px;
 
-  > mat-icon { color: #ef4444; flex-shrink: 0; }
-  span { flex: 1; }
-
-  button {
-    display: inline-flex;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    padding: 2px;
-    border-radius: 6px;
-
-    mat-icon { font-size: 18px; width: 18px; height: 18px; }
-  }
+  .group-title { padding-block: 6px; }
 }
 
-// ── Cards ───────────────────────────────────────────────────────────────────
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
-  gap: 14px;
+.person.unread .row-line { color: $mq-text; font-weight: 600; }
 
-  // Two across on a phone.
-  @include below($bp-phone-lg) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-}
+// A call is going on in the group (also when it has unread messages).
+.person .row-line.live { color: $mq-green; font-weight: 600; }
 
-.person-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-  overflow: hidden;
-  transition: $transition-std;
-
-  &:hover {
-    border-color: $border-input;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-  }
-}
-
-// The square picture across the top of the card.
-.card-media {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  padding: 0;
-  border: 0;
-  background: $bg-input;
-  cursor: pointer;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.25s ease;
-  }
-
-  // No picture: the person's initials on their own colour.
-  .media-initials {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(2.2rem, 6vw, 3.4rem);
-    font-weight: 800;
-    letter-spacing: 1px;
-    color: rgba(17, 24, 39, 0.82);
-    background:
-      linear-gradient(140deg, color-mix(in srgb, var(--tint) 62%, #fff) 0%, var(--tint) 100%);
-  }
-
-  &:hover img { transform: scale(1.04); }
-  &:focus-visible { outline: 2px solid $teal-primary; outline-offset: -2px; }
-}
-
-// "More" sits over the picture's corner.
-.card-menu-wrap {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-}
-
-.card-more {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(17, 24, 39, 0.55);
-  color: #fff;
-  cursor: pointer;
-  opacity: 0;
-  transition: $transition-std;
-
-  mat-icon { font-size: 20px; width: 20px; height: 20px; }
-
-  &:hover { background: rgba(17, 24, 39, 0.8); }
-}
-
-.person-card:hover .card-more,
-.person-card:focus-within .card-more,
-.card-more[aria-expanded='true'] { opacity: 1; }
-
-// No hover on touch screens: keep it visible.
-@include touch {
-  .card-more { opacity: 1; width: 36px; height: 36px; }
-}
-
-.card-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 20;
-  min-width: 170px;
-  padding: 6px;
-  background: $bg-card;
-  border: 1px solid $border-input;
-  border-radius: 10px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-
-  button {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 9px 10px;
-    border: 0;
-    border-radius: 7px;
-    background: transparent;
-    color: $text-primary;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-align: left;
-    cursor: pointer;
-
-    mat-icon { font-size: 18px; width: 18px; height: 18px; color: $text-secondary; }
-
-    &:hover:not(:disabled) { background: $bg-card-hover; }
-    &.danger:hover:not(:disabled) { color: #ef4444; mat-icon { color: #ef4444; } }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
-  }
-}
-
-.card-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: 12px 12px 12px;
-}
-
-.person-name {
-  align-self: flex-start;
-  max-width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: $text-primary;
-  font-size: 1.02rem;
-  font-weight: 700;
-  line-height: 1.3;
-  text-align: left;
-  cursor: pointer;
-  // A long name wraps onto a second line; on a narrow card an ellipsis hid
-  // the surname. The buttons stay level because they sit at the card's foot.
-  min-height: 24px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-
-  // A finger needs more to aim at than a line of text.
-  @include touch { min-height: 32px; }
-
-  &:hover { text-decoration: underline; }
-}
-
-.person-sub {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  // One line reserved either way, so the buttons line up across a row of cards.
-  min-height: 22px;
-  margin: 4px 0 10px;
-  font-size: 0.82rem;
-  color: $text-secondary;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-// The words give way before the faces do, and never spill out of the card.
-.person-sub > span:last-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-// Overlapping faces of the friends you share.
-.mutual-faces {
-  display: inline-flex;
+.unread-count {
+  box-sizing: border-box;
   flex-shrink: 0;
-
-  // Two cards across a small phone leave room for the words or the faces, not
-  // both: "3 mutual friends" says more than three 18px circles.
-  @include below($bp-phone-md) { display: none; }
-
-  img,
-  .face {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid $bg-card;
-    margin-left: -6px;
-    object-fit: cover;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 9px;
-    font-weight: 800;
-    color: #111827;
-
-    &:first-child { margin-left: 0; }
-  }
-}
-
-.card-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: auto;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  min-height: 36px;
-  border: 0;
-  border-radius: $radius-btn;
-  font-size: 0.9rem;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: $mq-accent;
+  color: $mq-on-accent;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: $transition-std;
-
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
-
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  &.primary {
-    background: $btn-quick-add-bg;
-    color: $btn-quick-add-text;
-    &:hover:not(:disabled) { background: $btn-quick-add-hover; }
-  }
-
-  &.subtle {
-    background: $bg-card-hover;
-    border: 1px solid $border-card;
-    color: $text-primary;
-    &:hover:not(:disabled) { border-color: $text-muted; }
-  }
-
-  &.muted {
-    background: $teal-glow;
-    color: $teal-primary;
-    opacity: 1;
-  }
-}
-
-// ── States ──────────────────────────────────────────────────────────────────
-.state-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  line-height: 18px;
   text-align: center;
-  padding: 3.5rem 1.5rem;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-
-  @include below($bp-tablet-sm) { padding: 2.5rem 1rem; }
-
-  .state-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: $bg-card-hover;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-
-    mat-icon { font-size: 32px; width: 32px; height: 32px; color: $text-secondary; }
-  }
-
-  .state-title { font-size: 1.1rem; font-weight: 700; color: $text-primary; margin: 0 0 0.25rem; }
-  .state-sub   { font-size: 0.9rem; color: $text-secondary; margin: 0 0 1.25rem; }
 }
 
-.primary-btn {
-  background: $btn-quick-add-bg;
-  color: $btn-quick-add-text;
-  border: 0;
-  border-radius: $radius-btn;
-  font-weight: 700;
-  font-size: 0.875rem;
-  padding: 10px 20px;
-  cursor: pointer;
-
-  &:hover { background: $btn-quick-add-hover; }
+.more-groups {
+  @include mq-btn-ghost(32px, 0 10px, 8px);
+  flex-shrink: 0;
+  align-self: flex-start;
+  font-size: 12px;
+  color: $mq-accent-text;
 }
 
-// ── Skeleton ────────────────────────────────────────────────────────────────
-.person-card.skeleton {
-  pointer-events: none;
-
-  .sk-media { width: 100%; aspect-ratio: 1 / 1; }
-  .sk-body  { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-  .sk-line  { height: 12px; border-radius: 6px; }
-  .sk-line.long  { width: 72%; }
-  .sk-line.short { width: 44%; }
-  .sk-btn   { height: 36px; border-radius: $radius-btn; }
-
-  .sk-media,
-  .sk-line,
-  .sk-btn {
-    background: linear-gradient(90deg, $bg-card-hover 25%, $bg-input 37%, $bg-card-hover 63%);
-    background-size: 400% 100%;
-    animation: friends-shimmer 1.4s ease infinite;
-
-    @include reduced-motion { animation: none; }
-  }
+.none.tight {
+  padding: 6px 10px 10px;
 }
 
-@keyframes friends-shimmer {
-  0%   { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
-}
-
-// A sentence above a list that needs explaining (the blocked list).
-.section-note {
-  margin: -4px 0 16px;
-  max-width: 62ch;
-  font-size: 0.875rem;
+.note {
+  padding: 10px 6px;
+  font-size: 12px;
   line-height: 1.5;
-  color: $text-secondary;
+  color: $mq-muted;
+}
+
+app-chat-avatar.muted {
+  --avatar-ink: #{$mq-muted};
+}
+
+.error {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--mq-late) 50%, transparent);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: $mq-late;
+
+  button {
+    @include mq-btn-ghost(28px, 0 8px, 8px);
+    font-size: 12px;
+    color: $mq-text-2;
+  }
+}
+
+// ── Loading ──────────────────────────────────────────────────────────────────
+.person.ghost {
+  cursor: default;
+
+  &:hover { background: transparent; }
+}
+
+.ghost-dot {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: $mq-line;
+}
+
+.ghost-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  span {
+    height: 10px;
+    width: 55%;
+    border-radius: 5px;
+    background: $mq-line;
+
+    &:last-child { width: 80%; height: 8px; }
+  }
+}
+
+// ── Right column ─────────────────────────────────────────────────────────────
+.profile-side {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  @include mq-scroll;
+}
+
+.nobody {
+  box-sizing: border-box;
+  max-width: 460px;
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: $mq-muted;
+}
+
+.nobody-title {
+  @include mq-serif(30px);
+}
+
+// ── Narrow screens: one of the two at a time ────────────────────────────────
+@include below($bp-laptop) {
+  .list {
+    flex: 1 1 auto;
+    border-inline-end: 0;
+  }
+
+  .profile-side { display: none; }
+
+  .profile-only {
+    .list { display: none; }
+    .profile-side { display: block; }
+  }
+}
+
+// Phones: the page itself scrolls, clear of the floating tab bar.
+@include below($bp-tablet) {
+  :host { height: auto; }
+  .people { height: auto; }
+  .rows { overflow: visible; padding-bottom: 8px; }
+  .profile-side { overflow: visible; }
+  .phone-menu { display: inline-flex; }
+  .list-head { padding: 16px 16px 12px; }
+  .title-row { align-items: center; }
+  .person, .row-main { min-height: 58px; }
+  .add { height: 44px; }
+  .tabs button { height: 40px; }
+  .search { height: 44px; }
+  .accept, .decline, .side-btn { height: 44px; }
+  .mini, .hide { height: 44px; min-width: 44px; }
+  .more-groups { height: 44px; }
+}
+
+// ── Arabic and right to left ─────────────────────────────────────────────────
+// What a person typed takes its own direction (dir="auto") and still lines up with
+// the rest of the page.
+[dir='auto'] {
+  text-align: left;
+
+  @include mq-rtl { text-align: right; }
 }

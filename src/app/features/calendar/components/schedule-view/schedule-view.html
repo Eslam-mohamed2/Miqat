@@ -1,0 +1,39 @@
+<div class="list">
+  @for (day of days(); track day.key) {
+    <section class="day" [class.today]="day.isToday" [attr.aria-label]="day.label">
+      <div class="date">
+        <button type="button" class="num" [class.today]="day.isToday" (click)="openDay(day)"
+                [attr.aria-label]="'Open {day}' | t: { day: day.label }">{{ day.number | num }}</button>
+        <span class="date-text">
+          <span class="dow">{{ day.dow }}</span>
+          @if (day.hijri) { <span class="hijri">{{ day.hijri }}</span> }
+        </span>
+      </div>
+
+      <div class="items">
+        <!-- Public holidays and occasions: rows to read, not events to open. -->
+        @for (mark of day.occasions; track mark.occasion.id) {
+          <div class="entry occasion" [class.holiday]="mark.occasion.kind === 'holiday'" [title]="summaryOf(mark)">
+            <span class="time">{{ (mark.occasion.kind === 'holiday' ? 'Public holiday' : 'Observance') | t }}</span>
+            <span class="glyph" [class.holiday]="mark.occasion.kind === 'holiday'" aria-hidden="true"></span>
+            <span class="title">{{ mark.occasion.name }}</span>
+            <span class="note">{{ noteOf(mark) }}</span>
+          </div>
+        }
+        @for (chip of day.chips; track chip.key) {
+          <button type="button" class="entry" [class.done]="chip.done" [class.declined]="chip.declined"
+                  [class.selected]="board.isShown(chip)" [attr.aria-pressed]="board.isShown(chip)" (click)="pick(chip)">
+            <span class="time">{{ chip.timeRange }}</span>
+            <span class="dot" [class.planned]="chip.planned" [style.--tone]="chip.color"></span>
+            <span class="title" dir="auto">{{ chip.title }}</span>
+            @if (note(chip); as text) { <span class="note" dir="auto">{{ text }}</span> }
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (!days().length) {
+    <p class="empty">{{ 'Nothing on the calendar in {month}.' | t: { month: monthLabel() } }}</p>
+  }
+</div>

@@ -1,0 +1,371 @@
+// ============================================================================
+// Miqat 2.0 shared control styles, as mixins.
+//
+// Each mixin is the default form of a control in design/miqat-2.0; where a screen
+// draws the control at another size, pass the size or override it after the include.
+// Reached through `@use '.../styles/tokens' as *` (forwarded from there).
+//
+// This file uses the CSS custom properties directly, because _tokens.scss forwards
+// it and so cannot be used from here.
+// ============================================================================
+
+/// A black shadow on the dark theme; warm ink at 30% of the strength on the light one.
+///   box-shadow: 0 16px 40px mq-shadow(.5);
+@function mq-shadow($alpha) {
+  @return rgb(var(--mq-shade) / calc(#{$alpha} * var(--mq-shade-k)));
+}
+
+/// A colour that comes from data, used as text: kept as it is on the dark theme,
+/// mixed toward ink on the light one so it stays readable.
+@function mq-tone-text($color) {
+  @return color-mix(in srgb, #{$color} var(--mq-tone-mix), #1A1814);
+}
+
+/// The keyboard focus ring. Every control that can take focus includes this.
+@mixin mq-focus($offset: 2px) {
+  &:focus { outline: none; }
+  &:focus-visible {
+    outline: 2px solid var(--mq-accent);
+    outline-offset: $offset;
+  }
+}
+
+/// Removes the browser's button look. The base of every button mixin below.
+@mixin mq-btn-base($height: 38px, $padding: 0 14px, $radius: 10px) {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: $height;
+  padding: $padding;
+  border: 0;
+  border-radius: $radius;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--mq-t-press) var(--mq-ease-quick),
+    color var(--mq-t-press) var(--mq-ease-quick),
+    border-color var(--mq-t-press) var(--mq-ease-quick),
+    filter var(--mq-t-press) var(--mq-ease-quick),
+    transform var(--mq-t-press) var(--mq-ease-quick);
+  @include mq-focus;
+
+  &:disabled,
+  &[aria-disabled='true'] { opacity: .5; cursor: default; }
+}
+
+/// Primary: accent fill ("Plan my day", "New task", "Join").
+@mixin mq-btn-primary($height: 38px, $padding: 0 14px, $radius: 10px) {
+  @include mq-btn-base($height, $padding, $radius);
+  background: var(--mq-accent);
+  color: var(--mq-on-accent);
+  font-weight: 700;
+
+  &:hover:not(:disabled) { filter: brightness(1.06); color: var(--mq-on-accent); }
+  &:active:not(:disabled) { transform: scale(.98); }
+}
+
+/// Outline: hairline border on the page ("Today", "Share times", "Decline").
+@mixin mq-btn-outline($height: 38px, $padding: 0 12px, $radius: 10px) {
+  @include mq-btn-base($height, $padding, $radius);
+  border: 1px solid var(--mq-line-2);
+  color: var(--mq-text-2);
+
+  &:hover:not(:disabled) { background: var(--mq-hover); color: var(--mq-text); }
+  &:active:not(:disabled) { transform: scale(.98); }
+}
+
+/// Ghost: no border until hovered (the design's `.ghost`).
+@mixin mq-btn-ghost($height: 36px, $padding: 0 12px, $radius: 9px) {
+  @include mq-btn-base($height, $padding, $radius);
+  color: var(--mq-text-4);
+
+  &:hover:not(:disabled) { background: var(--mq-hover); color: var(--mq-text); }
+}
+
+/// A square icon button (arrows, close, "more").
+@mixin mq-icon-btn($size: 36px, $radius: 9px) {
+  @include mq-btn-ghost($size, 0, $radius);
+  width: $size;
+  flex-shrink: 0;
+}
+
+/// Segmented control: the track. Put `mq-seg-item` on each choice inside it and mark
+/// the chosen one with aria-pressed="true", aria-selected="true" or `.on`.
+@mixin mq-seg($pad: 3px, $radius: 10px) {
+  display: inline-flex;
+  padding: $pad;
+  border-radius: $radius;
+  background: var(--mq-field);
+  border: 1px solid var(--mq-line-2);
+}
+
+@mixin mq-seg-item($height: 30px, $padding: 0 11px, $radius: 7px) {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: $height;
+  padding: $padding;
+  border: 0;
+  border-radius: $radius;
+  background: transparent;
+  color: var(--mq-text-4);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--mq-t-change) var(--mq-ease-calm), color var(--mq-t-press) var(--mq-ease-quick);
+  @include mq-focus;
+
+  &:hover { color: var(--mq-text); }
+
+  &[aria-pressed='true'],
+  &[aria-selected='true'],
+  &[aria-current='page'],
+  &.on {
+    background: var(--mq-seg-on);
+    color: var(--mq-text);
+    font-weight: 600;
+  }
+}
+
+/// Switch: a <button role="switch" aria-checked> with one <span> inside for the knob.
+@mixin mq-switch {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 40px;
+  height: 24px;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--mq-line-2);
+  cursor: pointer;
+  transition: background var(--mq-t-change) var(--mq-ease-calm);
+  @include mq-focus;
+
+  > span {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--mq-muted);
+    transition: transform var(--mq-t-change) var(--mq-ease-calm), background var(--mq-t-change) var(--mq-ease-calm);
+  }
+
+  &[aria-checked='true'] {
+    background: var(--mq-accent);
+
+    // --mq-dir is -1 in the Arabic interface (styles.scss): the knob travels toward
+    // the end edge, which is the left there. A custom property because this mixin is
+    // used both as a global class and inside component stylesheets.
+    > span { background: var(--mq-on-accent); transform: translateX(calc(16px * var(--mq-dir, 1))); }
+  }
+
+  &:disabled { opacity: .5; cursor: default; }
+}
+
+/// A key cap ("Ctrl K").
+@mixin mq-kbd {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--mq-text-4);
+  background: var(--mq-line);
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+
+/// Small capitals above a group ("5 GUESTS · 3 GOING", "AGENDA").
+@mixin mq-eyebrow($size: 11px) {
+  margin: 0;
+  font-size: $size;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--mq-muted);
+}
+
+/// Instrument Serif: page titles, dates and big numbers.
+@mixin mq-serif($size: 30px, $line: 1) {
+  margin: 0;
+  font-family: var(--mq-serif);
+  font-weight: 400;
+  font-size: $size;
+  line-height: $line;
+  letter-spacing: 0;
+  color: var(--mq-text);
+}
+
+/// A text field or select, as on the search boxes and in Settings.
+@mixin mq-field($height: 38px, $radius: 10px) {
+  box-sizing: border-box;
+  height: $height;
+  padding: 0 12px;
+  border-radius: $radius;
+  background: var(--mq-field);
+  border: 1px solid var(--mq-line-2);
+  color: var(--mq-text);
+  font-family: inherit;
+  font-size: 13px;
+  transition: border-color var(--mq-t-press) var(--mq-ease-quick);
+
+  &::placeholder { color: var(--mq-placeholder); opacity: 1; }
+  &:hover { border-color: var(--mq-line-4); }
+  &:focus { outline: none; }
+  &:focus-visible { border-color: var(--mq-accent); outline: none; }
+}
+
+/// A card: surface, hairline, large radius.
+@mixin mq-card($radius: 16px) {
+  box-sizing: border-box;
+  border-radius: $radius;
+  background: var(--mq-card);
+  border: 1px solid var(--mq-line);
+}
+
+/// The initials circle (the signed-in user's is outlined in the accent).
+@mixin mq-avatar($size: 34px) {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  background: var(--mq-line);
+  color: var(--mq-text);
+  font-size: calc(#{$size} * .34);
+  font-weight: 700;
+  overflow: hidden;
+}
+
+/// A small colour dot in front of a calendar or project name.
+@mixin mq-dot($size: 8px, $radius: 3px) {
+  flex-shrink: 0;
+  width: $size;
+  height: $size;
+  border-radius: $radius;
+  background: var(--tone, var(--mq-accent));
+}
+
+/// Calendar event block. The colour is mixed 19% into the surface with a 30% border.
+/// Pass the colour, or set `--tone` on the element and include it with no argument.
+@mixin mq-event($color: var(--tone, var(--mq-accent))) {
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: color-mix(in srgb, #{$color} 19%, var(--mq-event-base));
+  border: 1px solid color-mix(in srgb, #{$color} 30%, transparent);
+  color: inherit;
+  font-family: inherit;
+  text-align: start;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    box-shadow var(--mq-t-change) var(--mq-ease-calm),
+    transform var(--mq-t-press) var(--mq-ease-quick),
+    filter var(--mq-t-press) var(--mq-ease-quick);
+  @include mq-focus;
+
+  &:hover { filter: brightness(1.12); }
+  &:active { transform: scale(.98); }
+}
+
+/// The time line inside an event block.
+@mixin mq-event-time($color: var(--tone, var(--mq-accent))) {
+  font-size: 11px;
+  font-weight: 600;
+  color: color-mix(in srgb, #{$color} 70%, var(--mq-ink));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/// A block Miqat proposes ("Planned"): diagonal accent hatch and a dashed accent border.
+@mixin mq-event-planned {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mq-accent) 12%, var(--mq-event-base)) 0 5px,
+    color-mix(in srgb, var(--mq-accent) 5%, var(--mq-event-base)) 5px 10px
+  );
+  border: 1px dashed color-mix(in srgb, var(--mq-accent) 60%, transparent);
+  animation: mq-settle var(--mq-t-arrive) var(--mq-ease-calm) backwards;
+}
+
+/// The selected event: a ring in the accent, separated from the block by the page colour.
+@mixin mq-event-selected {
+  box-shadow: 0 0 0 2px var(--mq-bg), 0 0 0 3.5px var(--mq-accent);
+  z-index: 3;
+}
+
+/// A toast, with room for an "Undo" action (see .mq-toast in styles.scss).
+@mixin mq-toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--mq-hover);
+  border: 1px solid var(--mq-line-4);
+  box-shadow: 0 16px 40px mq-shadow(.5);
+  color: var(--mq-text);
+  font-size: 12.5px;
+  overflow: hidden;
+}
+
+/// Thin scrollbars that match the surface they sit on.
+@mixin mq-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mq-line-2) transparent;
+
+  &::-webkit-scrollbar { width: 8px; height: 8px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: var(--mq-line-2);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+}
+
+/// One line, cut with an ellipsis.
+@mixin mq-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ── Right to left (the Arabic interface) ─────────────────────────────────────
+// Write layout with logical properties (margin-inline-start, padding-inline-end,
+// inset-inline-start, border-inline-end, text-align: start) and it mirrors by
+// itself. These two are for the few things that have no logical form: a transform,
+// a gradient direction, a background position, a physical offset computed in code.
+// For a horizontal offset inside a transform or a keyframe there is also the sign
+// `var(--mq-dir, 1)` (1 left to right, -1 right to left; set in styles.scss):
+//   transform: translateX(calc(24px * var(--mq-dir, 1)));
+
+/// Rules for the Arabic (right-to-left) interface, from inside any selector of a
+/// component stylesheet:
+///   .chevron { @include mq-rtl { transform: scaleX(-1); } }
+@mixin mq-rtl {
+  :host-context([dir='rtl']) & { @content; }
+}
+
+/// The same for the `:host` rule itself:
+///   :host { @include mq-rtl-host { --shift: -8px; } }
+@mixin mq-rtl-host {
+  :host-context([dir='rtl']) { @content; }
+}

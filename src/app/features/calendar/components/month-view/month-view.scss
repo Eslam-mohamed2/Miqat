@@ -1,0 +1,483 @@
+@use '../../../../../styles/tokens' as *;
+@use '../../calendar' as cal;
+
+// design/miqat-2.0: V2-Month / L-Month.
+:host {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  min-height: 0;
+}
+
+// ── The grid ────────────────────────────────────────────────────────────────
+.month {
+  flex: 999 1 640px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  @include mq-scroll;
+}
+
+.inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 700px;
+}
+
+.dows,
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid $mq-line;
+}
+
+.dows {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: $mq-bg;
+}
+
+.dow {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: $mq-muted;
+
+  &.off { background: $mq-bg-3; }
+}
+
+.week {
+  position: relative;
+  flex: 1 0 auto;
+  min-height: 150px;
+}
+
+.cell {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  min-height: 150px;
+  padding: 10px 10px 8px;
+  border: 0;
+  border-inline-start: 1px solid $mq-line;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick, box-shadow $mq-t-change $mq-ease-calm;
+
+  &.off { background: $mq-bg-3; }
+  &:hover { background: $mq-card-2; }
+  &:focus { outline: none; }
+  &:focus-visible { box-shadow: inset 0 0 0 2px $mq-accent; }
+  &[aria-pressed='true'] { box-shadow: inset 0 0 0 1.5px $mq-accent-text; }
+}
+
+.cell-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+}
+
+.num {
+  font-family: $mq-serif;
+  font-size: 22px;
+  line-height: 1;
+  color: $mq-text;
+
+  .out & { color: $mq-placeholder; }
+
+  &.today {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: $mq-accent;
+    color: $mq-on-accent;
+  }
+}
+
+.hijri {
+  font-size: 10.5px;
+  color: $mq-muted;
+  white-space: nowrap;
+
+  // The first of a Hijri month.
+  &.first {
+    font-weight: 600;
+    color: $mq-accent-text;
+  }
+}
+
+// How full the day is: 7px for every item, up to four.
+.load {
+  margin-inline-start: auto;
+  height: 3px;
+  border-radius: 2px;
+
+  &[data-load='0'] { width: 0; }
+  &[data-load='1'] { width: 7px; background: color-mix(in srgb, #{$mq-accent} 45%, transparent); }
+  &[data-load='2'] { width: 14px; background: color-mix(in srgb, #{$mq-accent} 60%, transparent); }
+  &[data-load='3'] { width: 21px; background: color-mix(in srgb, #{$mq-accent} 75%, transparent); }
+  &[data-load='4'] { width: 28px; background: color-mix(in srgb, #{$mq-accent} 90%, transparent); }
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 11.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  &.done .title {
+    color: $mq-muted;
+    text-decoration: line-through;
+  }
+}
+
+.dot,
+.entry-dot {
+  @include cal.dot(6px, 2px);
+
+  // A task's time block: the dot is drawn, not filled.
+  &.planned {
+    box-sizing: border-box;
+    background: transparent;
+    border: 1px dashed $mq-accent-text;
+  }
+}
+
+// The same height in every cell of a week, so the bars under it stay in one line.
+.occasions {
+  flex-shrink: 0;
+}
+
+// A public holiday or an occasion: a diamond and a quiet name, ahead of the day's items.
+.line.occasion {
+  gap: 7px;
+
+  .title { color: $mq-text-4; }
+  &.holiday .title { color: $mq-text-3; }
+}
+
+.glyph {
+  @include cal.occasion-glyph;
+}
+
+// A public holiday tints its date; an observance does not.
+.cell.holiday .num:not(.today) {
+  color: $mq-accent-text;
+}
+
+.time {
+  flex-shrink: 0;
+  color: $mq-muted;
+}
+
+.title {
+  color: $mq-text-2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.more {
+  font-size: 11px;
+  font-weight: 600;
+  color: $mq-text-4;
+}
+
+.bar {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--cal-tone) 22%, var(--mq-event-base));
+  color: $mq-text;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+// Arabic: a title in Latin letters that does not fit loses its end, not its beginning.
+:host-context([dir='rtl']) .bar-title {
+  min-width: 0;
+  overflow: hidden;
+}
+
+// ── Beside the grid ─────────────────────────────────────────────────────────
+.side {
+  flex: 1 1 320px;
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px;
+  border-inline-start: 1px solid $mq-line;
+  overflow-y: auto;
+  @include mq-scroll;
+
+  // The chat button floats over this corner: the panel's last row stays clear of it.
+  &.beside-chat { padding-bottom: 92px; }
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  h2 { @include mq-serif(34px, 1.05); }
+}
+
+.day-hijri {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: $mq-accent-text;
+}
+
+// The picked day's holidays and occasions, said in full.
+.occasion-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid $mq-hover;
+
+  .glyph { margin-top: 5px; }
+}
+
+.occasion-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.occasion-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: $mq-text-2;
+}
+
+.occasion-detail {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: $mq-muted;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid $mq-hover;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus(-2px);
+
+  &:hover .entry-title { text-decoration: underline; }
+  &.declined { opacity: .55; }
+
+  &.done .entry-title {
+    color: $mq-muted;
+    text-decoration: line-through;
+  }
+}
+
+.entry-time {
+  flex-shrink: 0;
+  min-width: 44px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $mq-text-3;
+  white-space: nowrap;
+}
+
+.entry-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+}
+
+.entry-title {
+  min-width: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  font-size: 13px;
+  color: $mq-muted;
+}
+
+.open-week {
+  align-self: flex-start;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $mq-accent-text;
+  cursor: pointer;
+  @include mq-focus;
+
+  &:hover { text-decoration: underline; }
+}
+
+.glance {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid $mq-line;
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: $mq-field;
+  border: 1px solid $mq-line-b;
+}
+
+.stat-name {
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+.stat-value {
+  font-family: $mq-serif;
+  font-size: 32px;
+  line-height: 1;
+
+  &.focus { color: $mq-accent-text; }
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 90px;
+  padding-top: 6px;
+}
+
+.chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-bar {
+  width: 100%;
+  max-width: 26px;
+  border-radius: 6px;
+  background: $mq-line-3;
+  transition: height $mq-t-view $mq-ease-calm;
+
+  &.heaviest { background: $mq-accent; }
+}
+
+.chart-label {
+  font-size: 10.5px;
+  color: $mq-muted;
+}
+
+.note {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: $mq-text-3;
+}
+
+.layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid $mq-line;
+}
+
+.layer-name {
+  flex: 1;
+  font-size: 12.5px;
+}
+
+// Too narrow for two columns: the day and the month's numbers follow the grid.
+@include below($bp-laptop) {
+  :host {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .month {
+    flex: none;
+    overflow: visible;
+    overflow-x: auto;
+  }
+
+  .side {
+    flex: none;
+    border-inline-start: 0;
+    overflow: visible;
+  }
+
+  .dows { position: static; }
+}
+
+// Calendar and project colours, as the theme draws them (see cal.tone).
+.dot,
+.entry-dot,
+.bar {
+  @include cal.tone;
+}

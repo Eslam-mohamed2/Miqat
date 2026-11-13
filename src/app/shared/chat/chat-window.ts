@@ -3,10 +3,20 @@ import {
   computed, inject, input, signal, viewChild
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
-import { ChatMessage, ChatService, describeCall } from '../../core/services/chat.service';
+import { ChatMessage, ChatService } from '../../core/services/chat.service';
 import { CallService } from '../../core/services/call.service';
+import { GroupCallService } from '../../core/services/group-call.service';
+import { GROUP_CALL_LIMIT } from '../../core/services/group-call-rules';
+import { ChatUser } from '../../core/services/realtime.service';
+import {
+  chatTitle, countLabel, describeCall, describeGroupEvent, isInCall, isolate, readersOf, sameRun, seenLabel
+} from '../../core/services/chat-text';
+import { serverMessage } from '../../core/http/api-error';
+import { locale, t, tCount } from '../../core/i18n/i18n';
+import { TPipe } from '../../core/i18n/t.pipe';
 import { ChatAvatar } from './chat-avatar';
+import { ChatIcon } from './chat-icon';
+import { ChatMembers } from './chat-members';
 
 /** One message as the window draws it. */
 interface MessageRow {
@@ -19,22 +29,30 @@ interface MessageRow {
   endsGroup: boolean;
   /** For the record of a call: what to say about it ("Video call · 2:05"). Null for a normal message. */
   call: string | null;
+  /** For a line about the group itself: what happened ("Sara added Omar"). */
+  event: string | null;
+  /** In a group, on someone else's message: who wrote it. Their picture goes beside the last of a run. */
+  sender: ChatUser | null;
+  /** In a group, on the first of a run of someone else's messages: their name above it. */
+  showsName: boolean;
 }
 
-const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+const timeFormat = new Intl.DateTimeFormat(locale(), { hour: 'numeric', minute: '2-digit' });
 /** Messages of one person less than this apart are drawn as one group. */
 const GROUP_GAP_MS = 5 * 60 * 1000;
 /** Closer than this to the end counts as "reading the newest messages". */
 const NEAR_BOTTOM_PX = 80;
 
 /**
- * A pop-up chat with one friend: the messages, "is typing", "seen", and the
- * box to write in. All state lives in ChatService; this only draws it.
+ * A pop-up chat with one friend or with a group: the messages, "is typing",
+ * "seen", and the box to write in. A group's window also names who wrote each
+ * message, shows what happened to the group, and opens its members and its
+ * call. All state lives in ChatService; this only draws it.
  */
 @Component({
   selector: 'app-chat-window',
   standalone: true,
-  imports: [MatIconModule, ChatAvatar],
+  imports: [ChatAvatar, ChatIcon, ChatMembers, TPipe],
   templateUrl: './chat-window.html',
   styleUrl: './chat-window.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -42,6 +60,7 @@ const NEAR_BOTTOM_PX = 80;
 export class ChatWindow {
   protected chat = inject(ChatService);
   protected calls = inject(CallService);
+  protected groupCalls = inject(GroupCallService);
   private router = inject(Router);
 
   readonly conversationId = input.required<string>();
@@ -53,6 +72,45 @@ export class ChatWindow {
   protected readonly thread = computed(() => this.chat.thread(this.conversationId()));
   protected readonly online = computed(() => this.chat.isOnline(this.conversation()?.friend.id ?? ''));
   protected readonly typing = computed(() => this.chat.isTyping(this.conversationId()));
+  /** "typing…" for a friend, "Omar is typing…" in a group. */
+  protected readonly typingText = computed(() => this.chat.typingText(this.conversationId()));
+
+  /** The friend's name, or the group's. */
+  protected readonly title = computed(() => {
+    const conversation = this.conversation();
+    return conversation ? chatTitle(conversation) : '';
+  });
+
+  /** Under a group's name: how many people it has. */
+  protected readonly memberCount = computed(() =>
+    countLabel(this.conversation()?.participants?.length ?? 0, 'member', 'members'));
+
+  /** In an empty chat: "Say hello to Omar." */
+  protected readonly hello = computed(() => t('Say hello to {name}.', { name: isolate(this.title()) }));
+
+  /** The members panel of a group is open over the messages. */
+  protected readonly membersOpen = signal(false);
+
+  /** A call of any kind is going on in this tab: one at a time. */
+  protected readonly onCall = computed(() => !!this.calls.call() || !!this.groupCalls.call());
+
+  /** The call going on in this group, unless this tab is the one in it. */
+  protected readonly liveCall = computed(() => {
+    const call = this.conversation()?.activeCall;
+    return call && this.groupCalls.call()?.id !== call.callId ? call : null;
+  });
+
+  /** The user is in the group's call with another tab or device, so it cannot be joined here. */
+  protected readonly inCallElsewhere = computed(() => isInCall(this.conversation(), this.chat.currentUserId));
+
+  protected readonly liveCallFull = computed(() => (this.liveCall()?.participants.length ?? 0) >= GROUP_CALL_LIMIT);
+
+  protected readonly liveCallText = computed(() => {
+    const count = this.liveCall()?.participants.length ?? 0;
+    return this.liveCallFull()
+      ? tCount(count, 'Call in progress · full ({n} people)', 'Call in progress · full ({n} people)')
+      : tCount(count, 'Call in progress · {n} person', 'Call in progress · {n} people');
+  });
 
   protected readonly draft = signal('');
   /** The own message being rewritten in the box, if any. */
@@ -64,33 +122,51 @@ export class ChatWindow {
   protected readonly rows = computed<MessageRow[]>(() => {
     const me = this.chat.currentUserId;
     const messages = this.thread().messages;
+    const conversation = this.conversation();
+    const group = !!conversation?.isGroup;
 
     return messages.map((message, index) => {
       const previous = messages[index - 1];
       const next = messages[index + 1];
       const at = new Date(message.createdAt);
+      const mine = message.senderId === me;
+      const written = !message.callOutcome && !message.groupEvent;
 
       return {
         message,
-        mine: message.senderId === me,
-        call: message.callOutcome ? describeCall(message, message.senderId === me) : null,
+        mine,
+        call: message.callOutcome ? describeCall(message, mine) : null,
+        event: message.groupEvent ? describeGroupEvent(message, me) : null,
         day: !previous || !sameDay(new Date(previous.createdAt), at) ? dayLabel(at) : null,
         time: timeFormat.format(at),
-        endsGroup: !next || next.senderId !== message.senderId ||
-          new Date(next.createdAt).getTime() - at.getTime() > GROUP_GAP_MS
+        endsGroup: group
+          ? !sameRun(message, next, GROUP_GAP_MS)
+          : !next || next.senderId !== message.senderId ||
+            new Date(next.createdAt).getTime() - at.getTime() > GROUP_GAP_MS,
+        sender: group && !mine && written
+          ? message.sender ?? conversation?.participants?.find(p => p.id === message.senderId) ??
+            { id: message.senderId, fullName: t('Someone') }
+          : null,
+        showsName: group && !mine && written && !sameRun(previous, message, GROUP_GAP_MS)
       };
     });
   });
 
-  /** Under the newest message when it is the user's own: has it gone out, has the friend seen it. */
+  /** Under the newest message when it is the user's own: has it gone out, who has seen it. */
   protected readonly receipt = computed(() => {
     const last = this.thread().messages.at(-1);
-    if (!last || last.senderId !== this.chat.currentUserId || last.isDeleted || last.callOutcome) return '';
-    if (last.state === 'sending') return 'Sending…';
+    if (!last || last.senderId !== this.chat.currentUserId || last.isDeleted || last.callOutcome || last.groupEvent) return '';
+    if (last.state === 'sending') return t('Sending…');
     if (last.state === 'failed') return '';
 
-    const seenAt = this.conversation()?.friendLastReadAt;
-    return seenAt && seenAt >= last.createdAt ? 'Seen' : 'Sent';
+    const conversation = this.conversation();
+    if (conversation?.isGroup) {
+      const people = conversation.participants ?? [];
+      return seenLabel(readersOf(people, this.chat.currentUserId, last.createdAt), people.length - 1);
+    }
+
+    const seenAt = conversation?.friendLastReadAt;
+    return seenAt && seenAt >= last.createdAt ? t('Seen') : t('Sent');
   });
 
   /** Follow new messages only while the user is at the end; reading older ones is left alone. */
@@ -100,8 +176,9 @@ export class ChatWindow {
 
   constructor() {
     afterRenderEffect(() => {
-      // Runs after every change to what is listed (new, older, typing, receipt).
-      this.rows(); this.typing(); this.receipt();
+      // Runs after every change to what is listed (new, older, typing, receipt)
+      // and to the room it has (the strip of a call in progress).
+      this.rows(); this.typing(); this.receipt(); this.liveCall();
 
       const el = this.scroller()?.nativeElement;
       if (!el) return;
@@ -144,15 +221,26 @@ export class ChatWindow {
     if (document.visibilityState === 'visible') this.chat.markRead(this.conversationId());
   }
 
-  /** Calls the friend of this chat. */
+  /** Calls the friend of this chat, or starts a call in this group. */
   protected call(video: boolean): void {
     const conversation = this.conversation();
-    if (conversation) this.calls.startCall(conversation, video);
+    if (!conversation) return;
+
+    if (conversation.isGroup) this.groupCalls.startCall(conversation.id, this.title(), video);
+    else this.calls.startCall(conversation, video);
   }
 
-  protected openProfile(): void {
-    const friend = this.conversation()?.friend;
-    if (friend) this.router.navigate(['/profile', friend.id]);
+  /** Joins the call that is going on in this group. */
+  protected joinCall(): void {
+    const call = this.liveCall();
+    if (call) this.groupCalls.join(call, this.title());
+  }
+
+  /** The header: a friend's profile, a group's members. */
+  protected openDetails(): void {
+    const conversation = this.conversation();
+    if (conversation?.isGroup) this.membersOpen.update(open => !open);
+    else if (conversation) this.router.navigate(['/profile', conversation.friend.id]);
   }
 
   // ── Writing ─────────────────────────────────────────────────────────────────
@@ -184,7 +272,7 @@ export class ChatWindow {
       this.error.set('');
       this.chat.edit(editing, text).subscribe({
         next: () => this.cancelEdit(),
-        error: err => this.error.set(err?.error?.message || 'Could not save the change.')
+        error: err => this.error.set(said(err, 'Could not save the change.'))
       });
       return;
     }
@@ -212,7 +300,7 @@ export class ChatWindow {
     if (this.editing()?.id === message.id) this.cancelEdit();
 
     this.chat.remove(message).subscribe({
-      error: err => this.error.set(err?.error?.message || 'Could not delete the message.')
+      error: err => this.error.set(said(err, 'Could not delete the message.'))
     });
   }
 
@@ -235,6 +323,11 @@ export class ChatWindow {
   }
 }
 
+/** The server's refusal when it gave one, otherwise `fallback`: both in the interface language. */
+function said(err: { error?: { message?: string } } | null | undefined, fallback: string): string {
+  return err?.error?.message ? serverMessage(err.error.message) : t(fallback);
+}
+
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -242,10 +335,10 @@ function sameDay(a: Date, b: Date): boolean {
 function dayLabel(date: Date): string {
   const today = new Date();
   const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-  if (sameDay(date, today)) return 'Today';
-  if (sameDay(date, yesterday)) return 'Yesterday';
+  if (sameDay(date, today)) return t('Today');
+  if (sameDay(date, yesterday)) return t('Yesterday');
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale(), {
     weekday: 'short', day: 'numeric', month: 'short',
     ...(date.getFullYear() === today.getFullYear() ? {} : { year: 'numeric' })
   }).format(date);

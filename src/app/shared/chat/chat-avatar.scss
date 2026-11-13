@@ -1,5 +1,8 @@
 @use '../../../styles/tokens' as *;
 
+// The initials circle of design/miqat-2.0 (People list: 38px, 11.5px bold initials).
+// `--avatar-ink` recolours the initials; `--avatar-ring` is the surface the online
+// dot is cut out of, for an avatar that sits on a card instead of the page.
 :host {
   position: relative;
   display: inline-flex;
@@ -17,31 +20,35 @@ img,
 
 img {
   object-fit: cover;
-  background: $bg-input;
+  background: $mq-line;
 }
 
 .initials {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: $teal-glow;
-  color: $text-active;
-  font-size: calc(var(--avatar-size, 40px) * 0.36);
+  background: $mq-line;
+  color: var(--avatar-ink, #{$mq-text});
+  font-size: calc(var(--avatar-size, 40px) * 0.303);
   font-weight: 700;
-  letter-spacing: 0.02em;
   user-select: none;
 }
 
+:host(.group) .initials {
+  background: color-mix(in srgb, var(--mq-accent) 20%, #{$mq-line});
+  color: $mq-accent-text;
+}
+
 .online-dot {
+  box-sizing: content-box;
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 28%;
-  height: 28%;
+  inset-inline-end: -1px;
+  bottom: -1px;
+  width: 29%;
+  height: 29%;
   min-width: 9px;
   min-height: 9px;
   border-radius: 50%;
-  background: #22c55e;
-  // The ring separates the dot from the picture on any background.
-  box-shadow: 0 0 0 2px $bg-card;
+  background: $mq-green;
+  border: 2px solid var(--avatar-ring, #{$mq-bg});
 }

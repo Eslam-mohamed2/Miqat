@@ -1,110 +1,54 @@
-// Page layout (form column, card, clock panel, home button) is shared with the
-// other auth pages; see _auth-layout.scss.
-@use './auth-layout';
-@use '../../styles/breakpoints' as *;
+@use '../../styles/tokens' as *;
+@use './auth-layout' as *;
 
-label {
-  font-family: "Luckiest Guy";
-  font-size: 16px !important;
-  font-weight: 500 !important;
-}
+@include auth-form;
 
-input {
-  font-family: "Luckiest Guy" !important;
-  border-radius: 15px !important;
-}
-
-.form-control:focus {
-  border-color: #2e6670 !important;
-  box-shadow: 0 0 0 0.2rem rgba(46, 102, 112, 0.25) !important;
-}
-
-.form-select:focus {
-  border-color: #2e6670 !important;
-  box-shadow: 0 0 0 0.2rem rgba(46, 102, 112, 0.25) !important;
-}
-
-// Login / Register switch
-.switch-wrapper {
+.fields {
   display: flex;
-  justify-content: center;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.switch {
+.google {
   position: relative;
-  background: #e9ecef;
-  border-radius: 25px;
   display: flex;
-  width: 220px;
-  height: 40px;
-  align-items: center;
-  overflow: hidden;
 }
 
-.switch button {
+.google-btn {
+  @include mq-btn-outline(50px, 1px 6px, 12px);
   flex: 1;
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: #555;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.3s ease;
+  gap: 10px;
+  border-color: $mq-line-4;
+  color: $mq-text;
+  font-size: 14.5px;
+  line-height: normal;
+  font-feature-settings: normal;
+
+  // The mark is drawn in the theme's own tones, as designed.
+  .gm-1 { fill: $mq-text-2; }
+  .gm-2 { fill: $mq-text-4; }
+  .gm-3 { fill: $mq-muted; }
+  .gm-4 { fill: $mq-accent; }
 }
 
-.switch button.active {
-  color: #fff;
-}
-
-.switch-indicator {
+.google-real {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  // Half of the switch, whatever its width.
-  width: calc(50% - 5px);
-  height: calc(100% - 6px);
-  background-color: #2e6670;
-  border-radius: 25px;
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.9rem;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.divider {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  z-index: 1;
-}
+  gap: 14px;
+  font-size: 12px;
+  color: $mq-muted;
 
-/* move indicator to the right */
-.switch-indicator.move-right {
-  left: calc(50% + 2px);
-}
-
-// Google renders its button at a fixed 300px; scale it down to fit the card.
-.google-btn-wrapper {
-  transform: scale(0.8);
-  transform-origin: center;
-}
-
-@include below($bp-grid-lg) {
-  .switch-wrapper {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .switch {
-    background: #f0f2f5;
-    border: 1px solid #ddd;
-    width: 200px;
-    height: 44px;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-}
-
-@include below($bp-phone-lg) {
-  .google-btn-wrapper {
-    transform: scale(0.7);
+  span {
+    flex: 1;
+    height: 1px;
+    background: $mq-chip;
   }
 }

@@ -4,7 +4,11 @@
  * A task's due date is an instant. Which *day* it falls on, and what clock time to
  * print, depends on the zone it is viewed in — so every part of the calendar has to
  * ask the same zone. These helpers are that single place.
+ *
+ * What they return for the screen (clock times, zone labels) follows the interface
+ * language and its digits; what they return for inputs and the API never does.
  */
+import { locale, num, t } from '../i18n/i18n';
 
 /** Calendar fields of an instant as seen from a time zone. `month` is 1-12. */
 export interface ZonedParts {
@@ -95,12 +99,15 @@ export function todayInZone(timeZone: string): Date {
   return new Date(parts.year, parts.month - 1, parts.day);
 }
 
-/** Clock time of an instant in a zone: "11:23 AM", or "23:23" on a 24-hour clock. */
+/**
+ * Clock time of an instant in a zone: "11:23 AM", or "23:23" on a 24-hour clock.
+ * In Arabic "١١:٢٣ ص", in the digits chosen.
+ */
 export function formatTimeInZone(date: Date, timeZone: string, hour24 = false): string {
-  const key = `${timeZone}|${hour24}`;
+  const key = `${locale()}|${timeZone}|${hour24}`;
   let formatter = timeFormatters.get(key);
   if (!formatter) {
-    formatter = new Intl.DateTimeFormat(undefined, hour24
+    formatter = new Intl.DateTimeFormat(locale(), hour24
       ? { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }
       : { timeZone, hour: 'numeric', minute: '2-digit', hour12: true });
     timeFormatters.set(key, formatter);
@@ -110,16 +117,16 @@ export function formatTimeInZone(date: Date, timeZone: string, hour24 = false): 
 
 /**
  * The shortest readable clock time, for places with very little room:
- * "7pm", "8:46am", or "19:00" on a 24-hour clock.
+ * "7pm", "8:46am", or "19:00" on a 24-hour clock. In Arabic "٧ م", "٨:٤٦ ص".
  */
 export function formatShortTimeInZone(date: Date, timeZone: string, hour24 = false): string {
   const parts = zonedParts(date, timeZone);
   const minutes = String(parts.minute).padStart(2, '0');
-  if (hour24) return `${String(parts.hour).padStart(2, '0')}:${minutes}`;
+  if (hour24) return num(`${String(parts.hour).padStart(2, '0')}:${minutes}`);
 
   const hour = parts.hour % 12 || 12;
-  const half = parts.hour < 12 ? 'am' : 'pm';
-  return parts.minute ? `${hour}:${minutes}${half}` : `${hour}${half}`;
+  const time = num(parts.minute ? `${hour}:${minutes}` : `${hour}`);
+  return parts.hour < 12 ? t('{time}am', { time }) : t('{time}pm', { time });
 }
 
 /**
@@ -173,13 +180,69 @@ export function cellOfInstant(date: Date, timeZone: string): Date {
   return new Date(parts.year, parts.month - 1, parts.day);
 }
 
-/** "Africa/Cairo" -> "Cairo (GMT+2)". */
-export function timeZoneLabel(timeZone: string): string {
+const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
+
+/** The calendar days an all-day event covers. `month` is 1-12. */
+export interface AllDaySpan {
+  year: number;
+  month: number;
+  day: number;
+  days: number;
+}
+
+/**
+ * The days of an all-day event, whatever zone it is looked at from.
+ *
+ * It is stored from one midnight to a later one in the zone it was made in. From
+ * another zone those are no longer midnights (Cairo's midnight is 17:00 the day
+ * before in New York), and reading them as instants would put the event on two
+ * days. It belongs to the date it was given, so that date is found again: a
+ * day's midnight falls between 11:00 UTC the day before (UTC+13) and 10:59 UTC
+ * of the day itself (UTC-10:59). The few islands on UTC-11 and UTC+14 are read
+ * right in their own zone only.
+ */
+export function allDaySpan(start: Date, end: Date, timeZone: string): AllDaySpan {
+  const length = end.getTime() - start.getTime();
+  const whole = Math.round(length / DAY_MS);
+  // A day of 23 or 25 hours, when the clocks change, is still one day.
+  const isWhole = whole >= 1 && Math.abs(length - whole * DAY_MS) <= HOUR_MS;
+
+  const local = zonedParts(start, timeZone);
+  if (local.hour === 0 && local.minute === 0 && isWhole) {
+    return { year: local.year, month: local.month, day: local.day, days: whole };
+  }
+
+  if (isWhole) {
+    const given = new Date(start.getTime() + 13 * HOUR_MS);
+    return { year: given.getUTCFullYear(), month: given.getUTCMonth() + 1, day: given.getUTCDate(), days: whole };
+  }
+
+  // Not a whole number of days: the days its instants touch in this zone.
+  const last = zonedParts(new Date(Math.max(start.getTime(), end.getTime() - 1)), timeZone);
+  const days = Math.round(
+    (Date.UTC(last.year, last.month - 1, last.day) - Date.UTC(local.year, local.month - 1, local.day)) / DAY_MS) + 1;
+  return { year: local.year, month: local.month, day: local.day, days };
+}
+
+/**
+ * The city a zone is named after, in the interface language: "Africa/Cairo" ->
+ * "Cairo", in Arabic "القاهرة". A city the Arabic dictionary does not list keeps
+ * its Latin name.
+ */
+export function timeZoneCity(timeZone: string): string {
   const city = timeZone.split('/').pop()?.replace(/_/g, ' ') || timeZone;
+  return t(`${city}@@city`);
+}
+
+/** "Africa/Cairo" -> "Cairo (GMT+2)", in Arabic "القاهرة (غرينتش+٢)". */
+export function timeZoneLabel(timeZone: string): string {
+  const city = timeZoneCity(timeZone);
   try {
-    const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset' })
+    const parts = new Intl.DateTimeFormat(locale(), { timeZone, timeZoneName: 'shortOffset' })
       .formatToParts(new Date());
-    const offset = parts.find(part => part.type === 'timeZoneName')?.value ?? '';
+    // A zone on Greenwich time reads "GMT", not "GMT+0".
+    const offset = (parts.find(part => part.type === 'timeZoneName')?.value ?? '').replace(/[+-][0٠]$/, '');
     return offset && offset !== city ? `${city} (${offset})` : city;
   } catch {
     return city;

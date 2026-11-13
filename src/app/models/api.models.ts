@@ -89,6 +89,10 @@ export interface GroupDto {
   memberCount: number; taskCount: number; createdAt: string;
   /** Completed subset of taskCount, for the progress bar. */
   completedTaskCount?: number;
+  /** Comments and replies in the project's discussion. Absent on an API build without discussions. */
+  commentCount?: number;
+  /** The caller owns the project. */
+  isOwner?: boolean;
 }
 
 /**
@@ -134,6 +138,37 @@ export interface CommentDto {
   authorProfilePictureUrl?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+}
+
+/**
+ * A comment in a project's discussion. Like a task comment, plus: it can answer
+ * another comment (`parentId`, one level deep) and it says what the caller may do.
+ */
+export interface GroupCommentDto {
+  id: string;
+  content: string;
+  groupId: string;
+  /** The comment this one answers; null for a comment of its own. */
+  parentId?: string | null;
+  authorId: string;
+  authorName?: string | null;
+  authorProfilePictureUrl?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+  isEdited?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  /** The id this app gave the comment before it was saved; only on the answer to a post and on the live event. */
+  clientId?: string | null;
+}
+
+/** A page of a discussion: comments oldest first, each followed by its replies. */
+export interface GroupCommentPage {
+  comments: GroupCommentDto[];
+  /** There are older comments: ask again with `before` = the first comment of this page. */
+  hasMore: boolean;
+  /** Comments and replies in the whole discussion. */
+  total: number;
 }
 
 /**
@@ -211,6 +246,15 @@ export interface UserProfileDto {
   friendsCount: number;
   mutualFriendsCount: number;
   mutualFriends: ProfilePersonDto[];
+  /** Projects both people are on. Missing on an API build from before it was added. */
+  sharedProjects?: SharedProjectDto[];
+}
+
+export interface SharedProjectDto {
+  id: string;
+  name: string;
+  color?: string | null;
+  taskCount: number;
 }
 
 export interface FriendshipStatusDto { status: string; id: string | null; }
@@ -307,6 +351,53 @@ export interface CalendarItemDto {
 }
 
 export interface ImportResultDto { calendarId: string; imported: number; updated: number; skipped: number; }
+
+// ── Import from Google Calendar (read in the browser; not Miqat API payloads) ─
+
+/** One calendar of the user's Google account, as the import's chooser lists it. */
+export interface GoogleCalendar {
+  id: string; name: string;
+  /** Google's own colour for it, as hex; '' when it has none. */
+  color: string;
+  /** The account's main calendar. */
+  primary: boolean;
+}
+
+/** Events are read between these two moments; null leaves that side open. */
+export interface GoogleImportPeriod { from: Date | null; to: Date | null; }
+
+/** What the import is doing right now, for one Google calendar. */
+export interface GoogleImportProgress {
+  calendarId: string;
+  step: 'reading' | 'saving' | 'done';
+  /** Events read from Google so far, events being saved, or events saved. */
+  events: number;
+  /** With 'done': what importing this calendar did. */
+  result?: GoogleCalendarImportResult;
+}
+
+/** What importing one Google calendar did. */
+export interface GoogleCalendarImportResult {
+  id: string; name: string;
+  /** The Miqat calendar colour it was given. */
+  color: string;
+  added: number; updated: number;
+  /** Cancelled in Google, or not readable. */
+  skipped: number;
+  /** Titles of repeating events whose rule Miqat keeps more simply than Google. */
+  simplified: string[];
+  /** Titles of events brought in as one series per weekday. */
+  split: string[];
+  /** Why this calendar (or the rest of it) was not imported; null when it was. */
+  error: string | null;
+}
+
+/** Kept in this browser: when the user last imported from Google. */
+export interface GoogleLastImport {
+  at: string; calendars: number; events: number;
+  /** Google calendar id → the Miqat calendar it went into, so a renamed one is found again. */
+  targets?: Record<string, string>;
+}
 
 // ── Reminders, attachments (tasks and events) ────────────────────────────────
 

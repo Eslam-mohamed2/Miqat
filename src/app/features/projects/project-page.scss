@@ -1,867 +1,622 @@
 @use '../../../styles/tokens' as *;
+@use '../tasks/tasks-shared' as shared;
 
-// A workspace page, not a panel: it takes the full content width the way a
-// Notion database page does, with a wide max so tables have room to breathe.
-.project-page {
-  width: 100%;
-  max-width: 1500px;
-  margin: 0 auto;
-  // No outer padding here: the app shell's .page-content is the one place that sets
-  // the page gutter, so every page starts at the same distance from the sidebar.
-  padding: 0 0 3rem;
+
+// A project's page. No design file draws it: the header, the title block, the
+// progress card, the rows and the board are those of V2-Tasks and V2-Board.
+:host {
+  display: block;
+  min-height: 100%;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
+.project-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  color: $mq-text;
+  font-size: 13px;
+}
+
+kbd {
+  font-family: inherit;
+}
+
+@include shared.page-top;
+@include shared.status-tones;
+@include shared.priority-tones;
+@include shared.done-card;
+
+.back {
+  @include mq-btn-ghost(38px, 0, 10px);
+  gap: 6px;
+  padding-inline: 8px 12px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px 32px;
+}
+
+// ── Title, progress, actions ────────────────────────────────────────────────
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 24px;
+}
+
+.head-title {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eyebrow-line {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+h1 {
+  @include mq-serif(44px, 1);
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+
+.project-dot {
+  @include mq-dot(12px, 3px);
+  align-self: center;
+}
+
+.description {
+  // As wide as its text: a description in the other direction stays under the name.
+  width: fit-content;
+  max-width: 68ch;
+  padding-top: 4px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: $mq-text-3;
+}
+
+.done-late {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: $mq-late;
   white-space: nowrap;
 }
 
-.muted { color: $text-muted; }
-
-// ── Cover ───────────────────────────────────────────────────────────────────
-.cover {
-  height: 140px;
-  border-radius: 0 0 $radius-card $radius-card;
-  margin: 0 -2rem 0;
-
-  @include below($bp-laptop)    { margin: 0 -1.25rem; height: 110px; }
-  @include below($bp-tablet-sm) { margin: 0 -0.85rem; height: 80px; }
-}
-
-// ── Header ──────────────────────────────────────────────────────────────────
-.project-header {
-  margin-top: -25px;
-  margin-bottom: 1.5rem;
-
-  // Scaled down with the base value (was -28px against a -48px base): the cover
-  // is shorter here, so the overlap has to stay smaller than the desktop one,
-  // not larger.
-  @include below($bp-tablet-sm) { margin-top: -15px; }
-}
-
-.breadcrumbs {
+.head-actions {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.8rem;
-  color: $text-secondary;
-  margin-bottom: 0.75rem;
-
-  a { color: $text-secondary; text-decoration: none; &:hover { color: $text-primary; } }
-  strong { color: $text-primary; font-weight: 600; }
-  mat-icon { font-size: 15px; width: 15px; height: 15px; }
-
-  // The trail collapses to just the project name where there is no room.
-  @include below($bp-tablet-sm) {
-    a, mat-icon, span { display: none; }
-    strong { display: inline; }
-  }
-}
-
-.title-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
 }
 
-.project-emblem {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
+.btn-outline {
+  @include mq-btn-outline(36px, 0 12px, 10px);
+  color: $mq-text-3;
+  font-size: 12.5px;
+
+  &.danger:hover:not(:disabled) { color: $mq-late; }
+}
+
+.btn-primary {
+  @include mq-btn-primary(36px, 0 14px, 10px);
+}
+
+.people {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  font-weight: 800;
-  flex-shrink: 0;
+  height: 36px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  @include mq-focus;
 
-  @include below($bp-tablet-sm) { width: 48px; height: 48px; font-size: 1.1rem; border-radius: 12px; }
+  &:hover { background: $mq-hover; }
+
+  .avatar + .avatar { margin-inline-start: -6px; }
 }
 
-.title-text {
-  flex: 1;
+.people-none {
+  padding: 0 6px;
+  font-size: 12.5px;
+  color: $mq-muted;
+}
+
+.avatar {
+  @include mq-avatar(26px);
+  font-size: 10px;
+  color: $mq-text-2;
+  box-shadow: 0 0 0 2px $mq-bg;
+  object-fit: cover;
+
+  &.more { color: $mq-text-4; }
+}
+
+.head-edit {
+  flex: 1 1 320px;
   min-width: 0;
-
-  .project-title {
-    font-size: 2.1rem;
-    font-weight: 800;
-    color: $text-primary;
-    margin: 0;
-    line-height: 1.15;
-    overflow-wrap: anywhere;
-
-    @include below($bp-tablet)    { font-size: 1.6rem; }
-    @include below($bp-phone-lg)  { font-size: 1.35rem; }
-  }
-
-  .project-desc {
-    margin: 0.35rem 0 0;
-    font-size: 0.92rem;
-    color: $text-secondary;
-    overflow-wrap: anywhere;
-  }
-}
-
-.title-edit {
-  flex: 1;
-  min-width: 240px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin: 0;
 
-  .edit-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-
-    label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.8rem;
-      color: $text-secondary;
-    }
-
-    input[type='color'] {
-      width: 34px;
-      height: 28px;
-      padding: 0;
-      border: 1px solid $border-input;
-      border-radius: 6px;
-      background: transparent;
-      cursor: pointer;
-    }
+  textarea {
+    @include mq-field(auto, 10px);
+    min-height: 64px;
+    padding: 9px 12px;
+    line-height: 1.5;
+    resize: vertical;
   }
 }
 
-.edit-input {
+.name-input {
   width: 100%;
-  background: $bg-input;
-  border: 1px solid $border-input;
-  border-radius: $radius-input;
-  color: $text-primary;
-  font-size: 0.9rem;
-  padding: 9px 12px;
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1px solid $mq-line-2;
+  background: transparent;
+  color: $mq-text;
+  font-family: $mq-serif;
+  font-size: 36px;
+  line-height: 1.1;
   outline: none;
-  font-family: inherit;
 
-  &:focus { border-color: $teal-primary; }
-
-  &.title { font-size: 1.3rem; font-weight: 700; }
+  &:focus-visible { border-bottom-color: $mq-accent; }
 }
 
-.header-actions {
+.edit-row {
   display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-shrink: 0;
-  margin-top: 52px;
-
-  @include below($bp-tablet-sm) { margin-top: 0; width: 100%; }
-}
-
-// ── Meta ────────────────────────────────────────────────────────────────────
-.meta-strip {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
   flex-wrap: wrap;
-  margin-top: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid $border-card;
-
-  .meta {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 0.85rem;
-    color: $text-secondary;
-
-    mat-icon { font-size: 17px; width: 17px; height: 17px; }
-  }
-
-  .members-meta { cursor: pointer; &:hover { color: $text-primary; } }
+  align-items: center;
+  gap: 8px;
 }
 
-.avatar-stack {
+.colour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  margin-inline-end: auto;
+  font-size: 12px;
+  color: $mq-text-4;
+
+  input {
+    width: 36px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid $mq-line-2;
+    border-radius: 7px;
+    background: transparent;
+    cursor: pointer;
+  }
+}
+
+// ── Notice ──────────────────────────────────────────────────────────────────
+.notice {
   display: flex;
   align-items: center;
+  gap: 12px;
+  padding-block: 8px;
+  padding-inline: 14px 8px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #{$mq-late} 10%, transparent);
+  border: 1px solid color-mix(in srgb, #{$mq-late} 30%, transparent);
+  color: $mq-late;
+  font-size: 12.5px;
+  font-weight: 600;
 
-  .mini-avatar {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 800;
-    // Dark, not white: the avatar colours are mid-tones and white on them was
-    // only 2-3:1.
-    color: #111827;
-    border: 2px solid var(--bg-app);
-    margin-right: -8px;
-
-    &.more { background: $bg-card-hover; color: $text-secondary; }
-  }
-}
-
-// ── Progress ────────────────────────────────────────────────────────────────
-.progress-block {
-  margin-top: 1rem;
-  max-width: 460px;
-
-  .progress-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 6px;
-  }
-
-  .progress-label { font-size: 0.8rem; font-weight: 700; color: $text-secondary; }
-  .progress-value { font-size: 0.8rem; color: $text-muted; }
-
-  .progress-track {
-    height: 7px;
-    border-radius: 20px;
-    background: $bg-card-hover;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    border-radius: 20px;
-    transition: width 0.3s ease;
-
-    @include reduced-motion { transition: none; }
-  }
-
-  .progress-warn {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin: 8px 0 0;
-    font-size: 0.8rem;
-    color: #ef4444;
-
-    mat-icon { font-size: 15px; width: 15px; height: 15px; }
-  }
-}
-
-// ── Section tabs ────────────────────────────────────────────────────────────
-.section-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid $border-card;
-  margin-bottom: 1rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar { display: none; }
+  span { flex: 1; }
 
   button {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: transparent;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    color: $text-secondary;
-    font-size: 0.9rem;
-    font-weight: 700;
-    padding: 10px 14px;
-    cursor: pointer;
-    white-space: nowrap;
-
-    mat-icon { font-size: 18px; width: 18px; height: 18px; }
-
-    &:hover { color: $text-primary; }
-    &.active { color: $text-primary; border-bottom-color: $teal-primary; }
-
-    .count {
-      background: $bg-card-hover;
-      color: $text-secondary;
-      font-size: 12px;
-      font-weight: 700;
-      border-radius: 20px;
-      padding: 1px 7px;
-    }
+    @include mq-icon-btn(28px, 8px);
+    color: inherit;
   }
 }
 
 // ── Toolbar ─────────────────────────────────────────────────────────────────
 .toolbar {
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
   flex-wrap: wrap;
-  margin-bottom: 0.85rem;
-
-  .toolbar-spacer { flex: 1; }
-
-  .section-title { font-size: 1rem; font-weight: 700; color: $text-primary; margin: 0; }
-
-  .hint { font-size: 0.78rem; color: $text-muted; }
-
-  select {
-    background: $bg-input;
-    border: 1px solid $border-input;
-    border-radius: $radius-input;
-    color: $text-primary;
-    font-size: 0.82rem;
-    padding: 8px 10px;
-    cursor: pointer;
-    outline: none;
-    max-width: 100%;
-
-    &:focus { border-color: $teal-primary; }
-  }
-
-  .add-member { border-style: dashed; }
-
-  @include below($bp-tablet-sm) {
-    .toolbar-spacer { display: none; }
-    .search-field { flex: 1 1 100%; }
-    select { flex: 1 1 auto; }
-  }
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
 }
 
-.view-switch {
-  display: inline-flex;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-btn;
-  padding: 3px;
+.seg {
+  @include mq-seg(3px, 10px);
 
   button {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    border: 0;
-    background: transparent;
-    color: $text-secondary;
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-
-    mat-icon { font-size: 17px; width: 17px; height: 17px; }
-
-    &.active { background: $bg-card-hover; color: $text-active; }
-
-    @include below($bp-phone-lg) { span { display: none; } }
+    @include mq-seg-item(30px, 0 12px, 7px);
+    gap: 6px;
   }
 }
 
-.search-field {
-  position: relative;
-  flex: 0 1 240px;
-  min-width: 0;
-
-  mat-icon {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 17px; width: 17px; height: 17px;
-    color: $text-muted;
-    pointer-events: none;
-  }
-
-  input {
-    width: 100%;
-    background: $bg-input;
-    border: 1px solid $border-input;
-    border-radius: $radius-input;
-    color: $text-primary;
-    font-size: 0.82rem;
-    padding: 8px 10px 8px 32px;
-    outline: none;
-
-    &:focus { border-color: $teal-primary; }
-    &::placeholder { color: $text-muted; }
-  }
+.seg-count {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: $mq-muted;
 }
 
-// ── Database table ──────────────────────────────────────────────────────────
-.table-wrap { display: flex; flex-direction: column; gap: 1.25rem; }
+.spacer {
+  flex: 1;
+}
 
-.db-group-head {
+.filter {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
-
-  h3 { font-size: 0.9rem; font-weight: 700; color: $text-primary; margin: 0; }
-
-  .group-count {
-    font-size: 12px;
-    font-weight: 700;
-    color: $text-secondary;
-    background: $bg-card-hover;
-    border-radius: 20px;
-    padding: 1px 7px;
-  }
-}
-
-.group-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-
-.db-group-empty {
-  font-size: 0.8rem;
-  color: $text-muted;
-  padding: 0.75rem;
-  border: 1px dashed $border-card;
-  border-radius: $radius-btn;
+  width: 220px;
+  height: 36px;
   margin: 0;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  color: $mq-muted;
+
+  &:focus-within { border-color: $mq-accent; }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: $mq-text;
+    font: inherit;
+    font-size: 12.5px;
+
+    &::placeholder { color: $mq-muted; opacity: 1; }
+  }
 }
 
-// The table scrolls inside its own box so a wide row never widens the page.
+.tool-select {
+  @include mq-field(36px, 10px);
+  max-width: 100%;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $mq-text-3;
+  cursor: pointer;
+}
+
+.hint {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+// ── Task table ──────────────────────────────────────────────────────────────
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 6px;
+
+  h2 {
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: normal;
+  }
+}
+
+.status-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.group-count {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.group-empty {
+  padding: 4px 6px 10px;
+  font-size: 12px;
+  color: $mq-muted;
+}
+
 .table-scroll {
-  width: 100%;
-  overflow-x: auto;
-  // Makes this box the reference for absolutely-positioned children (the
-  // screen-reader-only column labels). Without it they were placed against the
-  // page instead, escaped this box's clipping and made the whole page scroll
-  // sideways on phones.
+  // Holds the table's screen-reader-only headings (they are absolutely placed):
+  // without this they count as content of the page and let a phone scroll the
+  // whole page sideways.
   position: relative;
-  -webkit-overflow-scrolling: touch;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
+  overflow-x: auto;
+  @include mq-scroll;
 }
 
-.db-table {
+.task-table {
   width: 100%;
+  // The fixed columns below take 854px; the rest is the name.
+  min-width: 1100px;
   border-collapse: collapse;
-  font-size: 0.83rem;
-  min-width: 940px;
+  border-top: 1px solid $mq-hover;
+  // Fixed columns, so the tables of every group line up under one heading row.
+  table-layout: fixed;
 
-  thead th {
-    text-align: left;
-    padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid $border-card;
-    color: $text-secondary;
-    font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    position: sticky;
-    top: 0;
-    background: $bg-card;
-    z-index: 1;
+  // Only the first group prints the headings. The rest keep the row, flattened,
+  // so the columns still line up and a screen reader still has the headings.
+  &.repeat thead th {
+    height: 0;
+    padding-block: 0;
+    font-size: 0;
+    line-height: 0;
+    color: transparent;
   }
 
-  tbody tr {
-    border-bottom: 1px solid $border-subtle;
-    transition: background 0.12s ease;
-
-    &:last-child { border-bottom: 0; }
-    &:hover { background: $bg-card-hover; }
-    &.saving { opacity: 0.55; }
+  th {
+    height: 30px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    text-align: start;
+    color: $mq-muted;
+    white-space: nowrap;
   }
 
   td {
-    padding: 0.5rem 0.75rem;
-    color: $text-primary;
-    vertical-align: middle;
+    height: 48px;
+    padding: 0 8px;
+    border-bottom: 1px solid $mq-row-hover;
+    font-size: 12.5px;
+    color: $mq-text-3;
+    white-space: nowrap;
   }
 
-  .c-check { width: 40px; }
-  .c-name { min-width: 260px; }
-  .c-status, .c-priority { width: 130px; }
-  .c-assignee { width: 160px; }
-  .c-due { width: 110px; white-space: nowrap; }
-  .c-tags { width: 160px; }
-  .c-actions { width: 52px; text-align: right; }
-  .c-workload { width: 160px; }
+  tbody tr {
+    transition: background $mq-t-press $mq-ease-quick;
 
-  .name-btn {
-    background: transparent;
-    border: 0;
-    padding: 0;
-    text-align: left;
-    cursor: pointer;
-    width: 100%;
-
-    .name {
-      display: block;
-      font-weight: 600;
-      color: $text-primary;
-      overflow-wrap: anywhere;
-
-      &.done { text-decoration: line-through; color: $text-muted; }
-    }
-
-    .sub {
-      display: -webkit-box;
-      -webkit-line-clamp: 1;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      font-size: 0.75rem;
-      color: $text-secondary;
-      margin-top: 1px;
-    }
-
-    &:hover .name { color: $teal-primary; }
+    &:hover { background: $mq-card-2; }
   }
 
-  .check {
-    background: transparent;
-    border: 0;
-    color: $text-muted;
-    cursor: pointer;
-    display: inline-flex;
-    padding: 2px;
-
-    mat-icon { font-size: 19px; width: 19px; height: 19px; }
-
-    &.done { color: $teal-primary; }
-    &:hover { color: $teal-primary; }
-  }
-
-  .email { color: $text-secondary; }
+  .c-check { width: 44px; padding-inline: 10px 2px; }
+  .c-status { width: 132px; }
+  .c-priority { width: 118px; }
+  .c-assignee { width: 156px; }
+  .c-est { width: 76px; text-align: end; color: $mq-text-4; }
+  .c-due { width: 124px; text-align: end; }
+  .c-labels { width: 160px; overflow: hidden; }
+  .c-workload { width: 220px; }
+  .c-actions { width: 44px; text-align: end; }
+  .quiet { color: $mq-text-4; }
 }
 
-// Cell editors read as chips until focused, the way a database cell does.
-.cell-select {
-  border: 1px solid transparent;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 8px;
+.members-table { min-width: 720px; }
+
+.box {
+  @include shared.check-ring;
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.name-btn {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: $mq-text;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: start;
   cursor: pointer;
-  outline: none;
-  max-width: 100%;
+  @include mq-ellipsis;
+  @include mq-focus;
 
-  &:focus { border-color: $teal-primary; }
+  &:hover { text-decoration: underline; }
+}
 
-  // Options are painted by the OS, so they need their own readable background.
-  option { background: $bg-card; color: $text-primary; }
+tr.done .name-btn {
+  color: $mq-muted;
+  text-decoration: line-through;
+  text-decoration-color: $mq-line-6;
+}
 
-  &.plain {
-    background: transparent;
-    color: $text-secondary;
-    font-weight: 600;
-    border-radius: 6px;
+.cell-select {
+  max-width: 150px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: $mq-text-3;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  @include mq-focus;
 
-    &:hover { background: $bg-input; }
+  &:hover { border-color: $mq-line-2; }
+
+  &.pill {
+    @include shared.tone-pill;
+    height: auto;
+    cursor: pointer;
+  }
+
+  option {
+    background: $mq-card-5;
+    color: $mq-text;
+    font-weight: 400;
   }
 }
 
 .due {
-  font-size: 0.8rem;
-  color: $text-secondary;
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: $mq-muted;
 
-  &.overdue { color: $text-danger; font-weight: 700; }
+  &.late { color: $mq-late; }
 }
 
-.tag {
+.label {
   display: inline-block;
-  font-size: 0.75rem;
-  color: $text-secondary;
-  background: $bg-card-hover;
-  border-radius: 4px;
-  padding: 2px 6px;
-  margin: 1px 2px 1px 0;
+  padding: 0 6px;
+  border-radius: 5px;
+  border: 1px solid $mq-line-2;
+  font-size: 10.5px;
+  color: $mq-text-4;
+
+  & + & { margin-inline-start: 5px; }
 }
 
 .icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  color: $text-muted;
-  cursor: pointer;
-  padding: 5px;
+  @include mq-icon-btn(30px, 8px);
+  color: $mq-muted;
 
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
-
-  &:hover { background: $bg-input; color: $text-primary; }
-  &.danger:hover { color: #ef4444; }
-
-  @include touch { padding: 10px; }
+  &.danger:hover:not(:disabled) { color: $mq-late; }
 }
 
-// ── Members table ───────────────────────────────────────────────────────────
-.members-table { min-width: 720px; }
+.board-scroll {
+  overflow-x: auto;
+  @include mq-scroll;
+}
 
-.member-cell {
-  display: flex;
+// ── Members ─────────────────────────────────────────────────────────────────
+.member {
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
+  color: $mq-text;
+  border-radius: 6px;
+  @include mq-focus;
 
-  .member-avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    object-fit: cover;
+  .avatar { box-shadow: none; }
+}
 
-    &.initials {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      // Dark, not white: the avatar colours are mid-tones and white on them was
-      // only 2-3:1.
-      color: #111827;
-      font-size: 12px;
-      font-weight: 800;
-    }
-  }
-
-  .name { font-weight: 600; }
+.member-name {
+  font-size: 13.5px;
+  font-weight: 500;
 }
 
 .workload {
   display: flex;
   align-items: center;
   gap: 8px;
-
-  .mini-track {
-    flex: 1;
-    height: 5px;
-    border-radius: 20px;
-    background: $bg-card-hover;
-    overflow: hidden;
-    min-width: 60px;
-  }
-
-  .mini-fill { height: 100%; border-radius: 20px; }
-
-  .workload-text { font-size: 0.75rem; color: $text-secondary; white-space: nowrap; }
+  min-width: 140px;
 }
 
-// ── Board ───────────────────────────────────────────────────────────────────
-.board {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(220px, 1fr));
-  gap: 0.85rem;
-  align-items: start;
+.workload-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: $mq-line;
 
-  @include below($bp-laptop) {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 0.5rem;
-
-    .board-col { flex: 0 0 260px; scroll-snap-align: start; }
-  }
-
-  @include below($bp-phone-lg) {
-    .board-col { flex: 0 0 85vw; }
-  }
-}
-
-.board-col {
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-  min-width: 0;
-
-  .board-head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0.7rem 0.8rem;
-    border-bottom: 1px solid $border-subtle;
-
-    h3 { font-size: 0.82rem; font-weight: 700; color: $text-primary; margin: 0; flex: 1; }
-  }
-
-  .board-body {
-    padding: 0.6rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    min-height: 80px;
-  }
-
-  .board-empty { text-align: center; color: $text-muted; font-size: 0.78rem; margin: 0.5rem 0; }
-}
-
-.board-card {
-  position: relative;
-  background: $bg-app;
-  border: 1px solid $border-card;
-  border-radius: $radius-btn;
-  padding: 0.6rem 0.65rem 0.6rem 0.8rem;
-  cursor: pointer;
-  transition: $transition-std;
-
-  &:hover { border-color: $teal-primary; }
-  &.saving { opacity: 0.55; }
-
-  .prio-bar {
-    position: absolute;
-    left: 0; top: 8px; bottom: 8px;
-    width: 3px;
+  span {
+    display: block;
+    height: 100%;
     border-radius: 3px;
-  }
-
-  h4 {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: $text-primary;
-    margin: 0;
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-  }
-
-  .card-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    margin-top: 6px;
-
-    .assignee {
-      font-size: 0.75rem;
-      color: $text-secondary;
-      background: $bg-card-hover;
-      border-radius: 4px;
-      padding: 1px 6px;
-      max-width: 55%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    background: $mq-accent;
   }
 }
 
-// ── Shared chrome ───────────────────────────────────────────────────────────
-.error-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-  border-radius: $radius-card;
-  padding: 0.7rem 1rem;
-  margin-bottom: 1rem;
-  font-size: 0.88rem;
-
-  span { flex: 1; }
-  button { background: transparent; border: 0; color: inherit; cursor: pointer; display: inline-flex; }
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.workload-text {
+  font-size: 11px;
+  color: $mq-text-4;
 }
 
-.state-card {
+// ── Discussion ──────────────────────────────────────────────────────────────
+// The thread itself is shared/comment-thread. Here it only gets a column to
+// read in: the tables above use the whole width, a conversation should not.
+.discussion {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 760px;
+  padding: 10px 6px 0;
+
+  .empty { padding: 18px 0; }
+}
+
+// ── States ──────────────────────────────────────────────────────────────────
+.empty,
+.state {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 3rem 1.5rem;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-
-  @include below($bp-tablet-sm) { padding: 2rem 1rem; }
-
-  .state-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: $bg-card-hover;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-
-    mat-icon { font-size: 30px; width: 30px; height: 30px; color: $text-secondary; }
-  }
-
-  .state-title { font-size: 1.05rem; font-weight: 700; color: $text-primary; margin: 0 0 0.25rem; }
-  .state-sub   { font-size: 0.88rem; color: $text-secondary; margin: 0 0 1.15rem; }
+  align-items: flex-start;
+  gap: 10px;
+  padding: 28px 6px;
 }
 
-.primary-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: $btn-quick-add-bg;
-  color: $btn-quick-add-text;
-  border: 0;
-  border-radius: $radius-btn;
-  font-weight: 700;
-  font-size: 0.83rem;
-  padding: 9px 16px;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
+.state { padding: 48px 24px; }
 
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
-  &:hover { background: $btn-quick-add-hover; }
-  &.sm { padding: 7px 13px; font-size: 0.8rem; }
-}
-
-.ghost-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  color: $text-primary;
-  border-radius: $radius-btn;
+.empty-title {
+  font-size: 13.5px;
   font-weight: 600;
-  font-size: 0.83rem;
-  padding: 8px 14px;
-  cursor: pointer;
-  white-space: nowrap;
-
-  mat-icon { font-size: 17px; width: 17px; height: 17px; }
-  &:hover { background: $bg-card-hover; }
-  &.sm { padding: 7px 12px; font-size: 0.8rem; }
-  &.danger:hover { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
 }
 
-// ── Skeleton ────────────────────────────────────────────────────────────────
-.skeleton-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding-top: 2rem;
+.empty-text,
+.state p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: $mq-text-4;
+}
 
-  .sk-block {
-    height: 56px;
-    border-radius: $radius-card;
-    background: linear-gradient(90deg, $bg-card 25%, $bg-card-hover 37%, $bg-card 63%);
-    background-size: 400% 100%;
-    animation: project-shimmer 1.4s ease infinite;
+.skeleton .bone {
+  height: 40px;
+  border-radius: 8px;
+  background: $mq-card;
+  animation: mq-fade 900ms $mq-ease-calm infinite alternate;
 
-    &.tall { height: 140px; }
+  &.tall { height: 96px; }
+}
 
-    @include reduced-motion { animation: none; }
+// ── Phones ──────────────────────────────────────────────────────────────────
+@include below($bp-tablet) {
+  .top { padding: 12px 18px; }
+  .plan { display: none; }
+
+  .body { padding: 18px 18px 8px; }
+
+  h1 { font-size: 36px; }
+
+  .done-card { flex: 1 1 100%; }
+  .done-main { flex: 1; min-width: 0; }
+
+  .head-actions { margin-inline-start: 0; }
+
+  .filter { flex: 1 1 100%; width: auto; height: 44px; }
+
+  .tool-select,
+  .btn-outline,
+  .btn-primary,
+  .people { height: 44px; }
+
+  .seg button { height: 38px; }
+
+  .spacer { display: none; }
+
+}
+
+@include touch {
+  .icon-btn {
+    width: 40px;
+    height: 40px;
   }
-}
 
-@keyframes project-shimmer {
-  0%   { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
+  .cell-select { min-height: 36px; }
 }
-
-// Project colours are chosen by the user, so one used as a *text* colour can be
-// near-black on the dark theme or near-white on the light one (the seeded
-// "Leadership" navy measured 1.6:1). The colour stays on the tinted background
-// and border; the letters use the theme's text colour. !important because the
-// template sets the colour inline.
-.project-emblem {
-  color: $text-primary !important;
-}
-
-// Checklist progress and "Blocked" on a task (app-task-marks). Only the spacing is
-// set here; the marks bring their own look and take no room when there are none.
-.row-marks { margin-top: 6px; }
-.card-marks { margin-top: 8px; }

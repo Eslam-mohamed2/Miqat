@@ -1,19 +1,21 @@
-import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import { FlipClock } from '../../flip-clock/flip-clock';
-import { apiErrorMessage } from '../../core/http/api-error';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { AuthService } from '../../core/services/auth.service';
+import { AuthShell } from '../auth-shell/auth-shell';
+import { authError } from '../server-text';
 
+/** "Reset your password": asks for the address and emails it a code (design/miqat-2.0: V2-SignIn). */
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, FlipClock],
+  imports: [ReactiveFormsModule, AuthShell, TPipe],
   templateUrl: './forgot-password.html',
-  styleUrl: './forgot-password.scss'
+  styleUrl: './forgot-password.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ForgotPasswordComponent {
   private fb = inject(FormBuilder);
@@ -52,9 +54,13 @@ export class ForgotPasswordComponent {
         });
       },
       error: (err) => {
-        this.errorMessage.set(apiErrorMessage(err, 'Failed to request password reset. Please try again.'));
+        this.errorMessage.set(authError(err, 'Failed to request password reset. Please try again.'));
       }
     });
+  }
+
+  backToSignIn(): void {
+    this.router.navigate(['/authentication'], { queryParams: { form: 'login' } });
   }
 
   isFieldInvalid(field: string): boolean {

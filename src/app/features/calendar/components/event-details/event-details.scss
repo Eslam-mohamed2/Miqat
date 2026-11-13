@@ -1,0 +1,495 @@
+@use '../../../../../styles/tokens' as *;
+@use '../../calendar' as cal;
+
+// design/miqat-2.0: the "Event details" panel of Main / L-Week.
+:host {
+  display: block;
+  min-height: 100%;
+}
+
+.details {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 100%;
+  // Selecting another item cross-fades with a small rise (V2-Motion: "Details change in place").
+  animation: mq-rise $mq-t-change $mq-ease-calm;
+}
+
+.eyebrow {
+  @include mq-eyebrow;
+  letter-spacing: .1em;
+}
+
+// ── Where it belongs, and what can be done with it ──────────────────────────
+.source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: $mq-text-4;
+}
+
+.dot {
+  @include cal.dot(9px, 3px);
+}
+
+.source-name {
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+.pill {
+  flex-shrink: 0;
+  margin-inline-start: 4px;
+  padding: 2px 8px;
+  border: 1px dashed $mq-accent-text;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: $mq-accent-text;
+}
+
+// Edit, delete, close. The buttons are taller than the line they sit on and must not move what follows.
+.tools {
+  flex-shrink: 0;
+  display: flex;
+  gap: 2px;
+  margin-block: -7px;
+  margin-inline: auto -6px;
+}
+
+.tool {
+  @include mq-icon-btn(28px, 8px);
+
+  &.danger:hover:not(:disabled) { color: $mq-late; }
+
+  @include touch {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+// ── Title and time ──────────────────────────────────────────────────────────
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  h2 {
+    @include mq-serif(34px, 1.05);
+    overflow-wrap: anywhere;
+  }
+}
+
+.when {
+  font-size: 13.5px;
+  color: $mq-text-2;
+  overflow-wrap: anywhere;
+}
+
+.quiet {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.text-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: $mq-accent-text;
+  cursor: pointer;
+  @include mq-focus;
+
+  &:hover:not(:disabled) { text-decoration: underline; }
+  &:disabled { opacity: .5; cursor: default; }
+}
+
+// While the event loads, the shape of what is coming breathes; never a spinner.
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  span {
+    height: 44px;
+    border-radius: 12px;
+    background: $mq-field;
+    animation: breathe 1.6s ease-in-out infinite;
+
+    &:nth-child(2) { height: 34px; animation-delay: .2s; }
+    &:nth-child(3) { width: 60%; height: 14px; border-radius: 6px; animation-delay: .4s; }
+  }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: .45; }
+  50% { opacity: .9; }
+}
+
+.state {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: $mq-text-3;
+
+  &.error { color: $mq-late; }
+}
+
+// ── A question before a change ──────────────────────────────────────────────
+.ask {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: $mq-text-2;
+
+  strong { font-weight: 600; color: $mq-text; }
+}
+
+.ask-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-fill {
+  @include mq-btn-primary(36px, 0 12px, 9px);
+  font-size: 12.5px;
+}
+
+.btn-line {
+  @include mq-btn-outline(36px, 0 12px, 9px);
+  font-size: 12.5px;
+
+  &.danger {
+    color: $mq-late;
+    border-color: color-mix(in srgb, #{$mq-late} 45%, transparent);
+  }
+
+  &.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, #{$mq-late} 10%, transparent);
+    color: $mq-late;
+  }
+}
+
+.ask .btn-fill,
+.ask .btn-line {
+  height: 32px;
+  border-radius: 8px;
+  font-size: 12px;
+
+  @include touch { height: 40px; }
+}
+
+// ── Join, answer, guests ────────────────────────────────────────────────────
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.join {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  padding-inline-start: 14px;
+  border-radius: 12px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+}
+
+.join-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.join-name {
+  font-size: 13px;
+  font-weight: 600;
+  @include mq-ellipsis;
+}
+
+.join-when {
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+.join-btn {
+  @include mq-btn-primary(36px, 0 14px, 9px);
+}
+
+.answers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.answer {
+  @include mq-btn-base(34px, 0 6px, 9px);
+  border: 1px solid $mq-line-2;
+  color: $mq-text-4;
+  font-size: 12.5px;
+
+  &:hover:not(:disabled) { background: $mq-hover; color: $mq-text; }
+  &:active:not(:disabled) { transform: scale(.98); }
+
+  &[aria-pressed='true'] {
+    border-color: $mq-accent-text;
+    background: color-mix(in srgb, #{$mq-accent} 12%, transparent);
+    color: $mq-text;
+  }
+
+  @include touch { height: 44px; }
+}
+
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .eyebrow { padding-bottom: 4px; }
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.avatar {
+  @include mq-avatar(28px);
+  font-size: 10.5px;
+  color: $mq-text-2;
+  object-fit: cover;
+}
+
+.person-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.person-name {
+  font-size: 13px;
+  color: $mq-text;
+  text-decoration: none;
+  @include mq-ellipsis;
+  @include mq-focus;
+
+  &:hover { text-decoration: underline; }
+}
+
+.person-note {
+  font-size: 11px;
+  color: $mq-muted;
+  @include mq-ellipsis;
+}
+
+.person-status {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: $mq-muted;
+
+  &[data-tone='going'] { color: $mq-green; }
+  &[data-tone='maybe'] { color: $mq-accent-text; }
+}
+
+// ── A task's block ──────────────────────────────────────────────────────────
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reason {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: $mq-text-3;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+}
+
+.checklist-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: $mq-text-4;
+}
+
+.checklist-count {
+  color: $mq-text;
+}
+
+.meter {
+  height: 3px;
+  border-radius: 3px;
+  background: $mq-seg-on;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: $mq-accent;
+    transition: width $mq-t-view $mq-ease-calm;
+  }
+}
+
+.plan-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+
+  &.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  @include touch {
+    .btn-fill,
+    .btn-line { height: 44px; }
+  }
+}
+
+.move {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 104px);
+  gap: 6px;
+
+  input {
+    @include mq-field(36px, 9px);
+    min-width: 0;
+    color-scheme: inherit;
+
+    @include touch {
+      height: 44px;
+      font-size: 16px;
+    }
+  }
+}
+
+// ── Agenda and links ────────────────────────────────────────────────────────
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.point {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: $mq-text-2;
+  overflow-wrap: anywhere;
+}
+
+.dash {
+  flex-shrink: 0;
+  color: $mq-accent-text;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .eyebrow { padding-bottom: 2px; }
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid $mq-line;
+  color: $mq-text;
+  text-decoration: none;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: $mq-row-hover; color: $mq-text; }
+}
+
+.link-type {
+  flex-shrink: 0;
+  width: 74px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: $mq-accent-text;
+}
+
+.link-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  @include mq-ellipsis;
+}
+
+// ── The suggestion, at the foot of the panel ────────────────────────────────
+.smart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding: 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #{$mq-accent} 8%, #{$mq-card});
+  border: 1px solid color-mix(in srgb, #{$mq-accent} 30%, transparent);
+  animation: mq-settle $mq-t-arrive $mq-ease-calm;
+}
+
+.smart-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: $mq-text-2;
+}
+
+.smart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.smart-go {
+  @include mq-btn-primary(32px, 0 12px, 8px);
+  font-size: 12px;
+}
+
+.smart-no {
+  @include mq-btn-outline(32px, 0 12px, 8px);
+  font-size: 12px;
+  color: $mq-text-3;
+}
+
+@include touch {
+  .smart-go,
+  .smart-no { height: 40px; }
+}
+
+// Calendar and project colours, as the theme draws them (see cal.tone).
+.dot {
+  @include cal.tone;
+}

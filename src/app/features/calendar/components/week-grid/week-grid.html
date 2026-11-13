@@ -1,0 +1,145 @@
+<div class="inner">
+
+  <!-- Day headings and the all-day row stay in view while the hours scroll. -->
+  <div class="head">
+    <div class="head-row">
+      <div class="gutter gutter-head" [style.width.px]="gutter()">
+        @if (secondTag(); as tag) {
+          <span class="zone-tag second" [title]="board.secondZone()">{{ tag }}</span>
+        }
+        <button type="button" class="zone-tag" (click)="toggleZoneMenu($event)"
+                aria-haspopup="listbox" [attr.aria-expanded]="zoneMenuOpen()"
+                [attr.aria-label]="'Time zone: {zone}' | t: { zone: board.zoneLabel() }" [title]="board.zoneLabel()">{{ zoneTag() }}</button>
+
+        @if (zoneMenuOpen()) {
+          <div class="mq-menu zone-menu" role="listbox" [attr.aria-label]="'Time zone the calendar is shown in' | t"
+               (click)="$event.stopPropagation()">
+            @for (option of zoneOptions(); track option.label) {
+              <button type="button" class="mq-menu-item zone-option" role="option"
+                      [attr.aria-selected]="isZoneActive(option)" (click)="chooseZone(option)">
+                <span class="zone-text">
+                  <span>{{ option.label }}</span>
+                  <small>{{ option.hint }}</small>
+                </span>
+                @if (isZoneActive(option)) {
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                }
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="day-heads" [style.--days]="days().length">
+        @for (day of days(); track day.key) {
+          <div class="day-head" [class.off]="!day.isWorkDay" [class.holiday]="day.isHoliday"
+               (dragover)="overDay($event)" (drop)="dropOnDay($event, day)">
+            <span class="day-top">
+              <span class="dow">{{ day.dow }}</span>
+              <button type="button" class="day-num" [class.today]="day.isToday" (click)="openDay(day)"
+                      [attr.aria-label]="'Open {day}' | t: { day: day.label }" [attr.aria-current]="day.isToday ? 'date' : null">{{ day.number | num }}</button>
+            </span>
+            @if (day.hijri) { <span class="hijri">{{ day.hijri }}</span> }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="allday-row">
+      <div class="gutter gutter-allday" [style.width.px]="gutter()">{{ 'all-day' | t }}</div>
+      <div class="allday" [style.--days]="days().length">
+        <!-- Public holidays and occasions lead the row; they are marks, not events. -->
+        @for (bar of occasionBars(); track bar.occasion.id) {
+          <app-occasion-mark [occasion]="bar.occasion" [dayNumber]="bar.span === 1 ? bar.dayNumber : 0" [stretch]="bar.span > 1"
+                             [style.grid-column]="bar.column + ' / span ' + bar.span" />
+        }
+        @for (bar of bars(); track bar.chip.key) {
+          <button type="button" class="bar" [class.task]="bar.chip.kind === 'Task'" [class.declined]="bar.chip.declined"
+                  [class.selected]="board.isShown(bar.chip)" [attr.aria-pressed]="board.isShown(bar.chip)"
+                  [style.grid-column]="bar.column + ' / span ' + bar.span" [style.--tone]="bar.chip.color"
+                  [title]="bar.chip.title" (click)="pick(bar.chip)">
+            @if (bar.chip.kind === 'Task') { <span class="ring" [class.done]="bar.chip.done"></span> }
+            <span class="bar-title" dir="auto">{{ bar.chip.title }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="gutter gutter-body" [style.width.px]="gutter()" [style.height.px]="gridHeight" aria-hidden="true">
+      @for (hour of hours(); track hour.top) {
+        <div class="hour" [style.top.px]="hour.top">
+          @if (hour.second) { <span class="hour-second">{{ hour.second }}</span> }
+          <span class="hour-first">{{ hour.first }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="grid" [style.height.px]="gridHeight" [style.--days]="days().length">
+      <div class="lines" aria-hidden="true">
+        @for (line of lines; track line.top) {
+          <span class="line" [class.half]="line.half" [style.top.px]="line.top"></span>
+        }
+        @for (prayer of prayerTags(); track prayer.name) {
+          <span class="prayer-tag" [style.top.px]="prayer.top - 9">{{ prayer.label }}</span>
+        }
+      </div>
+
+      @for (column of columns(); track column.day.key) {
+        <div class="day-col" [class.off]="!column.day.isWorkDay" [class.today]="column.day.isToday"
+             role="group" [attr.aria-label]="column.day.label"
+             (dblclick)="newEventAt($event, column.day)"
+             (dragover)="overColumn($event, column.day)" (dragleave)="leaveColumn($event, column.day)"
+             (drop)="dropOnColumn($event, column.day)">
+
+          @for (prayer of column.prayers; track prayer.name) {
+            <span class="prayer-line" [style.top.px]="prayer.top"></span>
+          }
+
+          @for (block of column.blocks; track block.chip.key) {
+            <button type="button" class="ev"
+                    [class.planned]="block.chip.planned"
+                    [class.due]="block.chip.kind === 'Task' && !block.chip.planned"
+                    [class.done]="block.chip.done"
+                    [class.pending]="block.chip.pending"
+                    [class.declined]="block.chip.declined"
+                    [class.compact]="block.compact"
+                    [class.stacked]="block.stacked"
+                    [class.selected]="board.isShown(block.chip)"
+                    [attr.aria-pressed]="board.isShown(block.chip)"
+                    [attr.aria-label]="block.label"
+                    [attr.draggable]="block.chip.planned ? 'true' : null"
+                    [style.top.px]="block.top" [style.height.px]="block.height"
+                    [style.inset-inline-start]="block.left" [style.width]="block.width"
+                    [style.--tone]="block.chip.color"
+                    [style.animation-delay.ms]="block.delay"
+                    (dragstart)="dragBlock($event, block.chip)" (dragend)="endDrag()"
+                    (click)="pick(block.chip)">
+              @if (block.chip.kind === 'Task' && !block.chip.planned) {
+                <span class="ring" [class.done]="block.chip.done"></span>
+              }
+              <span class="ev-title" dir="auto" [class.clamp]="block.clamp">{{ block.chip.title }}</span>
+              @if (block.roomy) { <span class="ev-time">{{ block.chip.timeRange }}</span> }
+            </button>
+          }
+
+          @if (ghost(); as drop) {
+            @if (drop.key === column.day.key) {
+              <div class="ev planned ghost" [style.top.px]="drop.top" [style.height.px]="drop.height">
+                <span class="ev-time">{{ drop.label }}</span>
+              </div>
+            }
+          }
+
+          @if (column.day.isToday) {
+            <div class="now" role="img" [attr.aria-label]="nowLabel()" [style.top.px]="nowTop()">
+              <span class="now-dot"></span>
+              <span class="now-rule"></span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

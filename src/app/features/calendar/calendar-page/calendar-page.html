@@ -1,8 +1,121 @@
-<div class="calendar-layout">
-  <div class="calendar-main-column">
-    <app-main-calendar></app-main-calendar>
-  </div>
-  <div class="calendar-sidebar-column">
-    <app-calendar-sidebar></app-calendar-sidebar>
-  </div>
+@if (!phoneDay()) {
+  <header class="head">
+    <div class="steps">
+      <button type="button" class="arrow" (click)="step(-1)" [attr.aria-label]="stepLabels().previous">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+      </button>
+      <button type="button" class="today" (click)="setToday()">{{ 'Today' | t }}</button>
+      <button type="button" class="arrow" (click)="step(1)" [attr.aria-label]="stepLabels().next">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+      </button>
+    </div>
+
+    <div class="heading">
+      <h1>{{ title() }}</h1>
+      <span class="sub">{{ subtitle() }}</span>
+    </div>
+
+    <button type="button" class="search" (click)="openPalette()" [attr.aria-label]="'Create or search' | t" aria-keyshortcuts="Control+K">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      <span class="search-text">{{ 'Create or search — “Lunch with Omar tomorrow {hour}pm”' | t: { hour: 1 } }}</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+
+    <div class="views" role="group" [attr.aria-label]="'View' | t">
+      @for (choice of views; track choice.value) {
+        <button type="button" [attr.aria-pressed]="view() === choice.value" (click)="setView(choice.value)">{{ choice.label }}</button>
+      }
+    </div>
+
+    @if (!showColumn()) {
+      <button type="button" class="arrow options" (click)="openSheet()" aria-haspopup="dialog"
+              [attr.aria-label]="'Calendars, tasks to plan and layers' | t" [title]="'Calendars, tasks to plan and layers' | t">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l8.5 4.5L12 13 3.5 8.5 12 4z"></path><path d="M3.5 12.5L12 17l8.5-4.5M3.5 16.5L12 21l8.5-4.5"></path></svg>
+      </button>
+    }
+
+    <a class="plan" routerLink="/dashboard">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"></path></svg>
+      {{ 'Plan my day' | t }}
+    </a>
+    <a class="share" routerLink="/calendar/find-time">{{ 'Share times' | t }}</a>
+    <app-user-menu />
+  </header>
+}
+
+<div class="body" [class.month-body]="view() === 'month'">
+  @if (showColumn() && !phoneDay()) {
+    <app-calendar-sidebar class="column" />
+  }
+
+  @switch (view()) {
+    @case ('month') {
+      <app-month-view class="main" [inlineDetails]="detailsInline()" />
+    }
+    @case ('agenda') {
+      <app-schedule-view class="main" />
+    }
+    @default {
+      @if (phoneDay()) {
+        <app-mobile-day class="main" (options)="openSheet()" />
+      } @else {
+        <app-week-grid class="main" [single]="view() === 'day'" />
+      }
+    }
+  }
+
+  @if (showPanel()) {
+    <aside class="panel" [class.beside-chat]="chat.cornerInUse()" [attr.aria-label]="'Event details' | t">
+      @if (board.shown(); as selection) {
+        <app-event-details [selection]="selection" (closed)="clearSelection()" />
+      } @else {
+        <div class="panel-empty">
+          <span class="panel-eyebrow">{{ 'Nothing selected' | t }}</span>
+          <h2>{{ 'Pick an event or a task' | t }}</h2>
+          <p>{{ 'Its time in every zone, who is coming and what it is linked to show here.' | t }}</p>
+        </div>
+      }
+    </aside>
+  }
 </div>
+
+<!-- The left column as a sheet, where it has no room on the page. -->
+@if (sheetOpen()) {
+  <div class="sheet-shade" (click)="closeSheet()"></div>
+  <div class="sheet" role="dialog" aria-modal="true" [attr.aria-label]="'Calendars, tasks to plan and layers' | t"
+       cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <div class="sheet-head">
+      <span class="sheet-title">{{ 'Calendar' | t }}</span>
+      <button type="button" class="arrow" (click)="closeSheet()" [attr.aria-label]="'Close' | t">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+
+    @if (phoneDay()) {
+      <!-- The phone's day screen has no header: what the header holds is here. -->
+      <div class="sheet-tools">
+        <div class="steps">
+          <button type="button" class="arrow" (click)="step(-1)" [attr.aria-label]="'Previous day' | t">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+          </button>
+          <button type="button" class="today" (click)="setToday()">{{ 'Today' | t }}</button>
+          <button type="button" class="arrow" (click)="step(1)" [attr.aria-label]="'Next day' | t">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+        </div>
+        <div class="views" role="group" [attr.aria-label]="'View' | t">
+          @for (choice of views; track choice.value) {
+            <button type="button" [attr.aria-pressed]="view() === choice.value"
+                    (click)="setView(choice.value); closeSheet()">{{ choice.label }}</button>
+          }
+        </div>
+        <div class="sheet-links">
+          <a class="plan" routerLink="/dashboard">{{ 'Plan my day' | t }}</a>
+          <a class="share" routerLink="/calendar/find-time">{{ 'Share times' | t }}</a>
+        </div>
+      </div>
+    }
+
+    <app-calendar-sidebar />
+  </div>
+}

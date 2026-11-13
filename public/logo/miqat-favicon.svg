@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Miqat">
+  <rect width="32" height="32" rx="7" fill="#0B0B0A"/>
+  <g transform="translate(5.2 5.2) scale(0.19)">
+  <circle cx="56" cy="56" r="44" fill="none" stroke="#F2EFE8" stroke-width="12"/>
+  <path d="M56 56V31" fill="none" stroke="#F2EFE8" stroke-width="12" stroke-linecap="round"/>
+  <path d="M56 56L102.67 102.67" fill="none" stroke="#CDAE72" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="56" cy="56" r="12.6" fill="#CDAE72"/>
+  </g>
+</svg>

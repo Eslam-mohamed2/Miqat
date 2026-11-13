@@ -1,0 +1,62 @@
+@use '../../../styles/tokens' as *;
+
+// "Page not found", in the language of design/miqat-2.0: the mark, a serif title,
+// one quiet line and one primary button.
+:host {
+  display: block;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: $mq-bg;
+  color: $mq-text;
+  font-family: $mq-font;
+  line-height: normal;
+}
+
+// Bootstrap gives paragraphs and headings a bottom margin; nothing here wants one.
+p, h1, h2, h3 {
+  margin: 0;
+}
+
+.not-found {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 32px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  animation: mq-rise $mq-t-arrive $mq-ease-calm;
+}
+
+.not-found__mark {
+  margin-bottom: 14px;
+  color: $mq-accent-text;
+}
+
+.not-found__code {
+  @include mq-eyebrow;
+}
+
+.not-found__title {
+  @include mq-serif(42px);
+}
+
+.not-found__sub {
+  font-size: 14px;
+  color: $mq-text-4;
+}
+
+.not-found__action {
+  @include mq-btn-primary(40px, 0 16px, 10px);
+  margin-top: 16px;
+  // !important: outside the app shell the site-wide link colour is forced the same way.
+  color: $mq-on-accent !important;
+}
+
+@include below($bp-tablet) {
+  .not-found__title { font-size: 34px; }
+  .not-found__action { height: 44px; }
+}

@@ -1,0 +1,110 @@
+<main class="month">
+  <div class="inner">
+    <div class="dows" aria-hidden="true">
+      @for (name of dayLabels(); track $index) {
+        <span class="dow" [class.off]="name.off">{{ name.label }}</span>
+      }
+    </div>
+
+    @for (week of weeks(); track week.cells[0].day.key) {
+      <div class="week">
+        @for (cell of week.cells; track cell.day.key) {
+          <button type="button" class="cell" [class.off]="!cell.day.isWorkDay" [class.out]="!cell.day.inMonth"
+                  [class.holiday]="cell.day.isHoliday"
+                  [attr.aria-pressed]="cell.day.isSelected" [attr.aria-label]="cell.label"
+                  [attr.aria-current]="cell.day.isToday ? 'date' : null"
+                  (click)="pickDay(cell.day)" (dblclick)="newEventOn(cell.day)">
+            <span class="cell-top">
+              <span class="num" [class.today]="cell.day.isToday">{{ cell.day.number | num }}</span>
+              @if (cell.hijri) { <span class="hijri" [class.first]="cell.hijriStart">{{ cell.hijri }}</span> }
+              <span class="load" [attr.data-load]="cell.load"></span>
+            </span>
+            <!-- Public holidays and occasions come before everything of the user's, bars included. -->
+            @if (week.occasionRows) {
+              <span class="lines occasions" [style.height.px]="week.occasionRows * 19 - 5">
+                @for (mark of cell.occasions; track mark.occasion.id) {
+                  <span class="line occasion" [class.holiday]="mark.occasion.kind === 'holiday'" [title]="summaryOf(mark)">
+                    <span class="glyph" [class.holiday]="mark.occasion.kind === 'holiday'"></span>
+                    <span class="title">{{ mark.occasion.name }}</span>
+                  </span>
+                }
+              </span>
+            }
+            <span class="lines" [style.margin-top.px]="week.barSpace || null">
+              @for (chip of cell.lines; track chip.key) {
+                <span class="line" [class.done]="chip.done">
+                  <span class="dot" [class.planned]="chip.planned" [style.--tone]="chip.color"></span>
+                  @if (!chip.allDay) { <span class="time">{{ chip.time }}</span> }
+                  <span class="title" dir="auto">{{ chip.title }}</span>
+                </span>
+              }
+              @if (cell.more) { <span class="more">{{ cell.more | tCount: '+{n} more' : '+{n} more' }}</span> }
+            </span>
+          </button>
+        }
+
+        @for (bar of week.bars; track bar.chip.key) {
+          <span class="bar" [style.--tone]="bar.chip.color" [style.top.px]="44 + week.barOffset + bar.row * 24"
+                [style.inset-inline-start]="barLeft(bar)" [style.width]="barWidth(bar)"><span class="bar-title" dir="auto">{{ bar.chip.title }}</span></span>
+        }
+      </div>
+    }
+  </div>
+</main>
+
+<aside class="side" [class.beside-chat]="chat.cornerInUse()" [attr.aria-label]="(state.selection() && inlineDetails() ? 'Event details' : 'The day and the month') | t">
+  @if (inlineDetails() && state.selection(); as selection) {
+    <app-event-details [selection]="selection" (closed)="state.clearSelection()" />
+  } @else {
+    <section class="day">
+      @if (selectedHijri()) { <span class="day-hijri">{{ selectedHijri() }}</span> }
+      <h2>{{ selectedTitle() }}</h2>
+
+      @for (mark of selected().occasions; track mark.occasion.id) {
+        <div class="occasion-row">
+          <span class="glyph" [class.holiday]="mark.occasion.kind === 'holiday'" aria-hidden="true"></span>
+          <span class="occasion-text">
+            <span class="occasion-name">{{ mark.occasion.name }}</span>
+            <span class="occasion-detail">{{ detailOf(mark) }}</span>
+          </span>
+        </div>
+      }
+
+      @for (chip of selected().chips; track chip.key) {
+        <button type="button" class="entry" [class.done]="chip.done" [class.declined]="chip.declined" (click)="pick(chip)">
+          <span class="entry-time">{{ chip.allDay ? ('All day' | t) : chip.time }}</span>
+          <span class="entry-dot" [class.planned]="chip.planned" [style.--tone]="chip.color"></span>
+          <span class="entry-title" dir="auto">{{ chip.title }}</span>
+        </button>
+      }
+      @if (!selected().chips.length) {
+        <span class="empty">{{ 'Nothing planned. A good day to protect.' | t }}</span>
+      }
+
+      <button type="button" class="open-week" (click)="openWeek()">{{ 'Open this week' | t }}</button>
+    </section>
+
+    <section class="glance">
+      <h2>{{ '{month} at a glance' | t: { month: monthName() } }}</h2>
+      <div class="stats">
+        <div class="stat"><span class="stat-name">{{ 'In meetings' | t }}</span><span class="stat-value">{{ glance().meetings }}</span></div>
+        <div class="stat"><span class="stat-name">{{ 'Focus blocks' | t }}</span><span class="stat-value focus">{{ glance().focus }}</span></div>
+      </div>
+      <div class="chart" role="img" [attr.aria-label]="glance().barsLabel">
+        @for (bar of glance().bars; track bar.label) {
+          <span class="chart-col">
+            <span class="chart-bar" [class.heaviest]="bar.heaviest" [style.height.px]="bar.height"></span>
+            <span class="chart-label">{{ bar.label }}</span>
+          </span>
+        }
+      </div>
+      <span class="note">{{ glance().note }}</span>
+    </section>
+
+    <section class="layer">
+      <span class="layer-name">{{ 'Hijri dates' | t }}</span>
+      <button type="button" class="mq-switch" role="switch" [attr.aria-checked]="board.hijriOn()"
+              [attr.aria-label]="'Hijri dates' | t" (click)="toggleHijri()"><span></span></button>
+    </section>
+  }
+</aside>

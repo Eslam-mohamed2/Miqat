@@ -1,34 +1,45 @@
 <h3 class="item-title">
-  <mat-icon>attach_file</mat-icon> Files
-  <span class="count" *ngIf="list().length">{{ list().length }}</span>
+  {{ 'Files' | t }}
+  @if (list().length) { <span class="count">{{ list().length | num }}</span> }
 </h3>
 
-<div role="list" class="file-list" *ngIf="list().length">
-  <div role="listitem" class="file-row" *ngFor="let file of list(); trackBy: trackById" [class.busy]="busyId() === file.id">
-    <button type="button" class="file-open" (click)="download(file)" [disabled]="busyId() !== null"
-            [title]="'Download ' + file.fileName">
-      <mat-icon class="file-icon">{{ icon(file) }}</mat-icon>
-      <span class="file-text">
-        <strong>{{ file.fileName }}</strong>
-        <small>{{ details(file) }}</small>
-      </span>
-      <mat-icon class="file-get">download</mat-icon>
-    </button>
-    <button type="button" class="row-remove" *ngIf="canRemove(file)" (click)="remove(file)"
-            [disabled]="busyId() !== null" [attr.aria-label]="'Remove ' + file.fileName">
-      <mat-icon>close</mat-icon>
-    </button>
+@if (list().length) {
+  <div role="list" class="file-list">
+    @for (file of list(); track file.id) {
+      <div role="listitem" class="file-row" [class.busy]="busyId() === file.id">
+        <button type="button" class="file-open" (click)="download(file)" [disabled]="busyId() !== null"
+                [title]="'Download {name}' | t: { name: file.fileName }">
+          <span class="file-tag">{{ tag(file) }}</span>
+          <span class="file-text">
+            <strong dir="auto">{{ file.fileName }}</strong>
+            <small>{{ details(file) }}</small>
+          </span>
+          <svg class="file-get" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v11M7.5 11.5L12 16l4.5-4.5M5 19h14"></path></svg>
+        </button>
+        @if (canRemove(file)) {
+          <button type="button" class="row-remove" (click)="remove(file)"
+                  [disabled]="busyId() !== null" [attr.aria-label]="'Remove {name}' | t: { name: file.fileName }">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </button>
+        }
+      </div>
+    }
   </div>
-</div>
+}
 
-<p class="item-empty" *ngIf="!loading() && !list().length">No files attached yet.</p>
+@if (!loading() && !list().length) {
+  <p class="item-empty">{{ 'No files attached yet.' | t }}</p>
+}
 
-<label class="attach-btn" *ngIf="!loading()" [class.disabled]="uploading()">
-  <input type="file" (change)="upload($event)" [disabled]="uploading()" />
-  <span class="spinner" *ngIf="uploading()"></span>
-  <mat-icon *ngIf="!uploading()">upload_file</mat-icon>
-  {{ uploading() ? 'Attaching…' : 'Attach a file' }}
-</label>
-<p class="item-note" *ngIf="!loading()">Documents, images or a zip, up to 10 MB each.</p>
+@if (!loading()) {
+  <label class="attach-btn" [class.disabled]="uploading()">
+    <input type="file" (change)="upload($event)" [disabled]="uploading()" />
+    @if (!uploading()) {
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+    }
+    {{ (uploading() ? 'Attaching…' : 'Attach a file') | t }}
+  </label>
+  <p class="item-note">{{ 'Documents, images or a zip, up to {n} MB each.' | t: { n: 10 } }}</p>
+}
 
-<p class="item-error" *ngIf="error()" role="alert">{{ error() }}</p>
+@if (error()) { <p class="item-error" role="alert">{{ error() }}</p> }

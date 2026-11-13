@@ -1,60 +1,35 @@
 import {
-  Component, ChangeDetectionStrategy, Input, Output, EventEmitter,
-  OnChanges, SimpleChanges, inject, signal
+  ChangeDetectionStrategy, Component, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges,
+  computed, inject, signal
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { GroupService } from '../../core/services/group.service';
-import { AuthService } from '../../core/services/auth.service';
-import { UiService } from '../../core/services/ui.service';
-import { CreateProjectDialog } from '../create-project-dialog/create-project-dialog';
-import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
-import { GroupDto } from '../../models/api.models';
-import { apiErrorMessage } from '../../core/http/api-error';
+import { MatDialog } from '@angular/material/dialog';
 
+import { AuthService } from '../../core/services/auth.service';
+import { GroupService } from '../../core/services/group.service';
+import { UiService } from '../../core/services/ui.service';
+import { apiErrorMessage } from '../../core/http/api-error';
+import { GroupDto } from '../../models/api.models';
+import { CreateProjectDialog } from '../create-project-dialog/create-project-dialog';
+import { formatNumber, isArabic, t, tCount } from '../../core/i18n/i18n';
+import { TCountPipe, TPipe } from '../../core/i18n/t.pipe';
+
+/**
+ * The projects drawer: every project the user owns or belongs to, with its real
+ * progress, a search box and "New project". The app shell mounts it once and
+ * anything opens it through `UiService.toggleProjects()`.
+ */
 @Component({
   selector: 'app-projects-panel',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatDialogModule],
+  imports: [TPipe, TCountPipe],
   templateUrl: './projects-panel.html',
   styleUrl: './projects-panel.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  animations: [
-    trigger('slideIn', [
-      transition(':enter', [
-        style({ transform: 'translateX(100%)', opacity: 0 }),
-        animate('300ms cubic-bezier(0.4,0,0.2,1)', style({ transform: 'translateX(0)', opacity: 1 }))
-      ]),
-      transition(':leave', [
-        animate('250ms cubic-bezier(0.4,0,0.2,1)', style({ transform: 'translateX(100%)', opacity: 0 }))
-      ])
-    ]),
-    trigger('fadeBackdrop', [
-      transition(':enter', [
-        style({ opacity: 0 }),
-        animate('200ms ease', style({ opacity: 1 }))
-      ]),
-      transition(':leave', [
-        animate('200ms ease', style({ opacity: 0 }))
-      ])
-    ]),
-    trigger('cardStagger', [
-      transition('* => *', [
-        query(':enter', [
-          style({ opacity: 0, transform: 'translateY(16px)' }),
-          stagger('60ms', [
-            animate('280ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
-          ])
-        ], { optional: true })
-      ])
-    ])
-  ]
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProjectsPanel implements OnChanges {
   @Input() isOpen = false;
   @Output() closed = new EventEmitter<void>();
-  @Output() projectCreated = new EventEmitter<any>();
+  @Output() projectCreated = new EventEmitter<GroupDto>();
 
   private groupService = inject(GroupService);
   private readonly myId = inject(AuthService).getCurrentUserId();
@@ -66,16 +41,16 @@ export class ProjectsPanel implements OnChanges {
   errorMessage = signal('');
   searchQuery = signal('');
 
-  filteredGroups = () => {
-    const q = this.searchQuery().toLowerCase();
-    if (!q) return this.groups();
-    return this.groups().filter(g =>
-      g.name?.toLowerCase().includes(q) || g.description?.toLowerCase().includes(q)
-    );
-  };
+  readonly filteredGroups = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+    if (!query) return this.groups();
+    return this.groups().filter(group =>
+      group.name?.toLowerCase().includes(query) || group.description?.toLowerCase().includes(query));
+  });
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['isOpen']?.currentValue === true) {
+      this.searchQuery.set('');
       this.loadGroups();
     }
   }
@@ -85,14 +60,13 @@ export class ProjectsPanel implements OnChanges {
     this.errorMessage.set('');
     this.groupService.getGroups().subscribe({
       next: (data) => {
-        this.groups.set(data);
+        this.groups.set(data ?? []);
         this.loading.set(false);
       },
       error: (err) => {
-        // Invented projects used to appear here on failure, which is worse than
-        // showing nothing — they look real and are not.
+        // Nothing is shown rather than anything invented: a made-up project looks real.
         this.groups.set([]);
-        this.errorMessage.set(apiErrorMessage(err, 'Could not load projects.'));
+        this.errorMessage.set(apiErrorMessage(err, t('Could not load projects.')));
         this.loading.set(false);
       }
     });
@@ -100,6 +74,8 @@ export class ProjectsPanel implements OnChanges {
 
   openCreateDialog() {
     const ref = this.dialog.open(CreateProjectDialog, {
+      width: '560px',
+      maxWidth: '95vw',
       panelClass: 'custom-dialog-container',
       disableClose: true,
       autoFocus: false
@@ -111,6 +87,10 @@ export class ProjectsPanel implements OnChanges {
         this.projectCreated.emit(result);
       }
     });
+  }
+
+  open(group: GroupDto) {
+    this.uiService.openProjectDetails(group.id);
   }
 
   close() {
@@ -127,34 +107,35 @@ export class ProjectsPanel implements OnChanges {
     return Math.round((this.completed(group) / group.taskCount) * 100);
   }
 
-  isMine(group: GroupDto): boolean {
-    return !!this.myId && group.ownerId === this.myId;
+  /** "40%", in the chosen digits and with the language's percent sign. */
+  percentLabel(group: GroupDto): string {
+    return formatNumber(this.percent(group) / 100, { style: 'percent', maximumFractionDigits: 0 });
   }
 
-  getInitials(name: string): string {
-    return (name ?? '').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  }
-
-  getStatusLabel(group: any): string {
-    return group.status ?? 'Active';
-  }
-
-  getStatusColor(group: any): string {
-    const map: Record<string, string> = {
-      Active: '#2ec4a0',
-      Paused: '#f4a835',
-      Completed: '#7c8ef5',
-      Archived: '#555'
-    };
-    return map[group.status ?? 'Active'] ?? '#2ec4a0';
+  /** "Owned by you · 4 members · 12 tasks" */
+  meta(group: GroupDto): string {
+    const owner = !!this.myId && group.ownerId === this.myId ? t('Owned by you') : this.ownerName(group);
+    const members = tCount(group.memberCount, '{n} member', '{n} members');
+    const tasks = tCount(group.taskCount, '{n} task', '{n} tasks');
+    return [owner, members, tasks].join(' · ');
   }
 
   /**
-   * A group's colour, or the shared default when the API sends none.
-   * The template appends opacity suffixes to this ('22', '33', '44'), so a null
-   * would render as the literal CSS value "null33" rather than falling back.
+   * In an Arabic line a Latin name would otherwise pull the count after it to its own
+   * side: the name is isolated (U+2068 … U+2069) so each piece of the line keeps its place.
    */
-  getColor(group: GroupDto): string {
-    return group.color || '#2ec4a0';
+  private ownerName(group: GroupDto): string {
+    if (!group.ownerName) return t('Unknown owner');
+    return isArabic() ? '\u2068' + group.ownerName + '\u2069' : group.ownerName;
+  }
+
+  textOf(event: Event): string {
+    return (event.target as HTMLInputElement).value;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    // A dialog opened from the drawer takes Escape first.
+    if (this.isOpen && !document.querySelector('.cdk-overlay-pane')) this.close();
   }
 }

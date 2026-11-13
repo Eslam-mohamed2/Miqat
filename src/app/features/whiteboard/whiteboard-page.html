@@ -1,107 +1,421 @@
-<div class="whiteboard-container" (pointermove)="dragNote($event)" (pointerup)="endDragNote()"
-     (pointercancel)="endDragNote()" (pointerleave)="endDragNote()">
+<!-- Whiteboard (design/miqat-2.0/pages/V2-Whiteboard.dc.html). -->
+<header class="head">
+  <div class="head-title">
+    <span class="head-eyebrow">{{ 'Whiteboard' | t }} · {{ saveLabel() }}</span>
+    <h1 class="title">
+      <span class="title-size" [attr.data-value]="name()">
+        <input type="text" dir="auto" [value]="name()" maxlength="120" spellcheck="false" autocomplete="off" [attr.aria-label]="'Board name' | t"
+               (input)="rename($any($event.target).value)" (blur)="finishRename()"
+               (keydown.enter)="closeField($event)" />
+      </span>
+    </h1>
+  </div>
 
-  <!-- The board scrolls: it is as large as what has been drawn on it, which can be
-       far bigger than a phone screen. The toolbar below stays put. -->
-  <div #scroller class="board-scroll">
-  <div #surface class="board-surface" [style.width.px]="surfaceWidth()" [style.height.px]="surfaceHeight()">
+  <!-- Who is on the board. Boards are private for now, so that is the signed-in user;
+       the circle is also their account menu. -->
+  <div class="people" role="group" [attr.aria-label]="'On this board' | t">
+    <app-user-menu [size]="phone() ? 44 : 32" />
+  </div>
 
-  <canvas #canvas
-          [class.select-mode]="tool() === 'select'"
-          [class.panning]="isPanning()"
-          (pointerdown)="onPointerDown($event)"
-          (pointermove)="onPointerMove($event)"
-          (pointerup)="onPointerUp($event)"
-          (pointercancel)="onPointerUp($event)">
-  </canvas>
+  <div class="share">
+    <button type="button" class="share-btn" aria-haspopup="menu" [attr.aria-expanded]="shareOpen()"
+            (click)="shareOpen.set(!shareOpen())">{{ 'Share' | t }}</button>
+    @if (shareOpen()) {
+      <div class="mq-menu share-menu" role="menu">
+        <button type="button" class="mq-menu-item" role="menuitem" (click)="downloadPng()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"></path></svg>
+          {{ 'Download as PNG' | t }}
+        </button>
+        <button type="button" class="mq-menu-item" role="menuitem" (click)="copyLink()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg>
+          {{ 'Copy link' | t }}
+        </button>
+        <p class="share-note">{{ 'Boards are private for now: the link opens for you only.' | t }}</p>
+      </div>
+    }
+  </div>
 
-  <!-- Sticky Notes Overlay -->
-  <div class="notes-layer">
-    <div *ngFor="let note of notes(); trackBy: trackByNoteId"
-         class="sticky-note"
-         [style.left.px]="note.x"
-         [style.top.px]="note.y"
-         [style.backgroundColor]="note.color"
-         (pointerdown)="startDragNote($event, note)">
-      <div class="note-header">
-        <button type="button" class="note-close" (click)="deleteNote($event, note.id)"
-                aria-label="Delete note">
-          <mat-icon>close</mat-icon>
+  <button type="button" class="present-btn" (click)="present()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M12 16v4M8 20h8"></path></svg>{{ 'Present' | t }}
+  </button>
+</header>
+
+<div class="body">
+  <section class="canvas" [attr.aria-label]="'Board canvas' | t" [attr.data-tool]="activeTool()" [class.erasing]="erasing()"
+        [class.panning]="panning()" [class.dragging]="dragging()">
+
+    <!-- The board scrolls: it is as large as what is on it. Everything below this frame stays put.
+         Left to right in every language: a place on the board is a place, not text. -->
+    <div #scroller class="scroller" dir="ltr"
+         (pointerdown)="onPointerDown($event)" (pointermove)="onPointerMove($event)"
+         (pointerup)="onPointerUp($event)" (pointercancel)="onPointerCancel($event)"
+         (dblclick)="onDoubleClick($event)" (scroll)="onScroll()" (wheel)="onWheel($event)">
+      <div class="sizer" [style.width.px]="surfaceW() * zoom()" [style.height.px]="surfaceH() * zoom()"
+           [style.--grid.px]="22 * zoom()">
+
+        <!-- Board coordinates; the zoom scales this layer as a whole. -->
+        <div #surface class="surface" [style.width.px]="surfaceW()" [style.height.px]="surfaceH()"
+             [style.transform]="'scale(' + zoom() + ')'">
+
+          @for (frame of content().frames; track frame.id) {
+            <div class="frame" [class.selected]="isSelected(frame.id)"
+                 [style.left.px]="frame.x" [style.top.px]="frame.y" [style.width.px]="frame.w" [style.height.px]="frame.h"></div>
+            @if (editing() === frame.id) {
+              <input #editField type="text" dir="auto" class="frame-label frame-label-field" maxlength="60" [attr.aria-label]="'Frame name' | t"
+                     [style.left.px]="frame.x" [style.top.px]="frame.y - 30" [style.width.px]="frame.w"
+                     [value]="frame.label" (input)="typeFrame(frame.id, $any($event.target).value)"
+                     (blur)="endEdit()" (keydown.enter)="closeField($event)" (keydown.escape)="closeField($event)" />
+            } @else {
+              <span class="frame-label" dir="auto" tabindex="0" [attr.data-id]="frame.id"
+                    [style.left.px]="frame.x" [style.top.px]="frame.y - 30" [style.max-width.px]="frame.w"
+                    (focus)="onItemFocus($event, frame.id)">{{ frame.label || ('Frame' | t) }}</span>
+            }
+          }
+
+          @for (shape of content().shapes; track shape.id) {
+            <div class="shape" tabindex="0" [class]="'shape shape-' + shape.kind" [attr.data-id]="shape.id"
+                 [attr.data-tone]="toneOf(shape.color)" [style.--ink]="toneOf(shape.color) ? null : shape.color"
+                 [style.left.px]="shape.x" [style.top.px]="shape.y" [style.width.px]="shape.w" [style.height.px]="shape.h"
+                 role="img" [attr.aria-label]="'Shape' | t" (focus)="onItemFocus($event, shape.id)"></div>
+          }
+
+          <canvas #ink class="ink"></canvas>
+
+          <svg class="lines" [attr.width]="surfaceW()" [attr.height]="surfaceH()" aria-hidden="true">
+            @for (line of connectorLines(); track line.id) {
+              <path class="line-hit" [attr.d]="line.d" [attr.data-id]="line.id"></path>
+              <path class="line" [attr.d]="line.d"></path>
+              <path class="line-arrow" [attr.d]="line.arrow"></path>
+            }
+            @if (draftLine(); as draft) {
+              <path class="line" [attr.d]="draft.d"></path>
+              <path class="line-arrow" [attr.d]="draft.arrow"></path>
+            }
+          </svg>
+
+          @for (line of connectorLines(); track line.id) {
+            @if (editing() === line.id) {
+              <input #editField type="text" dir="auto" class="line-label line-label-field" maxlength="40" [attr.aria-label]="'Connector label' | t"
+                     [style.left.px]="line.mid.x" [style.top.px]="line.mid.y" [attr.size]="(line.label.length || 5) + 1"
+                     [value]="line.label" (input)="typeLabel(line.id, $any($event.target).value)"
+                     (blur)="endEdit()" (keydown.enter)="closeField($event)" (keydown.escape)="closeField($event)" />
+            } @else if (line.label) {
+              <span class="line-label" dir="auto" [attr.data-id]="line.id" [style.left.px]="line.mid.x" [style.top.px]="line.mid.y">{{ line.label }}</span>
+            }
+          }
+
+          @for (text of content().texts; track text.id) {
+            <div class="hand" tabindex="0" [attr.data-id]="text.id" [attr.data-value]="text.text"
+                 [attr.data-tone]="toneOf(text.color)" [style.--ink]="toneOf(text.color) ? null : text.color"
+                 [style.left.px]="text.x" [style.top.px]="text.y"
+                 [style.transform]="text.rot ? 'rotate(' + text.rot + 'deg)' : null"
+                 (focus)="onItemFocus($event, text.id)">
+              @if (editing() === text.id) {
+                <textarea #editField class="hand-field" rows="1" dir="auto" spellcheck="false" [attr.aria-label]="'Text' | t"
+                          [value]="text.text" (input)="typeText(text.id, $any($event.target).value)"
+                          (blur)="endEdit()" (keydown.escape)="closeField($event)"></textarea>
+              } @else {
+                <span class="hand-text" dir="auto">{{ text.text }}</span>
+              }
+            </div>
+          }
+
+          @for (note of content().notes; track note.id) {
+            <div class="sticky" tabindex="0" role="group" [attr.data-id]="note.id"
+                 [class.held]="dragging() && isSelected(note.id)"
+                 [attr.data-tone]="toneOf(note.color)" [style.--paper]="toneOf(note.color) ? null : note.color"
+                 [style.left.px]="note.x" [style.top.px]="note.y"
+                 [style.width.px]="note.w ?? 120" [style.height.px]="note.h ?? 108"
+                 [style.transform]="note.rot ? 'rotate(' + note.rot + 'deg)' : null"
+                 [attr.aria-label]="noteLabel(note.text)"
+                 (focus)="onItemFocus($event, note.id)">
+              @if (editing() === note.id) {
+                <textarea #editField class="sticky-text sticky-field" dir="auto" [placeholder]="'Type a note…' | t" [attr.aria-label]="'Note text' | t"
+                          [value]="note.text" (input)="typeNote(note.id, $any($event.target))"
+                          (blur)="endEdit()" (keydown.escape)="closeField($event)"></textarea>
+              } @else {
+                <span class="sticky-text" dir="auto">{{ note.text }}</span>
+              }
+              <span class="sticky-foot">
+                @if (note.votes) {
+                  <button type="button" class="sticky-votes" [title]="'Remove one vote' | t"
+                          [attr.aria-label]="note.votes | tCount: '{n} vote: remove one' : '{n} votes: remove one'"
+                          (click)="unvote(note.id)">{{ note.votes | tCount: '{n} vote' : '{n} votes' }}</button>
+                }
+                @if (taskOf(note.id); as task) {
+                  <a class="sticky-task" [routerLink]="['/tasks', task.id]" [title]="'Open the task made from this sticky' | t">{{ 'Task' | t }}</a>
+                }
+                @if (note.by) { <span class="sticky-by">{{ note.by }}</span> }
+              </span>
+            </div>
+          }
+
+          @if (draftBox(); as draft) {
+            <div class="draft" [class.draft-frame]="draft.tool === 'frame'" [class]="'draft shape-' + (draft.tool === 'shape' ? shapeKind() : 'rect')"
+                 [attr.data-tone]="tone()"
+                 [style.left.px]="draft.box.x" [style.top.px]="draft.box.y" [style.width.px]="draft.box.w" [style.height.px]="draft.box.h"></div>
+          }
+        </div>
+
+        <!-- Screen-sized helpers over the board: they follow it but are not scaled by the zoom. -->
+        <div class="overlay">
+          @if (marquee(); as area) {
+            <div class="marquee" [style.left.px]="area.x * zoom()" [style.top.px]="area.y * zoom()"
+                 [style.width.px]="area.w * zoom()" [style.height.px]="area.h * zoom()"></div>
+          }
+
+          @if (!presenting() && selectionBox(); as box) {
+            <div class="selection" aria-hidden="true" [class.sizable]="resizable()"
+                 [style.left.px]="box.x * zoom()" [style.top.px]="box.y * zoom()"
+                 [style.width.px]="box.w * zoom()" [style.height.px]="box.h * zoom()">
+              @for (corner of corners; track corner) {
+                <span class="handle" [class]="'handle handle-' + corner" [attr.data-handle]="resizable() ? corner : null"></span>
+              }
+            </div>
+
+            @if (!dragging() && !editing() && !adding()) {
+              <!-- Hangs from the selection's left corner in every language; its buttons follow the page. -->
+              <div class="selection-bar" role="toolbar" [attr.dir]="dir" [attr.aria-label]="selectionLabel()"
+                   [style.left.px]="box.x * zoom()" [style.top.px]="(box.y + box.h) * zoom() + 10">
+                @if (canTint()) {
+                  @for (tone of tones; track tone) {
+                    <button type="button" class="swatch" [attr.data-tone]="tone" [class.on]="selectionTone() === tone"
+                            [attr.aria-label]="toneLabels[tone]" [attr.aria-pressed]="selectionTone() === tone"
+                            (click)="tint(tone)"></button>
+                  }
+                  <span class="bar-sep"></span>
+                }
+                @if (selectedNotes().length) {
+                  <button type="button" class="bar-btn" [title]="'Add a vote to each selected sticky' | t" (click)="vote()">{{ 'Vote' | t }}</button>
+                }
+                @if (canGroup()) {
+                  <button type="button" class="bar-btn" [title]="(grouped() ? 'Let these move separately again' : 'Make these move as one') | t"
+                          (click)="toggleGroup()">{{ (grouped() ? 'Ungroup' : 'Group@@verb') | t }}</button>
+                }
+                @if (selectedConnector(); as connector) {
+                  <button type="button" class="bar-btn" (click)="startEdit(connector)">{{ 'Label' | t }}</button>
+                }
+                <button type="button" class="bar-btn bar-icon" [attr.aria-label]="'Delete' | t" [title]="('Delete' | t) + ' (Del)'" (click)="deleteSelection()">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path></svg>
+                </button>
+                @if (selectedNotes().length) {
+                  <button type="button" class="bar-make" [disabled]="!taskable().length || making()"
+                          [title]="(taskable().length ? 'Make a task from each selected sticky' : 'Nothing to make: write on the sticky first, or it is a task already') | t"
+                          (click)="makeTasks()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>
+                    @if (taskable().length) { {{ taskable().length | tCount: 'Make {n} task' : 'Make {n} tasks' }} } @else { {{ 'Make tasks' | t }} }
+                  </button>
+                }
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (isEmpty() && !presenting()) {
+      <p class="empty-hint">{{ 'Pick a tool and start: a sticky, a frame, or just draw.' | t }}</p>
+    }
+
+    @if (!presenting()) {
+      <div class="tools" role="toolbar" [attr.aria-label]="'Tools' | t">
+        @for (item of tools; track item.key) {
+          <button type="button" class="tool" [attr.aria-label]="item.label" [attr.aria-pressed]="tool() === item.key"
+                  [title]="item.label + ' (' + item.shortcut + ')'" (click)="setTool(item.key)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="item.d"></path></svg>
+          </button>
+        }
+      </div>
+
+      <!-- What the chosen tool draws with. The design's tool bar has no room for these;
+           they keep the colours, the pen sizes and the eraser the board already had. -->
+      @if (tool() === 'pen' || tool() === 'sticky' || tool() === 'shape' || tool() === 'text') {
+        <div class="options" role="toolbar" [attr.aria-label]="optionsLabel()">
+          @if (tool() === 'shape') {
+            @for (kind of shapeKinds; track kind.key) {
+              <button type="button" class="option" [attr.aria-label]="kind.label" [title]="kind.label"
+                      [attr.aria-pressed]="shapeKind() === kind.key" (click)="shapeKind.set(kind.key)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="kind.d"></path></svg>
+              </button>
+            }
+            <span class="bar-sep"></span>
+          }
+          @for (item of tones; track item) {
+            <button type="button" class="swatch" [class.ink-swatch]="tool() !== 'sticky'" [attr.data-tone]="item"
+                    [class.on]="tone() === item && !erasing()" [attr.aria-label]="toneLabels[item]"
+                    [attr.aria-pressed]="tone() === item && !erasing()" (click)="setTone(item)"></button>
+          }
+          @if (tool() === 'pen') {
+            <span class="bar-sep"></span>
+            @for (width of penWidths; track width) {
+              <button type="button" class="option" [attr.aria-label]="'Pen width {n}' | t: { n: width }" [title]="'Pen width {n}' | t: { n: width }"
+                      [attr.aria-pressed]="penWidth() === width && !erasing()" (click)="setPenWidth(width)">
+                <span class="width-dot" [style.width.px]="width + 3" [style.height.px]="width + 3"></span>
+              </button>
+            }
+            <span class="bar-sep"></span>
+            <button type="button" class="option" [attr.aria-label]="'Eraser' | t" [title]="'Eraser' | t" [attr.aria-pressed]="erasing()"
+                    (click)="erasing.set(!erasing())">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 3.5 6 6a1.5 1.5 0 0 1 0 2.1l-7.4 7.4H8.4l-4.9-4.9a1.5 1.5 0 0 1 0-2.1l9-9a1.5 1.5 0 0 1 2 0Z"></path><path d="M8.4 19h12.1"></path><path d="m9 9 6 6"></path></svg>
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Undo, redo and clear: kept from the board before the redesign. -->
+      <div class="history" role="toolbar" [attr.aria-label]="'History' | t">
+        <button type="button" class="zoom-btn" [attr.aria-label]="'Undo' | t" [title]="('Undo' | t) + ' (Ctrl Z)'" [disabled]="!canUndo()" (click)="undo()">
+          <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5L4 9l4 4"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg>
+        </button>
+        <button type="button" class="zoom-btn" [attr.aria-label]="'Redo' | t" [title]="('Redo' | t) + ' (Ctrl Shift Z)'" [disabled]="!canRedo()" (click)="redo()">
+          <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 5l4 4-4 4"></path><path d="M20 9H10a6 6 0 0 0 0 12h3"></path></svg>
+        </button>
+        <button type="button" class="zoom-btn" [attr.aria-label]="'Clear board' | t" [title]="'Clear board' | t" [disabled]="isEmpty()" (click)="clear()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path></svg>
         </button>
       </div>
-      <!-- Written back through the signal; binding [(ngModel)] straight to the
-           object mutated it in place, which a zoneless app never notices. -->
-      <textarea [value]="note.text"
-                (input)="updateNoteText(note.id, $any($event.target).value)"
-                (pointerdown)="$event.stopPropagation()"
-                placeholder="Type a note…"></textarea>
-    </div>
-  </div>
 
-  </div>
-  </div>
+      <div class="corner">
+        <!-- A small picture of the board: the same way round as the board. -->
+        <div class="minimap" dir="ltr" aria-hidden="true" (pointerdown)="onMap($event)" (pointermove)="onMap($event)">
+          @for (frame of minimap().frames; track frame.id) {
+            <span class="map-frame" [style.left.px]="frame.left" [style.top.px]="frame.top"
+                  [style.width.px]="frame.width" [style.height.px]="frame.height"></span>
+          }
+          @for (block of minimap().blocks; track $index) {
+            <span class="map-block" [style.left.px]="block.left" [style.top.px]="block.top"
+                  [style.width.px]="block.width" [style.height.px]="block.height"></span>
+          }
+          <span class="map-view" [style.left.px]="minimap().view.left" [style.top.px]="minimap().view.top"
+                [style.width.px]="minimap().view.width" [style.height.px]="minimap().view.height"></span>
+        </div>
+        <div class="zoom">
+          <button type="button" class="zoom-btn" [attr.aria-label]="'Zoom out' | t" (click)="zoomBy(-1)">−</button>
+          <button type="button" class="zoom-value" [title]="'Zoom to fit' | t" [attr.aria-label]="'Zoom {value}: fit the board' | t: { value: zoomLabel() }"
+                  (click)="zoomToFit()">{{ zoomLabel() }}</button>
+          <button type="button" class="zoom-btn" [attr.aria-label]="'Zoom in' | t" (click)="zoomBy(1)">+</button>
+        </div>
+      </div>
+    } @else {
+      <div class="present-bar" role="toolbar" [attr.aria-label]="'Presentation' | t">
+        @if (slides().length > 1) {
+          <button type="button" class="zoom-btn" [attr.aria-label]="'Previous frame' | t" [disabled]="slide() === 0" (click)="step(-1)">
+            <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"></path></svg>
+          </button>
+          <span class="present-count">{{ '{n} / {total}' | t: { n: slide() + 1, total: slides().length } }}</span>
+          <button type="button" class="zoom-btn" [attr.aria-label]="'Next frame' | t" [disabled]="slide() === slides().length - 1" (click)="step(1)">
+            <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"></path></svg>
+          </button>
+        }
+        @if (slideTitle()) { <span class="present-title" dir="auto">{{ slideTitle() }}</span> }
+        <button type="button" class="present-exit" (click)="stopPresenting()">{{ 'Stop presenting' | t }}</button>
+      </div>
+    }
 
-  <!-- Shown while there is more board than screen. -->
-  <p class="pan-hint" *ngIf="canScroll()">
-    <mat-icon>open_with</mat-icon>
-    {{ tool() === 'select' ? 'Drag to move around the board' : 'Choose Select &amp; move to move around the board' }}
-  </p>
+    @if (madeNotice(); as notice) {
+      <div class="made-notice" role="status">
+        <span class="made-dot"></span>
+        <span>{{ notice.ids.length | tCount: '{n} task added to' : '{n} tasks added to' }} <strong>{{ 'your tasks' | t }}</strong></span>
+        <a class="made-open" routerLink="/tasks">{{ 'Open tasks' | t }}</a>
+        <button type="button" class="made-undo" (click)="undoMade()">{{ 'Undo' | t }}</button>
+      </div>
+    }
+  </section>
 
-  <!-- Autosave feedback; silent while idle so it never nags. -->
-  <div class="save-state" *ngIf="saveState() !== 'idle'" [class.saved]="saveState() === 'saved'">
-    <mat-icon>{{ saveState() === 'saved' ? 'cloud_done' : 'cloud_upload' }}</mat-icon>
-    {{ saveState() === 'saved' ? 'Saved' : 'Saving…' }}
-  </div>
+  <aside class="session" [attr.aria-label]="'Session' | t" [class.beside-chat]="besideChat()">
+    @if (meeting(); as live) {
+      <a class="meeting" routerLink="/calendar" [queryParams]="live.query">
+        <span class="meeting-eyebrow" [class.live]="live.live"><span class="meeting-dot"></span>{{ (live.live ? 'Live meeting' : 'Next meeting') | t }}</span>
+        <span class="meeting-title" dir="auto">{{ live.title }}</span>
+        <span class="meeting-when">{{ live.when }} · {{ 'open in calendar' | t }}</span>
+      </a>
+    } @else {
+      <a class="meeting" routerLink="/calendar">
+        <span class="meeting-eyebrow"><span class="meeting-dot"></span>{{ 'No meeting now' | t }}</span>
+        <span class="meeting-title">{{ 'Nothing else today' | t }}</span>
+        <span class="meeting-when">{{ 'open calendar' | t }}</span>
+      </a>
+    }
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <button type="button" class="tool-btn" [class.active]="tool() === 'select'"
-            (click)="setTool('select')">
-      <mat-icon>near_me</mat-icon>
-      <span class="tooltip">Select &amp; move</span>
-    </button>
-    <button type="button" class="tool-btn" [class.active]="tool() === 'pen'"
-            (click)="setTool('pen')">
-      <mat-icon>edit</mat-icon>
-      <span class="tooltip">Pen</span>
-    </button>
-    <button type="button" class="tool-btn" [class.active]="tool() === 'eraser'"
-            (click)="setTool('eraser')">
-      <!-- Inline SVG, not <mat-icon>ink_eraser</mat-icon>: this app loads the
-           classic Material Icons font, which has no `ink_eraser` glyph (that is
-           a Material Symbols name). The ligature fell back to the literal text
-           and mat-icon's 24px overflow clipped it, so the button looked empty. -->
-      <svg class="tool-svg" viewBox="0 0 24 24" width="22" height="22"
-           fill="none" stroke="currentColor" stroke-width="1.9"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="m14.5 3.5 6 6a1.5 1.5 0 0 1 0 2.1l-7.4 7.4H8.4l-4.9-4.9a1.5 1.5 0 0 1 0-2.1l9-9a1.5 1.5 0 0 1 2 0Z" />
-        <path d="M8.4 19h12.1" />
-        <path d="m9 9 6 6" />
-      </svg>
-      <span class="tooltip">Eraser</span>
-    </button>
-    <button type="button" class="tool-btn" [class.active]="tool() === 'note'"
-            (click)="setTool('note')">
-      <mat-icon>sticky_note_2</mat-icon>
-      <span class="tooltip">Sticky note</span>
-    </button>
+    <section class="agenda">
+      <div class="agenda-head">
+        <span class="eyebrow">{{ 'Agenda' | t }}</span>
+        <button type="button" class="agenda-plus" [attr.aria-label]="'Add an agenda item' | t" [title]="'Add an agenda item' | t"
+                [attr.aria-expanded]="agendaOpen()" (click)="agendaOpen.set(!agendaOpen())">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        </button>
+        @if (prayer(); as next) {
+          <span class="agenda-note">{{ pausePlanned() ? next.pauseLabel : next.label }}</span>
+        }
+      </div>
+      <div class="timer-line">
+        <span class="timer" role="timer" [attr.aria-label]="'Time left in this item' | t">{{ timerText() }}</span>
+        <button type="button" class="timer-btn" [attr.aria-label]="(running() ? 'Pause timer' : 'Start timer') | t"
+                [disabled]="!currentItem()" [title]="currentItem() ? '' : ('Add an agenda item first' | t)" (click)="toggleTimer()">
+          @if (running()) {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+          } @else {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"></path></svg>
+          }
+        </button>
+      </div>
 
-    <div class="divider"></div>
+      @if (agenda().items.length) {
+        <div class="agenda-list" role="list">
+          @for (item of agenda().items; track item.id) {
+            <div class="agenda-item" role="listitem" [class]="'agenda-item is-' + agendaState(item)">
+              <button type="button" class="agenda-pick"
+                      [title]="(agendaState(item) === 'now' ? 'Finish this item' : 'Put the timer on this item') | t"
+                      (click)="pickAgendaItem(item)">
+                <span class="agenda-dot"></span>
+                <span class="agenda-title" dir="auto">{{ item.title }}</span>
+                <span class="agenda-len">{{ '{n} min' | t: { n: item.minutes } }}</span>
+              </button>
+              <button type="button" class="agenda-remove" [attr.aria-label]="'Remove {title}' | t: { title: item.title }" [title]="'Remove' | t"
+                      (click)="removeAgendaItem(item.id)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <span class="hint">{{ 'No agenda yet. Add what this session should cover and the timer keeps each item to its time.' | t }}</span>
+      }
 
-    <button type="button" class="color-btn" *ngFor="let c of ['#2ec4a0','#7c8ef5','#f4a835','#f4845f','#e879f9']"
-            [style.background]="c" [class.active]="currentColor() === c"
-            (click)="setColor(c)" [attr.aria-label]="'Colour ' + c">
-    </button>
+      @if (agendaOpen() || !agenda().items.length) {
+        <form class="agenda-add" (submit)="$event.preventDefault(); addAgendaItem(newTitle, newMinutes)">
+          <input #newTitle #agendaField type="text" dir="auto" class="agenda-new" [placeholder]="'Add an item' | t" maxlength="80" [attr.aria-label]="'New agenda item' | t"
+                 (keydown.escape)="agendaOpen.set(false)" />
+          <input #newMinutes [type]="numberField" inputmode="numeric" class="agenda-minutes" min="1" max="240" [value]="10 | num" [attr.aria-label]="'Minutes' | t" />
+          <span class="agenda-unit">{{ 'min' | t }}</span>
+          <button type="submit" class="agenda-submit" [attr.aria-label]="'Add to the agenda' | t" [title]="'Add' | t">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+        </form>
+      }
+    </section>
 
-    <div class="divider"></div>
+    <section class="votes">
+      <span class="eyebrow">{{ 'Top votes' | t }}</span>
+      @for (vote of topVotes(); track vote.id) {
+        <div class="vote">
+          <span class="vote-line"><span class="vote-text" dir="auto">{{ vote.text }}</span><span class="vote-count">{{ vote.votes | tCount: '{n} vote' : '{n} votes' }}</span></span>
+          <span class="vote-track"><span class="vote-fill" [style.width.%]="vote.share"></span></span>
+        </div>
+      } @empty {
+        <span class="hint">{{ 'No votes yet. Select stickies and choose “Vote”.' | t }}</span>
+      }
+    </section>
 
-    <button type="button" class="tool-btn" [disabled]="!canUndo()" (click)="undo()">
-      <mat-icon>undo</mat-icon>
-      <span class="tooltip">Undo</span>
-    </button>
-    <button type="button" class="tool-btn danger" [disabled]="isEmpty()" (click)="clear()">
-      <mat-icon>delete_sweep</mat-icon>
-      <span class="tooltip">Clear board</span>
-    </button>
-  </div>
+    <section class="made">
+      <span class="eyebrow">{{ 'Made from this board' | t }}</span>
+      @for (task of madeTasks(); track task.id) {
+        <a class="made-task" [routerLink]="['/tasks', task.id]">
+          <span class="made-kind">{{ 'Task' | t }}</span><span class="made-name" dir="auto">{{ task.title }}</span>
+        </a>
+      } @empty {
+        <span class="hint">{{ 'Select stickies and choose “Make tasks”. They land in your tasks with a link back to this board.' | t }}</span>
+      }
+    </section>
+  </aside>
 </div>

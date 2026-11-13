@@ -1,14 +1,14 @@
 import {
   ChangeDetectionStrategy, Component, computed, effect, inject, input, signal
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 
 import { ReminderService } from '../../core/services/reminder.service';
 import { UserService } from '../../core/services/user.service';
 import { CalendarItemKind, ReminderDto } from '../../models/api.models';
 import { apiErrorMessage } from '../../core/http/api-error';
 import { REMINDER_PRESETS, reminderLabel } from '../../core/utils/reminder-label';
+import { locale, t } from '../../core/i18n/i18n';
+import { TPipe } from '../../core/i18n/t.pipe';
 
 /** The API allows this many reminders on one task or event. */
 const MAX_REMINDERS = 5;
@@ -24,7 +24,7 @@ const MAX_REMINDERS = 5;
 @Component({
   selector: 'app-item-reminders',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [TPipe],
   templateUrl: './item-reminders.html',
   styleUrl: './item-reminders.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,7 +75,7 @@ export class ItemReminders {
         this.available.set(err?.status !== 404);
         this.list.set([]);
         this.loading.set(false);
-        if (err?.status !== 404) this.error.set(apiErrorMessage(err, 'Reminders could not be loaded.'));
+        if (err?.status !== 404) this.error.set(apiErrorMessage(err, t('Reminders could not be loaded.')));
       }
     });
   }
@@ -92,7 +92,7 @@ export class ItemReminders {
       },
       error: err => {
         this.busy.set(false);
-        this.error.set(apiErrorMessage(err, 'That reminder was not saved.'));
+        this.error.set(apiErrorMessage(err, t('That reminder was not saved.')));
       }
     });
   }
@@ -109,7 +109,7 @@ export class ItemReminders {
       },
       error: err => {
         this.busy.set(false);
-        this.error.set(apiErrorMessage(err, 'That reminder was not removed.'));
+        this.error.set(apiErrorMessage(err, t('That reminder was not removed.')));
       }
     });
   }
@@ -120,18 +120,18 @@ export class ItemReminders {
 
   /** "Rings Thu 13 Nov, 4:45 PM", in the profile's time zone. */
   ringsAt(reminder: ReminderDto): string {
-    if (!reminder.remindAt) return 'Nothing ahead to remind about';
+    if (!reminder.remindAt) return t('Nothing ahead to remind about');
     const date = new Date(reminder.remindAt);
     if (Number.isNaN(date.getTime())) return '';
-    return 'Rings ' + new Intl.DateTimeFormat(undefined, {
-      weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
-      timeZone: this.users.timeZone()
-    }).format(date);
+    return t('Rings {date}', {
+      date: new Intl.DateTimeFormat(locale(), {
+        weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+        timeZone: this.users.timeZone()
+      }).format(date)
+    });
   }
 
   private sorted(list: ReminderDto[]): ReminderDto[] {
     return [...list].sort((a, b) => a.minutesBefore - b.minutesBefore);
   }
-
-  trackById = (_: number, reminder: ReminderDto) => reminder.id;
 }

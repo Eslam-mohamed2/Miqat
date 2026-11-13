@@ -1,0 +1,22 @@
+<button type="button" class="mark" cdkOverlayOrigin #origin="cdkOverlayOrigin"
+        aria-haspopup="dialog" [attr.aria-expanded]="open()" [attr.aria-label]="summary()" [title]="summary()"
+        (click)="toggle($event)">
+  <span class="glyph" [class.holiday]="isHoliday()" aria-hidden="true"></span>
+  <span class="name">{{ occasion().name }}</span>
+  @if (stretch()) { <span class="reach" aria-hidden="true"></span> }
+</button>
+
+<ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="origin" [cdkConnectedOverlayOpen]="open()"
+             [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true"
+             (overlayOutsideClick)="pressedOutside($event, origin)" (overlayKeydown)="onKey($event)" (detach)="close()">
+  <div class="mq-menu card" role="dialog" [attr.aria-label]="occasion().name">
+    <span class="card-name">
+      <span class="glyph" [class.holiday]="isHoliday()" aria-hidden="true"></span>
+      {{ occasion().name }}
+    </span>
+    <span class="card-line">{{ kind() }}</span>
+    <span class="card-line">{{ dates() }}</span>
+    @if (occasion().note; as note) { <span class="card-line">{{ note }}</span> }
+    @if (occasion().mayVary) { <span class="card-vary">{{ 'Date may vary' | t }}</span> }
+  </div>
+</ng-template>

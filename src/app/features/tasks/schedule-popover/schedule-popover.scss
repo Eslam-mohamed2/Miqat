@@ -1,0 +1,147 @@
+@use '../../../../styles/tokens' as *;
+
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 940;
+}
+
+.pop {
+  position: fixed;
+  z-index: 941;
+  box-sizing: border-box;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: $mq-card-5;
+  border: 1px solid $mq-line-2;
+  box-shadow: 0 24px 60px mq-shadow(.55);
+  color: $mq-text;
+  animation: mq-settle $mq-t-change $mq-ease-calm;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.eyebrow {
+  @include mq-eyebrow(10.5px);
+}
+
+.length {
+  font-size: 11.5px;
+  color: $mq-text-4;
+  white-space: nowrap;
+}
+
+.title {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+// The proposed block: dashed accent, as "Planned" blocks are drawn on the calendar.
+.suggest {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, #{$mq-accent} 60%, transparent);
+  background: color-mix(in srgb, #{$mq-accent} 7%, transparent);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: color-mix(in srgb, #{$mq-accent} 14%, transparent); }
+
+  .when {
+    font-size: 13px;
+    font-weight: 600;
+    color: $mq-accent-text;
+  }
+
+  .note {
+    font-size: 11px;
+    color: $mq-text-4;
+  }
+}
+
+.none,
+.warn {
+  font-size: 12px;
+  line-height: 1.5;
+  color: $mq-text-4;
+}
+
+.warn { color: $mq-late; }
+
+.pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.pick-row {
+  display: flex;
+  gap: 6px;
+}
+
+.field {
+  @include mq-field(34px, 9px);
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 12.5px;
+
+  // Wide enough for "09:00 AM" on a 12-hour clock.
+  &.time { flex: 0 0 112px; }
+}
+
+.set {
+  @include mq-btn-primary(34px, 0 12px, 9px);
+  font-size: 12.5px;
+}
+
+.remove {
+  @include mq-btn-ghost(32px, 0 10px, 9px);
+  align-self: flex-start;
+  margin: 0 -10px -4px;
+  font-size: 12.5px;
+  color: $mq-text-4;
+
+  &:hover:not(:disabled) { color: $mq-late; }
+}
+
+// Phones: a sheet above the tab bar instead of a pop-up beside the control.
+@include below($bp-tablet) {
+  .backdrop { background: mq-shadow(.45); }
+
+  .pop {
+    left: 12px !important;
+    right: 12px;
+    top: auto !important;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    width: auto;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .field,
+  .set { height: 44px; }
+
+  .suggest { padding: 12px; }
+
+  .remove { height: 44px; }
+}

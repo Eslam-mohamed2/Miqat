@@ -1,664 +1,839 @@
 @use '../../../styles/tokens' as *;
+@use 'tasks-shared' as shared;
 
-.tasks-page {
-  // No outer padding here: the app shell's .page-content is the one place that sets
-  // the page gutter, so every page starts at the same distance from the sidebar.
-  max-width: 1400px;
-  margin: 0 auto;
-  padding-bottom: 2rem;
+
+// From this width the detail panel has its own column (see WIDE_QUERY in the component).
+$wide: 1180px;
+
+:host {
+  display: block;
+  // On phones the page grows with its content, so the shell's room for the tab
+  // bar stays under it; from tablet width up it fills the window exactly.
+  min-height: 100%;
+  // The text of an "understood" chip: its colour mixed toward white on dark, toward ink on light.
+  --chip-mix: 55%;
+
+  @include above($bp-tablet) { height: 100%; }
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+:host-context(html[data-theme='light']) {
+  --chip-mix: 42%;
 }
 
-// ── Header ──────────────────────────────────────────────────────────────────
-.page-header {
+.tasks {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  color: $mq-text;
+  font-size: 13px;
+}
+
+// Bootstrap gives every <kbd> a filled box; here each one is drawn as in the design.
+kbd {
+  font-family: inherit;
+  font-size: 1em;
+  background: transparent;
+}
+
+// ── Page header ─────────────────────────────────────────────────────────────
+@include shared.page-top;
+
+// ── Three columns ───────────────────────────────────────────────────────────
+.columns {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.lists {
+  box-sizing: border-box;
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px 12px;
+  border-inline-end: 1px solid $mq-line;
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.nav-title {
+  @include mq-eyebrow;
+  align-self: flex-start;
+  padding: 0 10px 6px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+}
+
+button.nav-title {
+  cursor: pointer;
+  border-radius: 4px;
+  @include mq-focus;
+
+  &:hover { color: $mq-text; }
+}
+
+// "Projects" and the button that makes a new one.
+.nav-title-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-
-  .greeting {
-    font-size: 2rem;
-    font-weight: 700;
-    color: $text-primary;
-    margin: 0 0 0.25rem;
-
-    @include below($bp-tablet) { font-size: 1.5rem; }
-  }
-
-  .subtitle {
-    margin: 0;
-    font-size: 0.9rem;
-    color: $text-secondary;
-
-    .sub-warn { color: $text-danger; }
-  }
-
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-
-    // Below tablet the actions take their own full-width row so neither the
-    // toggle nor the button gets squeezed to an unusable width.
-    @include below($bp-tablet) {
-      width: 100%;
-      justify-content: space-between;
-    }
-  }
+  gap: 8px;
 }
 
-.view-toggle {
-  display: inline-flex;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-btn;
-  padding: 3px;
+.nav-add {
+  @include mq-icon-btn(22px, 6px);
+  margin-top: -5px;
+  margin-inline-end: 6px;
+  color: $mq-muted;
 
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 0;
-    background: transparent;
-    color: $text-secondary;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 7px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: $transition-std;
-
-    mat-icon { font-size: 18px; width: 18px; height: 18px; }
-
-    &.active {
-      background: $bg-card-hover;
-      color: $text-active;
-    }
-
-    &:hover:not(.active) { color: $text-primary; }
-
-    // Icon-only below large phones — the labels are what overflow first.
-    @include below($bp-phone-lg) {
-      padding: 7px 10px;
-      span { display: none; }
-    }
-  }
+  @include touch { width: 40px; height: 40px; margin-top: -12px; }
 }
 
-.btn-new {
-  display: inline-flex;
+.nav-item {
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  background: $btn-quick-add-bg;
-  color: $btn-quick-add-text;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
   border: 0;
-  border-radius: $radius-btn;
+  border-radius: 9px;
+  background: transparent;
+  color: $mq-text-3;
+  font: inherit;
   font-size: 13px;
-  font-weight: 700;
-  padding: 10px 16px;
+  text-align: start;
   cursor: pointer;
-  transition: $transition-std;
-  white-space: nowrap;
+  transition: background $mq-t-press $mq-ease-quick, color $mq-t-press $mq-ease-quick;
+  @include mq-focus(-2px);
 
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-  &:hover { background: $btn-quick-add-hover; }
+  svg { flex-shrink: 0; }
+
+  &:hover {
+    background: $mq-hover;
+    color: $mq-text;
+  }
+
+  &.on {
+    background: $mq-selected;
+    color: $mq-text;
+    font-weight: 600;
+  }
 }
 
-// ── Filters ─────────────────────────────────────────────────────────────────
-.filter-bar {
+.nav-label {
+  flex: 1;
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+.nav-count {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: $mq-text-4;
+
+  &.quiet { color: $mq-muted; }
+}
+
+.nav-empty {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+// A project's progress: a ring in its own colour.
+.ring-track { stroke: $mq-line-2; }
+.ring-fill { stroke: var(--tone, #{$mq-accent}); }
+
+.main {
+  box-sizing: border-box;
+  flex: 1 1 520px;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px 32px;
+}
+
+.detail {
+  box-sizing: border-box;
+  flex: 0 0 340px;
+  border-inline-start: 1px solid $mq-line;
+
+  &.none {
+    padding: 22px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: $mq-muted;
+  }
+}
+
+// ── Title row ───────────────────────────────────────────────────────────────
+.head {
+  display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+}
 
-  .search-field {
-    position: relative;
-    flex: 1 1 260px;
-    min-width: 0;
+.head-title,
+.board-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 
-    mat-icon {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 18px; width: 18px; height: 18px;
-      color: $text-muted;
-      pointer-events: none;
-    }
+.date {
+  font-size: 12px;
+  color: $mq-muted;
+}
 
-    input {
-      width: 100%;
-      background: $bg-input;
-      border: 1px solid $border-input;
-      border-radius: $radius-input;
-      color: $text-primary;
-      font-size: 13px;
-      padding: 10px 12px 10px 34px;
-      outline: none;
+h1 {
+  @include mq-serif(44px, 1);
+  overflow-wrap: anywhere;
+}
 
-      &:focus { border-color: $teal-primary; }
-      &::placeholder { color: $text-muted; }
-    }
-  }
+// A name someone typed (a project) is written in its own direction (dir="auto")
+// but stays on the page's side: left in English, right in Arabic.
+h1[dir],
+.nav-label[dir] {
+  text-align: left;
 
-  select {
-    background: $bg-input;
-    border: 1px solid $border-input;
-    border-radius: $radius-input;
-    color: $text-primary;
-    font-size: 13px;
-    padding: 10px 12px;
-    cursor: pointer;
-    outline: none;
-    max-width: 100%;
+  @include mq-rtl { text-align: right; }
+}
 
-    &:focus { border-color: $teal-primary; }
-  }
+.summary {
+  padding-bottom: 4px;
+  font-size: 12.5px;
+  color: $mq-text-4;
 
-  .btn-clear {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: transparent;
-    border: 1px solid $border-card;
-    color: $text-secondary;
-    border-radius: $radius-btn;
-    font-size: 13px;
-    padding: 9px 12px;
-    cursor: pointer;
-
-    mat-icon { font-size: 16px; width: 16px; height: 16px; }
-    &:hover { color: $text-primary; }
-  }
-
-  // Stack the controls once they can no longer sit side by side without
-  // each becoming too narrow to read.
-  @include below($bp-tablet-sm) {
-    .search-field { flex: 1 1 100%; }
-    select { flex: 1 1 calc(50% - 0.375rem); }
+  a {
+    color: $mq-accent-text;
+    font-weight: 600;
+    border-radius: 4px;
+    @include mq-focus;
   }
 }
 
-// ── Error + loading ─────────────────────────────────────────────────────────
-.error-banner {
+.head-actions {
+  display: flex;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+
+.seg {
+  @include mq-seg(3px, 10px);
+
+  button { @include mq-seg-item(30px, 0 12px, 7px); }
+}
+
+.display {
+  position: relative;
+  display: inline-flex;
+}
+
+.display-btn {
+  @include mq-btn-outline(36px, 0 12px, 10px);
+  color: $mq-text-3;
+  font-size: 12.5px;
+}
+
+.display-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $mq-accent;
+}
+
+.display-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: 30;
+  width: 256px;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-title {
+  @include mq-eyebrow(10.5px);
+  padding: 6px 10px 4px;
+}
+
+.menu-label { flex: 1; }
+
+.mq-menu-item[aria-checked='true'] {
+  color: $mq-text;
+  font-weight: 600;
+}
+
+.menu-arrow {
+  color: $mq-accent-text !important;
+  transition: transform $mq-t-change $mq-ease-calm;
+
+  &.down { transform: rotate(180deg); }
+}
+
+.menu-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 8px 6px;
+}
+
+.menu-chip {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid $mq-line-2;
+  background: transparent;
+  color: $mq-text-3;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  @include mq-focus;
+
+  &:hover { color: $mq-text; }
+
+  &[aria-pressed='true'] {
+    border-color: $mq-accent-line;
+    background: color-mix(in srgb, #{$mq-accent} 12%, transparent);
+    color: $mq-text;
+  }
+}
+
+.menu-input {
+  @include mq-field(34px, 9px);
+  margin: 0 8px 6px;
+  font-size: 12.5px;
+}
+
+.menu-reset {
+  @include mq-btn-ghost(30px, 0 10px, 8px);
+  align-self: flex-start;
+  margin: 0 0 2px;
+  font-size: 12px;
+}
+
+// ── Add a task ──────────────────────────────────────────────────────────────
+.add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.add {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-  border-radius: $radius-card;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  gap: 12px;
+  // 46px of content inside the dashed line.
+  height: 48px;
+  margin: 0;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px dashed $mq-line-3;
+  color: $mq-muted;
+  transition: border-color $mq-t-press $mq-ease-quick;
+
+  &:focus-within { border-color: $mq-accent; }
+
+  svg {
+    flex-shrink: 0;
+    color: $mq-accent-text;
+  }
+
+  kbd {
+    font-size: 11px;
+    color: $mq-text-4;
+    border: 1px solid $mq-line-2;
+    border-radius: 5px;
+    padding: 1px 6px;
+  }
+}
+
+.add-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: $mq-text;
+  font: inherit;
+  font-size: 13.5px;
+
+  &::placeholder {
+    color: $mq-muted;
+    opacity: 1;
+  }
+}
+
+// What the row read in the typed line, before it is saved.
+.understood {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 0 14px;
+  font-size: 12.5px;
+  animation: mq-rise $mq-t-change $mq-ease-calm;
+}
+
+.u-label {
+  @include mq-eyebrow(10.5px);
+}
+
+.u-title {
+  font-weight: 600;
+  color: $mq-text;
+  overflow-wrap: anywhere;
+
+  &.missing {
+    font-weight: 400;
+    color: $mq-late;
+  }
+}
+
+.chip {
+  --c: #{$mq-accent};
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  color: color-mix(in srgb, var(--c) var(--chip-mix), #{$mq-text});
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--c) 60%, transparent);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  @include mq-focus;
+
+  svg { opacity: .7; }
+  &:hover svg { opacity: 1; }
+
+  &.length { --c: #{$mq-green}; }
+  &.project { --c: #{$mq-amber}; }
+  &.priority { --c: #{$mq-late}; }
+}
+
+.u-note {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.u-add {
+  @include mq-btn-ghost(26px, 0 8px, 7px);
+  margin-inline-start: auto;
+  gap: 6px;
+  font-size: 12px;
+  color: $mq-accent-text;
+
+  kbd {
+    font-size: 10.5px;
+    font-weight: 400;
+    color: $mq-text-4;
+    border: 1px solid $mq-line-2;
+    border-radius: 5px;
+    padding: 1px 5px;
+  }
+}
+
+// ── States ──────────────────────────────────────────────────────────────────
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #{$mq-late} 10%, transparent);
+  border: 1px solid color-mix(in srgb, #{$mq-late} 30%, transparent);
+  color: $mq-late;
+  font-size: 12.5px;
+  font-weight: 600;
 
   span { flex: 1; }
 
   button {
-    background: transparent;
-    border: 0;
-    color: inherit;
-    cursor: pointer;
-    display: inline-flex;
+    @include mq-btn-ghost(28px, 0 10px, 8px);
+    font-size: 12px;
+    color: $mq-text;
   }
-
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
 }
 
-.skeleton-wrap {
+.skeleton {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-
-  .skeleton-row {
-    height: 56px;
-    border-radius: $radius-card;
-    background: linear-gradient(90deg, $bg-card 25%, $bg-card-hover 37%, $bg-card 63%);
-    background-size: 400% 100%;
-    animation: shimmer 1.4s ease infinite;
-
-    @include reduced-motion { animation: none; }
-  }
+  gap: 8px;
 }
 
-@keyframes shimmer {
-  0%   { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
+.bone {
+  height: 40px;
+  border-radius: 8px;
+  background: $mq-card;
+  animation: mq-fade 900ms $mq-ease-calm infinite alternate;
 }
 
-// ── Empty ───────────────────────────────────────────────────────────────────
-.empty-state {
+.empty {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 4rem 2rem;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-
-  @include below($bp-tablet) { padding: 2.5rem 1rem; }
-
-  .empty-icon-wrap {
-    width: 64px; height: 64px;
-    border-radius: 50%;
-    background: $bg-card-hover;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-
-    mat-icon { font-size: 32px; width: 32px; height: 32px; color: $text-secondary; }
-  }
-
-  .empty-title { font-size: 1.1rem; font-weight: 600; color: $text-primary; margin: 0 0 0.25rem; }
-  .empty-sub   { font-size: 0.9rem; color: $text-secondary; margin: 0 0 1.25rem; }
+  align-items: flex-start;
+  gap: 12px;
+  padding: 28px 6px;
 }
 
-// ── Shared bits ─────────────────────────────────────────────────────────────
-.tag-row {
+.empty-title {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: $mq-text-4;
+}
+
+.empty-btn {
+  @include mq-btn-outline(34px, 0 12px, 10px);
+  font-size: 12.5px;
+}
+
+// ── Keyboard hints ──────────────────────────────────────────────────────────
+.hints {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
+  gap: 8px 18px;
+  padding-top: 6px;
+  font-size: 11.5px;
+  color: $mq-muted;
 
-  .tag {
-    font-size: 12px;
-    color: $text-secondary;
-    background: $bg-card-hover;
-    border-radius: 4px;
-    padding: 2px 7px;
+  kbd {
+    margin-inline-end: 6px;
+    padding: 1px 6px;
+    border: 1px solid $mq-line-2;
+    border-radius: 5px;
+    color: $mq-text-3;
   }
 }
 
-.priority-pill {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 20px;
-  padding: 3px 10px;
-  white-space: nowrap;
-}
-
-.due {
-  display: inline-flex;
+// ── Board (V2-Board) ────────────────────────────────────────────────────────
+.board-top {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: $text-secondary;
-  white-space: nowrap;
+  gap: 14px 24px;
+  padding: 16px 24px;
+  border-bottom: 1px solid $mq-line;
 
-  mat-icon { font-size: 14px; width: 14px; height: 14px; }
-  &.overdue { color: $text-danger; font-weight: 600; }
+  h1 { font-size: 40px; }
 }
 
-.icon-btn {
-  display: inline-flex;
+@include shared.done-card;
+
+.done-card {
+  svg { flex-shrink: 0; }
+  .ideal { stroke: $mq-line-5; }
+}
+
+.board-actions {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  color: $text-muted;
-  cursor: pointer;
-  padding: 5px;
-  transition: $transition-std;
+  gap: 8px;
+  margin-inline-start: auto;
 
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-
-  &:hover { background: $bg-card-hover; color: $text-primary; }
-  &.danger:hover { color: #ef4444; }
-
-  // Touch devices get a full 44px target — a 28px icon button is a coin toss
-  // with a fingertip.
-  @include touch { padding: 11px; }
+  .new-task { height: 36px; }
 }
 
-.muted { color: $text-muted; }
+.toggle {
+  @include mq-btn-outline(36px, 0 12px, 10px);
+  color: $mq-text-3;
+  font-size: 12.5px;
 
-// ── List view ───────────────────────────────────────────────────────────────
-.list-view {
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-card;
-  overflow: hidden;
-}
-
-// Keeps the table itself scrollable rather than letting it widen the page.
-.table-scroll {
-  width: 100%;
-  overflow-x: auto;
-  // Makes this box the reference for absolutely-positioned children (the
-  // screen-reader-only column labels). Without it they were placed against the
-  // page instead, escaped this box's clipping and made the whole page scroll
-  // sideways on phones.
-  position: relative;
-  -webkit-overflow-scrolling: touch;
-}
-
-.task-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  min-width: 720px;
-
-  thead th {
-    text-align: left;
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid $border-card;
-    color: $text-secondary;
-    font-weight: 600;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-
-    button {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: transparent;
-      border: 0;
-      color: inherit;
-      font: inherit;
-      text-transform: inherit;
-      letter-spacing: inherit;
-      cursor: pointer;
-
-      mat-icon { font-size: 14px; width: 14px; height: 14px; }
-      &:hover { color: $text-primary; }
-    }
-  }
-
-  tbody tr {
-    cursor: pointer;
-    transition: $transition-std;
-    border-bottom: 1px solid $border-subtle;
-
-    &:last-child { border-bottom: 0; }
-    &:hover { background: $bg-card-hover; }
-    &.is-saving { opacity: 0.6; }
-  }
-
-  td {
-    padding: 0.85rem 1rem;
-    color: $text-primary;
-    vertical-align: middle;
-  }
-
-  .col-title {
-    .task-title { display: block; font-weight: 600; }
-    .task-desc {
-      display: block;
-      color: $text-secondary;
-      font-size: 12px;
-      margin-top: 2px;
-      // Long descriptions must not stretch the row.
-      display: -webkit-box;
-      -webkit-line-clamp: 1;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-  }
-
-  .status-select {
-    background: transparent;
-    border: 1px solid $border-input;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 8px;
-    cursor: pointer;
-    outline: none;
-
-    // The <option> list is painted by the OS, so it needs a readable
-    // background of its own rather than inheriting the transparent one.
-    option { background: $bg-card; color: $text-primary; }
-  }
-
-  .project-name {
-    display: inline-block;
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    vertical-align: middle;
-    color: $text-secondary;
-  }
-
-  .col-actions { text-align: right; }
-
-  // Below tablet the secondary columns are dropped rather than crushed —
-  // project and due date stay reachable by opening the task.
-  @include below($bp-tablet) {
-    min-width: 0;
-
-    .col-project { display: none; }
-  }
-
-  @include below($bp-phone-lg) {
-    .col-due { display: none; }
+  &[aria-pressed='true'] {
+    border-color: $mq-accent-line;
+    background: color-mix(in srgb, #{$mq-accent} 12%, transparent);
+    color: $mq-text;
   }
 }
 
-// ── Kanban view ─────────────────────────────────────────────────────────────
-.unknown-note {
-  font-size: 12px;
-  color: $text-secondary;
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-radius: $radius-btn;
-  padding: 0.6rem 0.85rem;
-  margin: 0 0 0.85rem;
-}
-
-.kanban-view { width: 100%; }
-
-.kanban-board {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(260px, 1fr));
-  gap: 0.9rem;
-  align-items: start;
-
-  // Below laptop the five columns can no longer each hold a readable card, so
-  // the board becomes a horizontal scroller with snap points instead of
-  // shrinking every column past the point of usefulness.
-  @include below($bp-laptop) {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 0.5rem;
-    -webkit-overflow-scrolling: touch;
-
-    .kanban-col {
-      flex: 0 0 280px;
-      scroll-snap-align: start;
-    }
-  }
-
-  @include below($bp-phone-lg) {
-    .kanban-col { flex: 0 0 85vw; }
-  }
-}
-
-.kanban-col {
-  background: $bg-card;
-  border: 1px solid $border-card;
-  border-top: 3px solid transparent;
-  border-radius: $radius-card;
+.board-body {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 12px;
+  padding: 18px 24px 28px;
+  overflow-x: auto;
+  @include mq-scroll;
+}
 
-  .col-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0.8rem 0.9rem;
-    border-bottom: 1px solid $border-subtle;
+// The picked card's details slide in over the board.
+.drawer-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: mq-shadow(.35);
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+}
 
-    .col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-end: 0;
+  z-index: 51;
+  width: min(400px, 100%);
+  background: $mq-bg;
+  border-inline-start: 1px solid $mq-line;
+  box-shadow: -24px 0 60px mq-shadow(.45);
+  overflow-y: auto;
+  animation: mq-rise $mq-t-arrive $mq-ease-calm;
+  @include mq-scroll;
 
-    .col-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: $text-primary;
-      margin: 0;
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+  // In Arabic it lies on the left edge, so its shadow falls to the right.
+  @include mq-rtl { box-shadow: 24px 0 60px mq-shadow(.45); }
+}
 
-    .col-count {
-      font-size: 12px;
-      font-weight: 700;
-      color: $text-secondary;
-      background: $bg-card-hover;
-      border-radius: 20px;
-      padding: 2px 8px;
+// Phone-only pieces.
+.m-head,
+.m-seg,
+.m-plan {
+  display: none;
+}
+
+// ── Wide: the header stays, each column scrolls by itself ───────────────────
+@include above($wide) {
+  .tasks {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .tasks:not(.is-board) {
+    .lists,
+    .main,
+    .detail {
+      overflow-y: auto;
+      @include mq-scroll;
     }
   }
 
-  .col-body {
-    padding: 0.7rem;
+}
+
+// The board keeps its header in place and scrolls underneath it, so the drawer
+// with a card's details can lie over it at full height.
+@include above($bp-tablet) {
+  .tasks.is-board {
+    height: 100%;
+    min-height: 0;
+
+    .board-body { overflow-y: auto; }
+  }
+}
+
+// ── Narrower: the detail takes the place of the list ────────────────────────
+@include below($wide) {
+  .detail { display: none; }
+
+  .tasks.detail-open:not(.is-board) {
+    .lists,
+    .main { display: none; }
+
+    .detail {
+      display: flex;
+      flex: 1;
+      // As wide as the screen, up to 720px. Without a width the auto margins let its
+      // content size it, and one long title pushed it past the edge of a phone.
+      width: 100%;
+      min-width: 0;
+      max-width: 720px;
+      margin: 0 auto;
+      border: 0;
+    }
+  }
+
+}
+
+// ── Phones (V2-MobileTasks) ─────────────────────────────────────────────────
+@include below($bp-tablet) {
+  .top { display: none; }
+
+  .columns { flex-direction: column; }
+
+  .main {
+    flex: none;
+    gap: 12px;
+    padding: 26px 18px 8px;
+  }
+
+  .m-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+
+    h1 { font-size: 40px; }
+  }
+
+  .m-title {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
-    min-height: 120px;
+    gap: 4px;
+    min-width: 0;
   }
 
-  .col-empty {
-    text-align: center;
-    color: $text-muted;
+  .m-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: $mq-accent-text;
+  }
+
+  .m-summary {
+    flex-shrink: 0;
+    padding-bottom: 4px;
     font-size: 12px;
-    padding: 1.5rem 0.5rem;
-    border: 1px dashed $border-card;
-    border-radius: $radius-btn;
-    margin: 0;
+    color: $mq-muted;
   }
-}
 
-.task-card {
-  position: relative;
-  background: $bg-app;
-  border: 1px solid $border-card;
-  border-radius: $radius-btn;
-  padding: 0.7rem 0.75rem;
-  cursor: pointer;
-  transition: $transition-std;
+  .m-seg {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 3px;
+    border-radius: 11px;
+    background: $mq-field;
+    border: 1px solid $mq-line-2;
 
-  &:hover { border-color: $teal-primary; }
-  &.is-saving { opacity: 0.55; }
-
-  .card-top {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-
-    .priority-bar {
-      width: 3px;
-      align-self: stretch;
-      min-height: 18px;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
-
-    .card-title {
-      flex: 1;
+    // 34px as drawn; the invisible part above and below makes it a 44px target.
+    button {
+      @include mq-seg-item(34px, 0 6px, 8px);
+      position: relative;
       font-size: 13px;
-      font-weight: 600;
-      color: $text-primary;
-      margin: 0;
-      line-height: 1.35;
-      overflow-wrap: anywhere;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -5px 0;
+      }
     }
   }
 
-  .card-desc {
-    margin: 6px 0 0;
-    font-size: 12px;
-    color: $text-secondary;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .card-foot {
+  .m-plan {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: $mq-card;
+    border: 1px solid $mq-line-b;
+    color: $mq-text;
+    @include mq-focus;
+  }
+
+  .m-plan-row {
+    display: flex;
     justify-content: space-between;
-    gap: 6px;
-    margin-top: 8px;
-
-    .project-chip {
-      font-size: 12px;
-      color: $text-secondary;
-      background: $bg-card-hover;
-      border-radius: 4px;
-      padding: 2px 7px;
-      max-width: 45%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    gap: 12px;
+    font-size: 12.5px;
   }
 
-  .saving-dot {
-    position: absolute;
-    top: 8px; right: 8px;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: $teal-primary;
-    animation: pulse 1s ease-in-out infinite;
+  .m-plan-label { font-weight: 600; }
 
-    @include reduced-motion { animation: none; }
+  .m-plan-link {
+    color: $mq-accent-text;
+    font-weight: 600;
+  }
+
+  .m-plan-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: $mq-line;
+  }
+
+  .m-plan-meetings { background: $mq-blue; }
+  .m-plan-tasks { background: $mq-accent; }
+
+  // The phone design has no add row: the tab bar's "+" adds from anywhere.
+  .add-form,
+  .hints,
+  .head-title,
+  .summary { display: none; }
+
+  // "List / Board" and "Display" move under the list.
+  .head {
+    order: 20;
+    padding-top: 8px;
+  }
+
+  .head-actions {
+    margin-inline-start: 0;
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .seg button,
+  .display-btn { height: 44px; }
+
+  .display-menu {
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
+
+  // The rest of the lists, the views and the projects follow the tasks.
+  .lists {
+    flex: none;
+    order: 2;
+    padding: 12px 8px 8px;
+    border: 0;
+    border-top: 1px solid $mq-line;
+    margin: 12px 10px 0;
+  }
+
+  .nav-item { height: 44px; }
+
+  .tasks.detail-open:not(.is-board) .detail { padding: 18px 18px 24px; }
+
+  .board-top {
+    padding: 22px 18px 14px;
+    gap: 12px;
+  }
+
+  .done-card {
+    flex: 1 1 100%;
+
+    svg { display: none; }
+  }
+
+  .done-main { min-width: 0; flex: 1; }
+
+  .board-actions {
+    margin-inline-start: 0;
+
+    .new-task,
+    .toggle { height: 44px; }
+  }
+
+  .board-body { padding: 14px 18px 20px; }
+
+  // The picked card's details fill the screen.
+  .drawer {
+    position: fixed;
+    inset: 0;
+    width: auto;
+    padding: 18px 18px calc(110px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    box-shadow: none;
   }
 }
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.3; }
-}
-
-// ── CDK drag-drop chrome ────────────────────────────────────────────────────
-.cdk-drag-preview {
-  border-radius: $radius-btn;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
-  opacity: 0.95;
-}
-
-.cdk-drag-placeholder {
-  opacity: 0.35;
-  border: 1px dashed $teal-primary;
-  border-radius: $radius-btn;
-  min-height: 56px;
-  background: $teal-glow;
-}
-
-.cdk-drag-animating,
-.cdk-drop-list-dragging .task-card:not(.cdk-drag-placeholder) {
-  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
-}
-
-.cdk-drop-list-receiving {
-  background: $teal-glow;
-  border-radius: $radius-btn;
-}
-
-// Checklist progress and "Blocked" on a task (app-task-marks). Only the spacing is
-// set here; the marks bring their own look and take no room when there are none.
-.row-marks { margin-top: 6px; }
-.card-marks { margin-top: 8px; }

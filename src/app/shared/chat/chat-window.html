@@ -1,149 +1,212 @@
 @if (conversation(); as c) {
-  <section class="window" role="dialog" [attr.aria-label]="'Chat with ' + c.friend.fullName">
+  <section class="window" role="dialog" [attr.aria-label]="'Chat with {name}' | t: { name: title() }">
     <header class="head">
-      <button type="button" class="who" (click)="openProfile()" [title]="'Open the profile of ' + c.friend.fullName">
-        <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl" [online]="online()" [size]="36" />
-        <span class="who-text">
-          <span class="who-name">{{ c.friend.fullName }}</span>
-          <span class="who-status" [class.live]="typing() || online()">
-            {{ typing() ? 'typing…' : online() ? 'Active now' : 'Offline' }}
+      @if (c.isGroup) {
+        <button type="button" class="who" (click)="openDetails()" [attr.aria-expanded]="membersOpen()"
+                [title]="'Members of {name}' | t: { name: title() }">
+          <app-chat-avatar [name]="title()" [group]="true" [size]="34" />
+          <span class="who-text">
+            <span class="who-name"><bdi>{{ title() }}</bdi></span>
+            <span class="who-status" [class.live]="typing()">{{ typing() ? typingText() : memberCount() }}</span>
           </span>
-        </span>
-      </button>
-      <!-- Calls: only with a friend, in a browser that can make them, one at a time. -->
-      @if (calls.supported && c.canSend) {
-        <button type="button" class="icon-btn accent" (click)="call(false)" [disabled]="!!calls.call()"
-                aria-label="Voice call" title="Voice call">
-          <mat-icon>call</mat-icon>
         </button>
-        <button type="button" class="icon-btn accent" (click)="call(true)" [disabled]="!!calls.call()"
-                aria-label="Video call" title="Video call">
-          <mat-icon>videocam</mat-icon>
+      } @else {
+        <button type="button" class="who" (click)="openDetails()"
+                [title]="'Open the profile of {name}' | t: { name: c.friend.fullName }">
+          <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl" [online]="online()" [size]="34" />
+          <span class="who-text">
+            <span class="who-name"><bdi>{{ c.friend.fullName }}</bdi></span>
+            <span class="who-status" [class.live]="typing()">
+              {{ (typing() ? 'typing…' : online() ? 'Online' : 'Offline') | t }}
+            </span>
+          </span>
         </button>
       }
-      <button type="button" class="icon-btn" (click)="chat.minimise(c.id)" aria-label="Minimise chat" title="Minimise">
-        <mat-icon>remove</mat-icon>
+      <!-- Calls: only with a friend or in a group the user is in, in a browser that can make them, one at a time. -->
+      @if (calls.supported && c.canSend) {
+        <button type="button" class="icon-btn" (click)="call(false)" [disabled]="onCall() || !!c.activeCall"
+                [attr.aria-label]="'Voice call' | t" [title]="'Voice call' | t">
+          <app-chat-icon name="phone" [size]="17" />
+        </button>
+        <button type="button" class="icon-btn" (click)="call(true)" [disabled]="onCall() || !!c.activeCall"
+                [attr.aria-label]="'Video call' | t" [title]="'Video call' | t">
+          <app-chat-icon name="video" [size]="17" />
+        </button>
+      }
+      <button type="button" class="icon-btn" (click)="chat.minimise(c.id)"
+              [attr.aria-label]="'Minimise chat' | t" [title]="'Minimise' | t">
+        <app-chat-icon name="minimise" [size]="16" />
       </button>
-      <button type="button" class="icon-btn" (click)="chat.close(c.id)" aria-label="Close chat" title="Close">
-        <mat-icon>close</mat-icon>
+      <button type="button" class="icon-btn" (click)="chat.close(c.id)"
+              [attr.aria-label]="'Close chat' | t" [title]="'Close' | t">
+        <app-chat-icon name="close" [size]="15" />
       </button>
     </header>
 
-    <div class="messages" #scroller (scroll)="onScroll()" role="log" aria-live="polite">
-      @if (thread().hasMore) {
-        <button type="button" class="older" (click)="loadOlder()" [disabled]="thread().loading">
-          {{ thread().loading ? 'Loading…' : 'Earlier messages' }}
-        </button>
-      }
+    <!-- A call is going on in this group and this tab is not in it. -->
+    @if (liveCall(); as live) {
+      <div class="live-call" role="status">
+        <span class="live-dot"></span>
+        <app-chat-icon [name]="live.video ? 'video' : 'phone'" [size]="15" />
+        <span class="live-text">{{ inCallElsewhere() ? ('You are in this call on another tab' | t) : liveCallText() }}</span>
+        @if (calls.supported && !inCallElsewhere()) {
+          <button type="button" class="join" (click)="joinCall()" [disabled]="onCall() || liveCallFull()">{{ 'Join' | t }}</button>
+        }
+      </div>
+    }
 
-      @if (thread().loading && !rows().length) {
-        <p class="state">Loading messages…</p>
-      } @else if (thread().loaded && !rows().length) {
-        <div class="state">
-          <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl" [size]="64" />
-          <p>Say hello to {{ c.friend.fullName }}.</p>
-        </div>
-      }
-
-      @for (row of rows(); track row.message.id) {
-        @if (row.day) {
-          <div class="day"><span>{{ row.day }}</span></div>
+    <div class="body">
+      <div class="messages" #scroller (scroll)="onScroll()" role="log" aria-live="polite">
+        @if (thread().hasMore) {
+          <button type="button" class="older" (click)="loadOlder()" [disabled]="thread().loading">
+            {{ (thread().loading ? 'Loading…' : 'Earlier messages') | t }}
+          </button>
         }
 
-        @if (row.call) {
-          <!-- A call is a line of its own in the middle; clicking it calls again. -->
-          <button type="button" class="call-line" [class.missed]="row.message.callOutcome !== 'Completed'"
-                  (click)="call(!!row.message.callVideo)" [disabled]="!calls.supported || !c.canSend || !!calls.call()"
-                  [title]="'Call again · ' + row.time">
-            <mat-icon>{{ row.message.callOutcome !== 'Completed' ? (row.mine ? 'call_missed_outgoing' : 'call_missed')
-                         : row.message.callVideo ? 'videocam' : 'call' }}</mat-icon>
-            <span>{{ row.call }}</span>
-            <span class="call-time">{{ row.time }}</span>
-          </button>
-        } @else {
-        <div class="line" [class.mine]="row.mine" [class.ends-group]="row.endsGroup">
-          <div class="bubble"
-               [class.deleted]="row.message.isDeleted"
-               [class.failed]="row.message.state === 'failed'"
-               [class.sending]="row.message.state === 'sending'"
-               [title]="row.time">
-            @if (row.message.isDeleted) {
-              <span class="deleted-text"><mat-icon>block</mat-icon> Message deleted</span>
-            } @else {
-              <span class="text">{{ row.message.body }}</span>
-              @if (row.message.editedAt) {
-                <span class="edited">edited</span>
+        @if (thread().loading && !rows().length) {
+          <p class="state">{{ 'Loading messages…' | t }}</p>
+        } @else if (thread().loaded && !rows().length) {
+          <div class="state">
+            <app-chat-avatar [name]="title()" [url]="c.friend.profilePictureUrl" [group]="!!c.isGroup" [size]="56" />
+            <p>{{ hello() }}</p>
+          </div>
+        }
+
+        @for (row of rows(); track row.message.id) {
+          @if (row.day) {
+            <div class="day"><span>{{ row.day }}</span></div>
+          }
+
+          @if (row.event) {
+            <!-- What happened to the group: a quiet line in the middle. -->
+            <p class="event" [title]="row.time">{{ row.event }}</p>
+          } @else if (row.call) {
+            <!-- A call is a line of its own in the middle; clicking it calls again. -->
+            <button type="button" class="call-line" [class.missed]="row.message.callOutcome !== 'Completed'"
+                    (click)="call(!!row.message.callVideo)"
+                    [disabled]="!calls.supported || !c.canSend || onCall() || !!c.activeCall"
+                    [title]="'Call again · {time}' | t: { time: row.time }">
+              <!-- The arrows of a missed and an unanswered call point the other way in Arabic. -->
+              <app-chat-icon [size]="14" [class.mq-flip]="row.message.callOutcome !== 'Completed'"
+                             [name]="row.message.callOutcome !== 'Completed' ? (row.mine ? 'no-answer' : 'missed')
+                                     : row.message.callVideo ? 'video' : 'phone'" />
+              <span>{{ row.call }}</span>
+              <span class="call-time">{{ row.time }}</span>
+            </button>
+          } @else {
+          @if (row.showsName) {
+            <span class="from-name"><bdi>{{ row.sender?.fullName }}</bdi></span>
+          }
+          <div class="line" [class.mine]="row.mine" [class.ends-group]="row.endsGroup">
+            <!-- In a group, the writer's picture sits beside the last message of their run. -->
+            @if (row.sender; as sender) {
+              <span class="from-face">
+                @if (row.endsGroup) {
+                  <app-chat-avatar [name]="sender.fullName" [url]="sender.profilePictureUrl" [size]="24" />
+                }
+              </span>
+            }
+            <div class="bubble"
+                 [class.deleted]="row.message.isDeleted"
+                 [class.failed]="row.message.state === 'failed'"
+                 [class.sending]="row.message.state === 'sending'"
+                 [title]="row.time">
+              @if (row.message.isDeleted) {
+                <span class="deleted-text"><app-chat-icon name="gone" [size]="13" /> {{ 'Message deleted' | t }}</span>
+              } @else {
+                <!-- What was written reads in its own direction: English left to right inside the Arabic interface, and the reverse. -->
+                <div class="said" dir="auto">
+                  <span class="text">{{ row.message.body }}</span>
+                  @if (row.message.editedAt) {
+                    <span class="edited">{{ 'edited' | t }}</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Own, saved messages can be changed or taken back. -->
+            @if (row.mine && !row.message.isDeleted && !row.message.state) {
+              @if (deleting() === row.message.id) {
+                <div class="ask">
+                  <span>{{ 'Delete?' | t }}</span>
+                  <button type="button" class="link danger" (click)="confirmDelete(row.message)">{{ 'Delete' | t }}</button>
+                  <button type="button" class="link" (click)="deleting.set(null)">{{ 'Keep' | t }}</button>
+                </div>
+              } @else {
+                <div class="actions">
+                  <button type="button" class="icon-btn tiny" (click)="startEdit(row.message)"
+                          [attr.aria-label]="'Edit message' | t" [title]="'Edit' | t">
+                    <app-chat-icon name="edit" [size]="13" />
+                  </button>
+                  <button type="button" class="icon-btn tiny" (click)="deleting.set(row.message.id)"
+                          [attr.aria-label]="'Delete message' | t" [title]="'Delete' | t">
+                    <app-chat-icon name="delete" [size]="13" />
+                  </button>
+                </div>
               }
             }
-          </div>
 
-          <!-- Own, saved messages can be changed or taken back. -->
-          @if (row.mine && !row.message.isDeleted && !row.message.state) {
-            @if (deleting() === row.message.id) {
-              <div class="ask">
-                <span>Delete?</span>
-                <button type="button" class="link danger" (click)="confirmDelete(row.message)">Delete</button>
-                <button type="button" class="link" (click)="deleting.set(null)">Keep</button>
-              </div>
-            } @else {
-              <div class="actions">
-                <button type="button" class="icon-btn small" (click)="startEdit(row.message)" aria-label="Edit message" title="Edit">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button type="button" class="icon-btn small" (click)="deleting.set(row.message.id)" aria-label="Delete message" title="Delete">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
+            @if (row.message.state === 'failed') {
+              <button type="button" class="link danger retry" (click)="chat.retry(row.message)">{{ 'Not sent. Try again' | t }}</button>
             }
-          }
-
-          @if (row.message.state === 'failed') {
-            <button type="button" class="link danger retry" (click)="chat.retry(row.message)">Not sent. Try again</button>
-          }
-        </div>
-        }
-      }
-
-      @if (receipt()) {
-        <div class="receipt">{{ receipt() }}</div>
-      }
-
-      @if (typing()) {
-        <div class="line">
-          <div class="bubble typing" [attr.aria-label]="c.friend.fullName + ' is typing'">
-            <i></i><i></i><i></i>
           </div>
-        </div>
+          }
+        }
+
+        @if (receipt()) {
+          <div class="receipt">{{ receipt() }}</div>
+        }
+
+        @if (typing()) {
+          <div class="line typing-line">
+            <div class="bubble typing"
+                 [attr.aria-label]="c.isGroup ? typingText() : ('{name} is typing' | t: { name: c.friend.fullName })">
+              <i></i><i></i><i></i>
+            </div>
+            @if (c.isGroup) {
+              <span class="typing-who">{{ typingText() }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <footer class="foot">
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+
+        @if (!c.canSend) {
+          <p class="closed">
+            <app-chat-icon name="lock" [size]="14" />
+            {{ (c.isGroup ? 'You are no longer in this group.' : 'You are no longer friends, so this chat is closed.') | t }}
+          </p>
+        } @else {
+          @if (editing()) {
+            <div class="editing">
+              <app-chat-icon name="edit" [size]="13" />
+              <span>{{ 'Editing your message' | t }}</span>
+              <button type="button" class="link" (click)="cancelEdit()">{{ 'Cancel' | t }}</button>
+            </div>
+          }
+
+          <div class="composer">
+            <!-- Empty, the box follows the interface (so the placeholder sits at the start edge); with text, the text. -->
+            <textarea #box rows="1" maxlength="4000" [placeholder]="'Write a message' | t"
+                      [attr.aria-label]="'Message {name}' | t: { name: title() }"
+                      [attr.dir]="draft() ? 'auto' : null"
+                      (input)="onInput($event)" (keydown)="onKeydown($event)"></textarea>
+            <button type="button" class="send" (click)="submit()" [disabled]="!draft().trim()"
+                    [attr.aria-label]="(editing() ? 'Save change' : 'Send message') | t"
+                    [title]="(editing() ? 'Save' : 'Send') | t">
+              <app-chat-icon [name]="editing() ? 'check' : 'send'" [size]="17" />
+            </button>
+          </div>
+        }
+      </footer>
+
+      @if (c.isGroup && membersOpen()) {
+        <app-chat-members [conversationId]="c.id" (closed)="membersOpen.set(false)" />
       }
     </div>
-
-    <footer class="foot">
-      @if (error()) {
-        <p class="error" role="alert">{{ error() }}</p>
-      }
-
-      @if (!c.canSend) {
-        <p class="closed"><mat-icon>lock</mat-icon> You are no longer friends, so this chat is closed.</p>
-      } @else {
-        @if (editing()) {
-          <div class="editing">
-            <mat-icon>edit</mat-icon>
-            <span>Editing your message</span>
-            <button type="button" class="link" (click)="cancelEdit()">Cancel</button>
-          </div>
-        }
-
-        <div class="composer">
-          <textarea #box rows="1" maxlength="4000" placeholder="Aa"
-                    [attr.aria-label]="'Message ' + c.friend.fullName"
-                    (input)="onInput($event)" (keydown)="onKeydown($event)"></textarea>
-          <button type="button" class="send" (click)="submit()" [disabled]="!draft().trim()"
-                  [attr.aria-label]="editing() ? 'Save change' : 'Send message'"
-                  [title]="editing() ? 'Save' : 'Send'">
-            <mat-icon>{{ editing() ? 'check' : 'send' }}</mat-icon>
-          </button>
-        </div>
-      }
-    </footer>
   </section>
 }

@@ -1,65 +1,167 @@
-<div class="dashboard-page" @fadeInUp>
+<div class="plan">
 
-  <div class="page-header">
-    <div class="header-left">
-      <h1 class="greeting">{{ greeting() }}, {{ firstName() }}</h1>
-      <p class="subtitle">Here's your productivity overview for today.</p>
+  <header class="plan-head">
+    <a class="back" routerLink="/calendar" [attr.aria-label]="'Back to week' | t">
+      <svg class="mq-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <div class="head-title">
+      <span class="head-eyebrow">{{ 'Plan my day' | t }}</span>
+      <h1>{{ dateLabel() }}</h1>
     </div>
-    <div class="header-right">
-      <button type="button" class="btn-ghost" (click)="exportCsv()" [disabled]="!tasksInRange().length"
-              title="Download these tasks as a CSV file">
-        <mat-icon>download</mat-icon> Export
-      </button>
+    <div class="steps" role="list" [attr.aria-label]="'Steps' | t">
+      @for (step of steps(); track step.label) {
+        <div class="step" role="listitem" [class.now]="step.state === 'now'" [class.done]="step.state === 'done'"
+             [attr.aria-current]="step.state === 'now' ? 'step' : null">
+          <span class="step-dot">{{ step.mark }}</span>{{ step.label }}
+        </div>
+      }
+    </div>
+    <button type="button" class="commit" [disabled]="!canCommit()" [attr.title]="commitWhy() || null" (click)="commit()">
+      {{ (committing() ? 'Saving…' : 'Commit plan') | t }}
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+    </button>
+  </header>
 
-      <div class="range-wrap">
-        <button type="button" class="btn-ghost" (click)="toggleRangeMenu($event)"
-                aria-haspopup="listbox" [attr.aria-expanded]="rangeMenuOpen()">
-          {{ rangeOption().label }}
-          <mat-icon>expand_more</mat-icon>
-        </button>
+  <div class="plan-body">
+    <section class="choose" [attr.aria-label]="'Choose tasks' | t">
+      <div class="col-head">
+        <h2>{{ 'What deserves today?' | t }}</h2>
+        <span>{{ 'Tick tasks to place them. Miqat finds the time.' | t }}</span>
+      </div>
 
-        <div class="range-menu" *ngIf="rangeMenuOpen()" role="listbox" (click)="$event.stopPropagation()">
-          <button type="button" class="range-option" *ngFor="let option of ranges"
-                  role="option" [attr.aria-selected]="option.key === range()"
-                  [class.active]="option.key === range()" (click)="chooseRange(option)">
-            {{ option.label }}
-            <mat-icon *ngIf="option.key === range()">check</mat-icon>
-          </button>
+      @if (loading()) {
+        <div class="wait" role="status" [attr.aria-label]="'Loading your tasks' | t"><i></i><i></i><i></i><i></i></div>
+      } @else if (error()) {
+        <div class="state">
+          <p>{{ error() }}</p>
+          <button type="button" class="quiet-btn" (click)="reload()">{{ 'Try again' | t }}</button>
+        </div>
+      } @else if (!groups().length) {
+        <div class="state">
+          <p>{{ 'Nothing is due today and nothing is late.' | t }}</p>
+          <a class="quiet-link" routerLink="/tasks">{{ 'Open your tasks' | t }}</a>
+        </div>
+      }
+
+      @for (group of groups(); track group.key) {
+        <div class="group">
+          <span class="group-title" [class.late]="group.late">{{ group.title }}</span>
+          @for (task of group.rows; track task.id) {
+            <label class="pick">
+              <input type="checkbox" [checked]="task.on" (change)="toggle(task.id)" />
+              <span class="pick-text">
+                <span class="pick-title"><bdi>{{ task.title }}</bdi></span>
+                <span class="pick-sub">
+                  <span class="pick-dot" [style.--tone]="task.color"></span><bdi>{{ task.project }}</bdi>
+                  @if (task.noRoom) {
+                    <span class="pick-due late">{{ 'No room today' | t }}</span>
+                  } @else if (task.due) {
+                    <span class="pick-due" [class.late]="task.late">{{ task.due }}</span>
+                  }
+                </span>
+              </span>
+              <span class="pick-est" [class.assumed]="task.assumed"
+                    [attr.title]="task.assumed ? ('No estimate on this task: half an hour is assumed' | t) : null">{{ task.estimate }}</span>
+            </label>
+          }
+          @if (group.hidden > 0) {
+            <button type="button" class="quiet-btn" (click)="showAllOverdue.set(true)">
+              {{ group.hidden | tCount: 'Show {n} more' : 'Show {n} more' }}
+            </button>
+          } @else if (group.key === 'overdue' && showAllOverdue()) {
+            <button type="button" class="quiet-btn" (click)="showAllOverdue.set(false)">{{ 'Show fewer' | t }}</button>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="day" [attr.aria-label]="'Today’s schedule' | t">
+      <div class="day-head">
+        <h2>{{ 'Proposed day' | t }}</h2>
+        <span>{{ 'Dashed blocks are Miqat’s suggestions. Drag to adjust.' | t }}</span>
+        <button type="button" class="shuffle" (click)="shuffle()" [disabled]="loading()">{{ 'Shuffle' | t }}</button>
+      </div>
+
+      <div class="timeline">
+        <div class="hours" [style.height.px]="axisHeight()" aria-hidden="true">
+          @for (hour of hours(); track hour.top) {
+            <span [style.top.px]="hour.top">{{ hour.label }}</span>
+          }
+        </div>
+        <div class="grid" [style.height.px]="axisHeight()">
+          @for (top of lines(); track top) {
+            <span class="line" [style.top.px]="top" aria-hidden="true"></span>
+          }
+          @for (prayer of prayerLines(); track prayer.label) {
+            <span class="prayer-line" [style.top.px]="prayer.top" aria-hidden="true"></span>
+            <span class="prayer-tag" [style.top.px]="prayer.top - 9">{{ prayer.label }}</span>
+          }
+          @for (block of blocks(); track block.id) {
+            <div class="block" [attr.data-kind]="block.kind" [class.dragging]="block.dragging" [class.landed]="block.landed"
+                 [class.staggered]="staggered()"
+                 [style.top.px]="block.top" [style.height.px]="block.height"
+                 [style.--tone]="block.tone" [style.--order]="block.order" [style.--lane]="block.lane" [style.--lanes]="block.lanes"
+                 [attr.tabindex]="block.kind === 'task' ? 0 : null"
+                 [attr.role]="block.kind === 'task' ? 'button' : null"
+                 [attr.aria-label]="block.kind === 'task' ? ('{title}, {time}, {estimate}. Arrow up and down move it' | t: { title: block.title, time: block.time, estimate: block.tag }) : null"
+                 (pointerdown)="onBlockDown($event, block)"
+                 (keydown)="onBlockKey($event, block)">
+              <span class="block-time">{{ block.time }}</span>
+              <span class="block-title"><bdi>{{ block.title }}</bdi></span>
+              <span class="block-tag">{{ block.tag }}</span>
+            </div>
+          }
+          @if (nowLine(); as line) {
+            <div class="now-line" [style.top.px]="line.top" [attr.aria-label]="line.label">
+              <span class="now-dot"></span>
+              <span class="now-rule"></span>
+            </div>
+          }
         </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- The day at a glance. Left out when the counts could not be loaded. -->
-  <div class="glance-row" *ngIf="glance().length" role="group" aria-label="Your tasks at a glance">
-    <button type="button" class="glance-tile" *ngFor="let tile of glance()"
-            [attr.data-tone]="tile.tone" [class.zero]="tile.value === 0"
-            [title]="tile.hint" [attr.aria-label]="tile.value + ' ' + tile.label + '. ' + tile.hint"
-            (click)="openGlance(tile)">
-      <span class="glance-icon"><mat-icon>{{ tile.icon }}</mat-icon></span>
-      <span class="glance-text">
-        <span class="glance-value">{{ tile.value }}</span>
-        <span class="glance-label">{{ tile.label }}</span>
-      </span>
-    </button>
-  </div>
+    <aside class="side">
+      <section class="workload" [attr.aria-label]="'Workload' | t">
+        <h2>{{ 'Workload' | t }}</h2>
+        <div class="total">
+          <span class="total-number">{{ totalLabel() }}</span>
+          <span class="total-of">{{ capacityLabel() }}</span>
+        </div>
+        <div class="meter" role="img" [attr.aria-label]="meterLabel()">
+          <span class="meter-meetings" [style.width.%]="load().meetingShare"></span>
+          <span class="meter-tasks" [class.over]="load().over" [style.width.%]="load().taskShare"></span>
+        </div>
+        <div class="legend">
+          <span><span class="swatch meetings"></span>{{ 'Meetings' | t }}<span class="legend-value">{{ meetingLabel() }}</span></span>
+          <span><span class="swatch tasks"></span>{{ 'Focus on tasks' | t }}<span class="legend-value">{{ taskLabel() }}</span></span>
+          <span><span class="swatch free"></span>{{ 'Free' | t }}<span class="legend-value">{{ freeLabel() }}</span></span>
+        </div>
+        @for (line of verdict(); track line.text) {
+          <span class="verdict" [class.bad]="line.bad">{{ line.text }}</span>
+        }
+      </section>
 
-  <div class="quick-actions-grid" @staggerCards>
-    <app-quick-action-card
-      *ngFor="let card of quickActionCards"
-      [card]="card"
-      (cardClick)="onQuickAction(card)">
-    </app-quick-action-card>
-  </div>
+      <section class="guardrails" [attr.aria-label]="'Guardrails' | t">
+        <h2>{{ 'Guardrails' | t }}</h2>
+        @for (rule of rules(); track rule.key) {
+          <div class="rule">
+            <span class="rule-text"><span>{{ rule.label }}</span><span class="rule-hint">{{ rule.hint }}</span></span>
+            <button type="button" class="switch" role="switch" [attr.aria-checked]="rule.on" [attr.aria-label]="rule.label"
+                    [disabled]="rule.disabled" [attr.title]="rule.why || null"
+                    (click)="setRule(rule.key, !rule.on)"><span></span></button>
+          </div>
+        }
+      </section>
 
-  <div class="dashboard-grid">
-    <div class="left-col">
-      <app-productivity-chart [tasks]="tasksInRange()" [caption]="rangeCaption()"></app-productivity-chart>
-      <app-recent-workspaces [refresh]="refreshTick()"></app-recent-workspaces>
-    </div>
-    <div class="right-col">
-      <app-mini-calendar [tasks]="tasks()"></app-mini-calendar>
-      <app-upcoming-agenda [refresh]="refreshTick()" (addTask)="openTaskDialog()"></app-upcoming-agenda>
-    </div>
+      <section class="yesterday">
+        <span class="yesterday-title">{{ 'Yesterday' | t }}</span>
+        @if (loading()) {
+          <span class="wait brief" role="status" [attr.aria-label]="'Loading' | t"><i></i><i></i></span>
+        } @else {
+          <span class="yesterday-text">{{ yesterday() }}</span>
+        }
+      </section>
+    </aside>
   </div>
 </div>

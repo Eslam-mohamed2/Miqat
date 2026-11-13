@@ -1,22 +1,24 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute, RouterLink } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { FlipClock } from '../../flip-clock/flip-clock';
-import { OtpPurpose } from '../../models/api.models';
-import { apiErrorMessage } from '../../core/http/api-error';
 
+import { latinDigits, num, t } from '../../core/i18n/i18n';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { AuthService } from '../../core/services/auth.service';
+import { OtpPurpose } from '../../models/api.models';
+import { AuthShell } from '../auth-shell/auth-shell';
+import { authError } from '../server-text';
+
+/** "Check your email": the 6-digit code step (design/miqat-2.0: V2-SignIn). */
 @Component({
   selector: 'app-verify-otp',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, FlipClock],
+  imports: [AuthShell, TPipe],
   templateUrl: './verify-otp.html',
-  styleUrl: './verify-otp.scss'
+  styleUrl: './verify-otp.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VerifyOtpComponent implements OnInit, OnDestroy {
-  private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -43,6 +45,18 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   successMessage = signal('');
 
   countdown = signal(60);
+  /** "0:42" */
+  readonly countdownLabel = computed(() => {
+    const left = this.countdown();
+    return num(`${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`);
+  });
+
+  /**
+   * "We sent a 6-digit code to *you@company.com*. It expires in 10 minutes.", as the
+   * text before the address and the text after it (the address is drawn between them).
+   */
+  readonly sentTo = t('We sent a {n}-digit code to *{email}*. It expires in {minutes} minutes.', { n: 6, minutes: 10 }).split('*');
+
   private timerInterval?: ReturnType<typeof setInterval>;
   /** True when no code was sent on the way here (see ngOnInit). */
   private arrivedWithoutCode = false;
@@ -55,14 +69,14 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
       // front instead of letting the user wait for a code that never left.
       if (params['sendFailed'] === '1') {
         this.errorMessage.set(
-          'Your account was created, but the code could not be emailed. Press "Resend OTP" to try again.');
+          t('Your account was created, but the code could not be emailed. Press "Resend code" to try again.'));
       }
       // Sent here from the sign-in form: no code was emailed just now, so there is
-      // nothing to wait for — offer "Resend OTP" straight away.
+      // nothing to wait for — offer "Resend code" straight away.
       this.arrivedWithoutCode = params['resend'] === '1' || params['sendFailed'] === '1';
       if (params['resend'] === '1') {
         this.successMessage.set(
-          'Your email is not verified yet. Enter the code we emailed you when you signed up, or press "Resend OTP" for a new one.');
+          t('Your email is not verified yet. Enter the code we emailed you when you signed up, or press "Resend code" for a new one.'));
       }
       if (!this.email()) {
         this.router.navigate(['/authentication/forgot-password']);
@@ -94,7 +108,8 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   onOtpDigitChange(index: number, event: any): void {
     // Codes are digits only. Anything else is dropped, and the box is rewritten so
     // a rejected letter does not stay on screen.
-    const value = String(event.target.value ?? '').replace(/\D/g, '');
+    // An Arabic keyboard may type ٤ for 4: the code itself is always 0-9.
+    const value = latinDigits(String(event.target.value ?? '')).replace(/\D/g, '');
     if (event.target.value !== value.slice(0, 1) && value.length <= 1) {
       event.target.value = value;
     }
@@ -141,20 +156,24 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   }
 
   onSubmit(): void {
-    if (this.otpCode().length < 6) return;
+    if (this.otpCode().length < 6) {
+      this.errorMessage.set(t('Enter all {n} digits of the code.', { n: 6 }));
+      return;
+    }
     this.isLoading.set(true);
     this.errorMessage.set('');
 
     this.authService.verifyOtp({ email: this.email(), code: this.otpCode(), purpose: this.purpose() }).pipe(
       finalize(() => this.isLoading.set(false))
     ).subscribe({
-      next: (res) => {
+      next: () => {
         if (this.isEmailVerification()) {
           // Registration is complete. The API signs the user in with this answer, so
-          // go straight to the app; asking them to type their password again right
-          // after they proved who they are was an unnecessary extra step.
+          // the last step of signing up follows: "Set up your week". Asking them to
+          // type their password again right after they proved who they are was an
+          // unnecessary extra step.
           if (this.authService.isLoggedIn()) {
-            this.router.navigate(['/dashboard']);
+            this.router.navigate(['/authentication/setup']);
             return;
           }
           this.router.navigate(['/authentication'], {
@@ -171,7 +190,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
         });
       },
       error: (err) => {
-        this.errorMessage.set(apiErrorMessage(err, 'Invalid code. Please try again.'));
+        this.errorMessage.set(authError(err, 'Invalid code. Please try again.'));
       }
     });
   }
@@ -186,12 +205,18 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
       finalize(() => this.isResending.set(false))
     ).subscribe({
       next: () => {
-        this.successMessage.set('A new code has been sent to your email.');
+        this.successMessage.set(t('A new code has been sent to your email.'));
         this.startTimer();
       },
       error: (err) => {
-        this.errorMessage.set(apiErrorMessage(err, 'Failed to resend OTP.'));
+        this.errorMessage.set(authError(err, 'Failed to resend the code.'));
       }
     });
+  }
+
+  /** "Wrong email?": back to where the address was typed. */
+  changeEmail(): void {
+    if (this.isEmailVerification()) this.router.navigate(['/register']);
+    else this.router.navigate(['/authentication/forgot-password']);
   }
 }

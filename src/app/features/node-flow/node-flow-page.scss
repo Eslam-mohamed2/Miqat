@@ -1,328 +1,1218 @@
 @use '../../../styles/tokens' as *;
 
-.node-flow-container {
-  // Fills the shell's content area rather than the viewport. It used to be
-  // absolutely positioned against the page, which laid it over the sidebar and
-  // topnav — that is why you could not navigate away from these pages.
+// Node Flow (design/miqat-2.0/pages/V2-Flow.dc.html, light twin L-Flow).
+// The page fills the shell's content area: header, then the canvas beside the
+// node's details. Only the canvas scrolls.
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: $mq-text;
+  // The design's metrics assume the font's own line height.
+  line-height: normal;
+}
+
+// In the design files, text inside a <button> has proportional figures: a browser
+// does not pass font-feature-settings into a button, and the app does. The parts
+// that are buttons there opt out here, so their widths and line breaks are the design's.
+@mixin design-button-text {
+  font-feature-settings: 'cv11' 1;
+}
+
+// What a node is, as a colour: each class sets the tone its pill, dot and bar are mixed from.
+.tone-done      { --tone: #{$mq-green}; }
+.tone-doing     { --tone: #{$mq-accent-text}; }
+.tone-todo      { --tone: #{$mq-text-3}; }
+.tone-hold      { --tone: #{$mq-text-4}; }
+.tone-cancelled { --tone: #{$mq-muted}; }
+.tone-late      { --tone: #{$mq-late}; }
+.tone-event     { --tone: #{$mq-blue}; }
+.tone-milestone { --tone: #{$mq-accent-text}; }
+
+// ── Header ──────────────────────────────────────────────────────────────────
+.head {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid $mq-line;
+}
+
+.head-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.head-eyebrow {
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+.title {
+  @include mq-serif(28px, 1);
+  min-width: 0;
+}
+
+// The name is edited in place: a hidden copy of the text gives the field its width.
+.title-size {
+  display: inline-grid;
+  max-width: 100%;
+  vertical-align: top;
+
+  &::after {
+    content: attr(data-value) ' ';
+    grid-area: 1 / 1;
+    visibility: hidden;
+    white-space: pre;
+    overflow: hidden;
+  }
+
+  input {
+    grid-area: 1 / 1;
+    box-sizing: content-box;
+    width: 100%;
+    min-width: 40px;
+    // Taller than the line so descenders are not cut; the margins give the height back.
+    height: 36px;
+    margin: -4px 0;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-overflow: ellipsis;
+
+    &:hover { background: $mq-hover; }
+    &:focus { outline: none; background: $mq-hover; }
+    &:focus-visible { box-shadow: 0 0 0 2px $mq-accent; }
+
+    // The field is never narrower than a browser's text field: a short name written
+    // left to right would stand away from the page's edge in Arabic.
+    @include mq-rtl { text-align: right; }
+  }
+}
+
+.mode {
+  @include mq-seg;
+  margin-inline-start: auto;
+
+  button {
+    @include mq-seg-item(30px, 0 14px, 7px);
+    @include design-button-text;
+    font-weight: 600;
+  }
+}
+
+.crit {
+  @include mq-btn-base(36px, 0 12px, 10px);
+  @include design-button-text;
+  border: 1px solid $mq-line-2;
+  color: $mq-text-3;
+  font-size: 12.5px;
+
+  &:hover { background: $mq-hover; color: $mq-text; }
+
+  &[aria-pressed='true'] {
+    border-color: $mq-accent-line;
+    background: color-mix(in srgb, var(--mq-accent) 12%, transparent);
+    color: $mq-text;
+  }
+}
+
+.crit-dot {
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: $mq-line-6;
+
+  .crit[aria-pressed='true'] & { background: $mq-accent; }
+}
+
+.auto {
+  @include mq-btn-outline(36px, 0 12px);
+  @include design-button-text;
+  color: $mq-text-3;
+  font-size: 12.5px;
+}
+
+.add {
   position: relative;
+}
+
+.add-btn {
+  @include mq-btn-primary(36px, 0 14px);
+  @include design-button-text;
+}
+
+.add-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 40;
+  min-width: 180px;
+}
+
+.phone-menu {
+  display: none;
+}
+
+// ── Canvas ──────────────────────────────────────────────────────────────────
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.canvas {
+  flex: 999 1 640px;
+  min-width: 0;
+  position: relative;
+  background-color: $mq-bg-2;
+}
+
+// The scrolling frame of the board.
+.scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  // Positions on the board are spatial: they do not mirror in a right-to-left language.
+  // What lies over the board (the legend, the hints) follows the page.
+  direction: ltr;
+  // Scrolling stays inside the board instead of dragging the page with it.
+  overscroll-behavior: contain;
+  cursor: grab;
+  @include mq-scroll;
+
+  &.panning { cursor: grabbing; }
+}
+
+// The board itself: at least as large as the frame, larger when the nodes need it
+// (the component sets width / height). The dots are drawn here so they move with
+// the nodes.
+.surface {
+  position: relative;
+  min-width: 100%;
+  min-height: 100%;
+  background-image: radial-gradient(circle, $mq-chip-2 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  user-select: none;
+}
+
+.edges {
+  position: absolute;
+  left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
-  min-height: 480px;
-  background-color: var(--bg-calendar);
-  overflow: hidden;
+  overflow: visible;
+  pointer-events: none;
 
-  // The scrolling viewport of the board.
-  .board-scroll {
-    position: absolute;
-    inset: 0;
-    overflow: auto;
-    // Momentum scrolling stays inside the board instead of dragging the page.
-    overscroll-behavior: contain;
+  path {
+    fill: none;
+    stroke: $mq-line-6;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
-  // The diagram itself. At least as large as the viewport, larger when the nodes
-  // need it (the component sets width / height). The grid is drawn here so it
-  // scrolls with the nodes.
-  .board-surface {
-    position: relative;
-    min-width: 100%;
-    min-height: 100%;
-    background-image:
-      linear-gradient(rgba(127, 127, 127, 0.16) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(127, 127, 127, 0.16) 1px, transparent 1px);
-    background-size: 40px 40px;
+  .critical path {
+    stroke: $mq-accent;
+    stroke-width: 2.2;
   }
 
-  .edges-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    pointer-events: none; // Let clicks pass through to background
+  .preview {
+    stroke: $mq-accent-text;
+    stroke-width: 1.6;
+    stroke-dasharray: 5 5;
   }
 
-  .nodes-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
-    pointer-events: none; // Only nodes capture events
+  // Changing the view redraws the lines once the nodes have glided to their places.
+  &.in-flow { animation: flow-lines-a $mq-t-view $mq-ease-quick; }
+  &.in-time { animation: flow-lines-b $mq-t-view $mq-ease-quick; }
+}
 
-    .flow-node {
-      position: absolute;
-      width: 200px;
-      min-height: 80px;
-      background: var(--icon-bg-board);
-      border: 1px solid var(--border-card);
-      border-radius: 12px;
-      padding: 12px;
-      box-shadow: var(--shadow-card);
-      pointer-events: auto;
-      cursor: grab;
-      // A finger on a node drags the node; without this the browser scrolls the
-      // board instead and the drag never starts.
-      touch-action: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition: border-color 0.2s, box-shadow 0.2s;
+@keyframes flow-lines-a {
+  0%, 55% { opacity: 0; }
+  100% { opacity: 1; }
+}
 
-      &:active {
-        cursor: grabbing;
-      }
+@keyframes flow-lines-b {
+  0%, 55% { opacity: 0; }
+  100% { opacity: 1; }
+}
 
-      &.selected {
-        border-color: var(--teal-primary);
-        box-shadow: 0 0 0 2px rgba(124, 142, 245, 0.3);
-      }
+// ── Nodes ───────────────────────────────────────────────────────────────────
+.node {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 78px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: $mq-card-5;
+  border: 1px solid $mq-line-2;
+  color: inherit;
+  font: inherit;
+  @include design-button-text;
+  text-align: left;
+  cursor: grab;
+  // A finger on a node drags the node instead of scrolling the board.
+  touch-action: none;
+  user-select: none;
+  // Nodes glide between the flow and the timeline (V2-Motion: "Flow ↔ Timeline").
+  transition:
+    left $mq-t-view $mq-ease-calm,
+    top $mq-t-view $mq-ease-calm,
+    width $mq-t-view $mq-ease-calm,
+    border-color $mq-t-press $mq-ease-quick,
+    box-shadow $mq-t-change $mq-ease-calm;
+  @include mq-focus(5px);
 
-      // Type is already spelled out by the icon and the TASK/EVENT label, so
-      // the accent is free to carry status — the same colours the list and the
-      // kanban use, applied on the left border below.
-      &.event .type-icon { color: var(--orange-accent); }
+  &:hover { border-color: $mq-line-6; }
 
-      .node-header {
-        display: flex;
-        align-items: center;
-        gap: 6px;
+  &.task { min-height: 92px; }
 
-        .type-icon {
-          font-size: 14px;
-          width: 14px;
-          height: 14px;
-          // Was rgba(255,255,255,.5) — white text on the light theme's pale node
-          // background, i.e. invisible.
-          color: var(--text-muted);
-        }
-
-        .type-label {
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-          color: var(--text-muted);
-          flex-grow: 1;
-        }
-
-        .close-icon {
-          background: none;
-          border: 0;
-          padding: 0;
-          line-height: 0;
-
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-          color: var(--text-muted);
-          cursor: pointer;
-          transition: color 0.2s;
-
-          &:hover {
-            color: #ef4444;
-          }
-        }
-      }
-
-      .node-body {
-        .node-title-input {
-          width: 100%;
-          background: transparent;
-          border: none;
-          color: var(--text-primary);
-          font-family: 'Inter', sans-serif;
-          font-size: 14px;
-          font-weight: 500;
-          outline: none;
-
-          &:focus {
-            background: rgba(127, 127, 127, 0.22);
-            border-radius: 4px;
-          }
-
-          // Tall enough to tap with a finger.
-          @media (pointer: coarse) {
-            min-height: 36px;
-          }
-        }
-      }
-    }
+  &.critical {
+    border-color: color-mix(in srgb, var(--mq-accent) 55%, transparent);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--mq-accent) 14%, transparent);
   }
 
-  .toolbar {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    // Was a hardcoded navy that stayed dark in the light theme.
-    background: var(--bg-topbar);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--border-card);
-    border-radius: 12px;
-    padding: 10px;
-    display: flex;
+  &.milestone {
+    border: 1.5px solid $mq-accent-line;
+    border-radius: 22px;
+  }
+
+  &.event { border: 1.5px dashed $mq-blue; }
+
+  &.tone-late { border: 1.5px solid $mq-late; }
+
+  &.tone-done {
+    background: $mq-card-2;
+    opacity: .75;
+  }
+
+  &.selected { box-shadow: 0 0 0 2px $mq-bg-2, 0 0 0 3.5px $mq-accent-text; }
+
+  // In the hand: it follows the pointer exactly and lifts off the board.
+  &.dragging {
+    z-index: 6;
+    cursor: grabbing;
+    transition: none;
+    box-shadow: 0 18px 30px mq-shadow(.55);
+  }
+
+  // Moved by the arrow keys: each press is a step, not a glide.
+  &.still { transition: none; }
+
+  &.selected.dragging { box-shadow: 0 0 0 2px $mq-bg-2, 0 0 0 3.5px $mq-accent-text, 0 18px 30px mq-shadow(.55); }
+
+  // A bar of the timeline.
+  &.bar {
+    flex-direction: row;
     align-items: center;
-    gap: 10px;
-    z-index: 10;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-
-    .divider {
-      width: 1px;
-      height: 24px;
-      background: var(--border-card);
-      margin: 0 5px;
-    }
-
-    .tool-btn {
-      // Real <button>s now, so strip the UA chrome first.
-      background: none;
-      border: 0;
-      padding: 0;
-      font: inherit;
-
-      &:focus-visible {
-        outline: 2px solid var(--teal-primary);
-        outline-offset: 2px;
-      }
-
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.2s;
-      position: relative;
-
-      &:hover {
-        background: rgba(127, 127, 127, 0.22);
-        color: var(--text-primary);
-
-        .tooltip {
-          opacity: 1;
-          transform: translateY(0) translateX(-50%);
-        }
-      }
-
-      &.active {
-        background: rgba(124, 142, 245, 0.2);
-        color: var(--text-active);
-      }
-
-      &.task-btn.active {
-        background: rgba(46, 196, 160, 0.2);
-        color: var(--teal-primary);
-      }
-
-      &.event-btn.active {
-        background: rgba(244, 168, 53, 0.2);
-        color: var(--orange-accent);
-      }
-
-      .tooltip {
-        position: absolute;
-        top: -35px;
-        left: 50%;
-        transform: translateY(5px) translateX(-50%);
-        background: var(--bg-card);
-        color: var(--text-primary);
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        pointer-events: none;
-        opacity: 0;
-        transition: all 0.2s;
-        white-space: nowrap;
-      }
-    }
-  }
-}
-
-// ── Responsive ──────────────────────────────────────────────────────────────
-// The toolbar is centred by transform on desktop; on narrow screens it spans the
-// width instead so its buttons can wrap rather than overflow.
-@include below($bp-tablet) {
-  .node-flow-container .toolbar {
-    bottom: 16px;
-    left: 12px;
-    right: 12px;
-    transform: none;
     justify-content: center;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 10px;
+    height: 26px;
+    min-height: 0;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--tone) 26%, $mq-card-5);
+    cursor: ew-resize;
+  }
+
+  &.bar.milestone { border-radius: 22px; }
+
+  &.bar.undated {
+    background: transparent;
+    border: 1px dashed $mq-line-6;
+    cursor: pointer;
+
+    .bar-label { color: $mq-text-4; font-weight: 600; }
   }
 }
 
-@include below($bp-phone) {
-  .node-flow-container .toolbar {
-    gap: 4px;
-
-    // The separators cost horizontal room the buttons need more.
-    .divider { display: none; }
-  }
+.canvas.picking .node {
+  cursor: copy;
 }
 
-
-// ── Added with the coordinate fixes ─────────────────────────────────────────
-// A left border carrying the task's real status colour, so the board reads the
-// same way the list and the kanban do.
-.flow-node {
-  border-left: 4px solid var(--teal-primary);
-
-  // In link mode the whole node is the target, so say so.
-  &.linkable { cursor: crosshair; }
-
-  .open-hint {
-    position: absolute;
-    right: 10px;
-    bottom: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  &:hover .open-hint { opacity: 1; }
-}
-
-.board-empty {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-
-// ── Autosave indicator ──────────────────────────────────────────────────────
-.save-state {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 12;
+.node-top {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  width: 100%;
+}
+
+.node-kind {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: $mq-muted;
+
+  .node.milestone & { color: $mq-accent-text; }
+  .node.event & { color: $mq-blue; }
+}
+
+.node-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
   border-radius: 999px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  white-space: nowrap;
+}
+
+.node-who {
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: $mq-seg-on;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: $mq-text-2;
+}
+
+.node-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: $mq-text;
+  text-align: left;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+
+  // A title written in Arabic (the element is dir="auto") starts from the card's right edge.
+  &:dir(rtl) {
+    align-self: stretch;
+    text-align: right;
+  }
+}
+
+// What the app itself writes on the board reads in the page's direction, inside
+// its own box. Where the box stands does not change.
+.node-kind,
+.node-pill,
+.node-dates,
+.bar-label,
+.day-label,
+.day-month {
+  @include mq-rtl { direction: rtl; }
+}
+
+.node-dates {
+  font-size: 11px;
+  color: $mq-muted;
+}
+
+.bar-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: $mq-text;
+  white-space: nowrap;
+}
+
+// The handle a dependency is dragged out of, on the selected node's right edge.
+.port {
+  position: absolute;
+  z-index: 5;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid $mq-accent-text;
+  background: $mq-bg-2;
+  cursor: crosshair;
+  touch-action: none;
+  // Shown with the pointer on the selected node, so a board at rest is the design's.
+  opacity: 0;
+  transition:
+    opacity $mq-t-press $mq-ease-quick,
+    background $mq-t-press $mq-ease-quick,
+    transform $mq-t-press $mq-ease-quick;
+
+  .node.selected:hover ~ &,
+  &:hover,
+  &.live { opacity: 1; }
+
+  // No hover on a touch screen: the handle is always there.
+  @include touch { opacity: 1; }
+
+  // A larger target than the dot itself.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+  }
+
+  &:hover { background: $mq-accent; transform: scale(1.15); }
+  &:focus { outline: none; }
+}
+
+// ── Timeline ────────────────────────────────────────────────────────────────
+.day {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-sizing: content-box;
+  width: 40px;
+  border-left: 1px solid $mq-hover;
+
+  &.off { background: color-mix(in srgb, var(--mq-ink) 2%, transparent); }
+}
+
+.day-label {
+  position: absolute;
+  top: 22px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: $mq-muted;
+
+  &.today {
+    color: $mq-accent-text;
+    font-weight: 700;
+  }
+}
+
+.day-month {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: $mq-muted;
+}
+
+// The lane names stay at the left edge; the days scroll under them.
+.lanes {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  width: 242px;
+  height: 100%;
+  background-color: $mq-bg-2;
+  background-image: radial-gradient(circle, $mq-chip-2 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+
+.lane {
+  position: absolute;
+  left: 16px;
+  width: 218px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: top $mq-t-view $mq-ease-calm;
+}
+
+.lane-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.lane-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: $mq-text-2;
+  // One tidy column, whichever way each title reads (the element is dir="auto").
+  text-align: left;
+  @include mq-ellipsis;
+}
+
+.lane-who {
+  font-size: 10px;
+  font-weight: 700;
+  color: $mq-text-4;
+}
+
+.today-line {
+  position: absolute;
+  top: 16px;
+  bottom: 0;
+  z-index: 2;
+  width: 1.5px;
+  background: $mq-accent;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    top: -2px;
+    left: -18px;
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: $mq-accent;
+    color: $mq-on-accent;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+
+    // Centred on the line whatever the word's width ("اليوم").
+    @include mq-rtl {
+      left: 50%;
+      transform: translateX(-50%);
+      direction: rtl;
+    }
+  }
+}
+
+// ── Over the canvas ─────────────────────────────────────────────────────────
+.legend {
+  position: absolute;
+  inset-inline-start: 16px;
+  bottom: 16px;
+  z-index: 8;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: $mq-card-4;
+  border: 1px solid $mq-line-2;
+  font-size: 11.5px;
+  color: $mq-text-4;
+  pointer-events: none;
+
+  > span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.key-line {
+  width: 18px;
+  height: 2px;
+  background: $mq-line-6;
+
+  &.critical { background: $mq-accent; }
+}
+
+.key-box {
+  box-sizing: content-box;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+
+  &.late { border: 1.5px solid $mq-late; }
+  &.event { border: 1.5px dashed $mq-blue; }
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  width: min(340px, calc(100% - 48px));
+  height: fit-content;
+  margin: auto;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.55;
+  color: $mq-text-4;
+  pointer-events: none;
+}
+
+.pick-hint {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 8;
+  transform: translateX(-50%);
+  max-width: calc(100% - 28px);
+  box-sizing: border-box;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: $mq-hover;
+  border: 1px solid $mq-line-4;
+  box-shadow: 0 12px 30px mq-shadow(.5);
+  font-size: 12.5px;
+  font-weight: 600;
+  pointer-events: none;
+  animation: mq-rise $mq-t-change $mq-ease-calm;
+
+  span {
+    color: $mq-muted;
+    font-weight: 500;
+  }
+}
+
+// ── Node details ────────────────────────────────────────────────────────────
+.details {
+  flex: 1 1 320px;
+  box-sizing: border-box;
+  min-width: 0;
+  border-inline-start: 1px solid $mq-line;
+  padding: 18px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  @include mq-scroll;
+}
+
+// Another node's details arrive with a small rise (V2-Motion: "Details change in place").
+.details-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: mq-rise $mq-t-change $mq-ease-calm;
+}
+
+.kind-line {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.name {
+  @include mq-serif(30px, 1.1);
+  margin: -10px 0 0;
+}
+
+.name-size {
+  display: grid;
+
+  &::after {
+    content: attr(data-value) ' ';
+    grid-area: 1 / 1;
+    visibility: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  textarea {
+    grid-area: 1 / 1;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    overflow-wrap: anywhere;
+    overflow: hidden;
+    resize: none;
+
+    &::placeholder { color: $mq-placeholder; opacity: 1; }
+    &:focus { outline: none; }
+    &:focus-visible:not([readonly]) { box-shadow: 0 2px 0 $mq-accent; }
+    &[readonly] { cursor: default; }
+  }
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone) 13%, transparent);
+  color: var(--tone);
+  font: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--bg-topbar);
-  border: 1px solid var(--border-card);
-  box-shadow: var(--shadow-card);
 
-  &.saved { color: var(--teal-primary); }
+  &.path {
+    --tone: #{$mq-text-4};
 
-  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+    &.on { --tone: #{$mq-accent-text}; }
+  }
+}
+
+button.pill {
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: color-mix(in srgb, var(--tone) 22%, transparent); }
+}
+
+.facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  row-gap: 10px;
+  column-gap: 12px;
+  font-size: 13px;
+
+  dt {
+    color: $mq-muted;
+    font-weight: 400;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+// Reads as the plain text of the design; it opens the date fields.
+.dates {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: underline dashed transparent;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: text-decoration-color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover,
+  &[aria-expanded='true'] { text-decoration-color: $mq-line-7; }
+}
+
+.facts .dates-edit {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  animation: mq-rise $mq-t-change $mq-ease-calm;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    font-size: 11px;
+    color: $mq-muted;
+
+    &.narrow input { width: 64px; }
+  }
+
+  input {
+    @include mq-field(32px, 8px);
+    padding: 0 8px;
+    font-size: 12.5px;
+  }
+
+  .quiet { height: 32px; }
+}
+
+.deps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  @include mq-eyebrow;
+}
+
+// The heading of a list and, at its end, the button that adds to the list.
+.deps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  &.second { padding-top: 6px; }
+}
+
+.dep {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid $mq-chip;
+  transition: background $mq-t-press $mq-ease-quick;
+
+  &:hover { background: $mq-hover; }
+}
+
+.dep-open {
+  @include design-button-text;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: $mq-text-2;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: start;
+  cursor: pointer;
+  @include mq-focus(-2px);
+
+  .dep:hover & { color: $mq-text; }
+}
+
+.dep-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.dep-title {
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+.dep-remove {
+  @include mq-icon-btn(26px, 7px);
+  margin-inline-end: 4px;
+  color: $mq-muted;
+  opacity: 0;
+
+  .dep:hover &,
+  &:focus-visible { opacity: 1; }
+
+  // No hover on a touch screen: the button is always there.
+  @include touch { opacity: 1; }
+}
+
+.dep-add {
+  @include mq-icon-btn(24px, 7px);
+  // Larger than the heading's line without making the line taller.
+  margin-block: -6px;
+  margin-inline: 0 -6px;
+  color: $mq-muted;
+
+  &[aria-pressed='true'] {
+    background: color-mix(in srgb, var(--mq-accent) 14%, transparent);
+    color: $mq-accent-text;
+  }
+}
+
+.none {
+  margin: 0;
+  font-size: 12.5px;
+  color: $mq-muted;
+}
+
+.whatif {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mq-accent) 7%, $mq-card);
+  border: 1px solid color-mix(in srgb, var(--mq-accent) 30%, transparent);
+
+  .label { color: $mq-accent-text; }
+}
+
+.slips {
+  display: flex;
+  gap: 6px;
+
+  button {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    // The browser's own button padding, as the design file has it.
+    padding: 1px 6px;
+    border-radius: 8px;
+    border: 1px solid $mq-line-3;
+    background: transparent;
+    color: $mq-text-2;
+    font: inherit;
+    @include design-button-text;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background $mq-t-press $mq-ease-quick, border-color $mq-t-press $mq-ease-quick;
+    @include mq-focus;
+
+    &:hover:not(:disabled):not([aria-pressed='true']) { background: $mq-hover; }
+
+    &[aria-pressed='true'] {
+      border-color: $mq-accent-line;
+      background: $mq-accent;
+      color: $mq-on-accent;
+    }
+
+    &:disabled {
+      opacity: .5;
+      cursor: default;
+    }
+
+    // Arabic words are wider than "+1d": each choice takes the room its word needs, on one line.
+    @include mq-rtl {
+      flex: 1 1 auto;
+      padding-inline: 4px;
+      white-space: nowrap;
+    }
+  }
+}
+
+.impact {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: $mq-text-3;
+
+  &.moved { color: $mq-late; }
+  &.safe { color: $mq-green; }
+}
+
+.moved-line {
+  font-size: 12px;
+  color: $mq-text-4;
+}
+
+.keep {
+  @include mq-btn-primary(34px, 0 12px, 9px);
+  @include design-button-text;
+  font-size: 12.5px;
+}
+
+.foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.foot-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.open {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: $mq-accent-text;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  transition: color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { color: $mq-text; }
+}
+
+.quiet {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: $mq-muted;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { color: $mq-text; }
+  &.danger:hover { color: $mq-late; }
+}
+
+.link-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: mq-rise $mq-t-change $mq-ease-calm;
+}
+
+.link-input {
+  @include mq-field(36px);
+  width: 100%;
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid $mq-chip;
+  background: transparent;
+  color: $mq-text-2;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: start;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus(-2px);
+
+  &:hover { background: $mq-hover; color: $mq-text; }
+}
+
+.link-kind {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: $mq-muted;
+
+  &.event { color: $mq-blue; }
+}
+
+.link-title {
+  flex: 1;
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+.link-when {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: $mq-muted;
+}
+
+// ── Narrow screens ──────────────────────────────────────────────────────────
+// No design at this width: the details follow the canvas, and the page scrolls.
+@include below($bp-laptop) {
+  :host {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .body {
+    flex: none;
+    flex-direction: column;
+  }
+
+  .canvas {
+    flex: none;
+    height: clamp(420px, 68dvh, 720px);
+  }
+
+  // Clear of the chat button in the page's corner.
+  .legend { max-width: calc(100% - 110px); }
+
+  .details {
+    flex: none;
+    border-inline-start: 0;
+    border-top: 1px solid $mq-line;
+    overflow: visible;
+  }
+
+  .foot { margin-top: 6px; }
+}
+
+@include below($bp-tablet) {
+  .head { padding: 12px 16px; }
+
+  // The account menu takes the end of the first row; the controls wrap under the title.
+  .head-title { flex: 1 1 calc(100% - 60px); }
+
+  // Header and canvas together stay above the tab bar.
+  .canvas { height: clamp(380px, 54dvh, 720px); }
+
+  .phone-menu {
+    display: inline-flex;
+    order: 1;
+  }
+
+  .mode,
+  .crit,
+  .auto,
+  .add { order: 2; }
+
+  .mode {
+    margin-inline-start: 0;
+
+    button { height: 38px; }
+  }
+
+  .crit,
+  .auto,
+  .add-btn { height: 44px; }
+
+  .details { padding: 18px 16px 24px; }
+
+  .dep,
+  .link-row,
+  .slips button,
+  .keep { height: 44px; }
+
+  .dep-remove {
+    width: 40px;
+    height: 40px;
+  }
+
+  // Text buttons keep their line; the area that takes a finger is taller.
+  .open,
+  .quiet,
+  .dates {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -14px -4px;
+    }
+  }
+
+  .foot-row { gap: 14px 22px; }
+
+  .dep-add {
+    width: 44px;
+    height: 44px;
+    margin-block: -16px;
+    margin-inline: 0 -10px;
+  }
+
+  // The lane names take less of a narrow canvas (the component scrolls the first day up to them).
+  .lanes { width: 150px; }
+
+  .lane {
+    left: 12px;
+    width: 130px;
+  }
 }

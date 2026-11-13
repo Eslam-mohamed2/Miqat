@@ -1,0 +1,90 @@
+@if (link(); as link) {
+  <div class="sheet">
+    <section class="about">
+      <span class="avatar">{{ initials() }}</span>
+      <div class="about-head">
+        <span class="host" dir="auto">{{ link.hostName }}</span>
+        <h1 dir="auto">{{ link.title }}</h1>
+      </div>
+      @if (link.description) {
+        <p class="about-text" dir="auto">{{ link.description }}</p>
+      }
+      <div class="facts">
+        <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>{{ duration() }}</span>
+        @if (link.place) {
+          <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2.5"></rect><path d="M16 10.5l5-3v9l-5-3"></path></svg>{{ link.place }}</span>
+        }
+        <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg>{{ 'Times shown in your time zone' | t }}</span>
+      </div>
+      <span class="about-foot">{{ keptBy() }}</span>
+    </section>
+
+    <section class="days" [attr.aria-label]="'Choose a day' | t">
+      <div class="days-head">
+        <h2>{{ monthTitle() }}</h2>
+        <span class="days-nav">
+          <button type="button" [attr.aria-label]="'Previous month' | t" (click)="stepMonth(-1)"><svg class="mq-flip" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+          <button type="button" [attr.aria-label]="'Next month' | t" (click)="stepMonth(1)"><svg class="mq-flip" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+        </span>
+      </div>
+      <div class="month">
+        @for (letter of weekdays; track $index) {
+          <span class="weekday">{{ letter }}</span>
+        }
+        @for (cell of cells(); track cell.key) {
+          <button type="button" class="date" [class.has]="cell.has" [class.today]="cell.today" [disabled]="!cell.has"
+            [attr.aria-pressed]="cell.on" [attr.aria-label]="cell.label" (click)="pickDay(cell.key)">{{ cell.day }}<span class="date-dot"></span></button>
+        }
+      </div>
+      <span class="days-note">{{ 'Days with a dot have open times.' | t }} {{ weekendNote() }}</span>
+    </section>
+
+    <section class="times" [attr.aria-label]="'Choose a time' | t">
+      <div class="times-head">
+        <h2>{{ dayTitle() || ('No open times' | t) }}</h2>
+        <span>{{ zoneNote() }}</span>
+      </div>
+      @if (!sameZone()) {
+        <div class="zones" role="group" [attr.aria-label]="'Time zone' | t">
+          @for (choice of zoneChoices(); track choice.id) {
+            <button type="button" [attr.aria-pressed]="zoneChoice() === choice.id" (click)="zoneChoice.set(choice.id)">{{ choice.label }}</button>
+          }
+        </div>
+      }
+      <div class="slots">
+        @for (slot of slots(); track slot; let i = $index) {
+          <div class="slot-row">
+            <button type="button" class="slot" [attr.aria-pressed]="chosenSlot() === i" (click)="slotIndex.set(i)">{{ slot }}</button>
+            @if (chosenSlot() === i) {
+              <!-- Taking a booking needs the booking API, which does not exist yet. -->
+              <button type="button" class="confirm" disabled [title]="'Booking is not open yet' | t">{{ 'Confirm' | t }}</button>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+} @else {
+  <div class="sheet">
+    <section class="missing" aria-labelledby="booking-missing">
+      <span class="avatar quiet" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M3.5 10h17M8 3v4M16 3v4M9.5 13.5l5 4M14.5 13.5l-5 4"></path></svg>
+      </span>
+      <div class="about-head">
+        <span class="host mq-ltr">{{ address() }}</span>
+        <h1 id="booking-missing">{{ 'This booking link isn’t available.' | t }}</h1>
+      </div>
+      <p class="about-text">{{ 'There is no booking page at this address right now. The link may have been switched off, or the address may be mistyped. Ask the person who sent it to you for a new one.' | t }}</p>
+      <div class="missing-actions">
+        <a class="confirm" routerLink="/login">{{ 'Sign in' | t }}</a>
+        <a class="slot" routerLink="/home">{{ 'About Miqat' | t }}</a>
+      </div>
+      <span class="about-foot">{{ 'Have a Miqat account? Sign in to plan your own week.' | t }}</span>
+    </section>
+  </div>
+}
+
+<a class="made-with" routerLink="/home">
+  <app-miqat-logo [height]="16" />
+  {{ 'Scheduled with Miqat' | t }}
+</a>

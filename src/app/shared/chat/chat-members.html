@@ -1,0 +1,117 @@
+@if (conversation(); as c) {
+  <header class="bar">
+    <button type="button" class="icon-btn" (click)="back()"
+            [attr.aria-label]="(adding() ? 'Back to the members' : 'Back to the messages') | t" [title]="'Back' | t">
+      <app-chat-icon name="back" [size]="16" class="mq-flip" />
+    </button>
+    <span class="bar-title">{{ (adding() ? 'Add people' : 'Group@@this group') | t }}</span>
+  </header>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  @if (adding()) {
+    <div class="adding">
+      <app-friend-picker [people]="candidates()" [(selected)]="addIds"
+                         [emptyText]="'All of your friends are already in this group.' | t" />
+    </div>
+    <footer class="foot">
+      <button type="button" class="quiet" (click)="adding.set(false)">{{ 'Cancel' | t }}</button>
+      <button type="button" class="primary" (click)="add()" [disabled]="!addIds().length || busy()">
+        {{ addLabel() }}
+      </button>
+    </footer>
+  } @else {
+    <div class="scroll">
+      @if (renaming()) {
+        <form class="rename" (submit)="saveName($event)">
+          <input type="text" maxlength="60" [attr.aria-label]="'Group name' | t" autocomplete="off"
+                 [attr.dir]="nameDraft() ? 'auto' : null"
+                 [value]="nameDraft()" (input)="nameDraft.set($any($event.target).value)"
+                 (keydown.escape)="$event.stopPropagation(); renaming.set(false)" />
+          <button type="submit" class="primary" [disabled]="!nameDraft().trim() || busy()">{{ 'Save' | t }}</button>
+          <button type="button" class="quiet" (click)="renaming.set(false)">{{ 'Cancel' | t }}</button>
+        </form>
+      } @else {
+        <div class="about">
+          <app-chat-avatar [name]="c.name ?? ''" [group]="true" [size]="44" />
+          <span class="about-text">
+            <span class="about-name"><bdi>{{ c.name }}</bdi></span>
+            <span class="about-count">{{ countText() }}</span>
+          </span>
+          @if (c.isAdmin) {
+            <button type="button" class="icon-btn" (click)="startRename()"
+                    [attr.aria-label]="'Rename group' | t" [title]="'Rename' | t">
+              <app-chat-icon name="edit" [size]="15" />
+            </button>
+          }
+        </div>
+      }
+
+      <button type="button" class="add-row" (click)="startAdd()">
+        <span class="add-icon"><app-chat-icon name="add-person" [size]="16" /></span>
+        {{ 'Add people' | t }}
+      </button>
+
+      <div class="people" role="list" [attr.aria-label]="'Members' | t">
+        @for (p of people(); track p.id) {
+          <div class="person" role="listitem">
+            <app-chat-avatar [name]="p.fullName" [url]="p.profilePictureUrl" [online]="isOnline(p)" [size]="34" />
+            <span class="person-text">
+              <span class="person-name">
+                <span class="name"><bdi>{{ p.fullName }}</bdi></span>
+                @if (p.id === me) {
+                  <span class="you">{{ 'You' | t }}</span>
+                }
+              </span>
+              <span class="person-line">
+                @if (p.isAdmin) {
+                  <span class="admin"><app-chat-icon name="admin" [size]="11" /> {{ 'Admin' | t }}</span>
+                }
+                <span>{{ (isOnline(p) ? 'Online' : 'Offline') | t }}</span>
+              </span>
+            </span>
+            @if (c.isAdmin && p.id !== me) {
+              <button type="button" class="icon-btn" (click)="toggleActions(p)"
+                      [attr.aria-label]="'Actions for {name}' | t: { name: p.fullName }"
+                      [attr.aria-expanded]="actingOn() === p.id" [title]="'Actions' | t">
+                <app-chat-icon name="more" [size]="16" />
+              </button>
+            }
+          </div>
+
+          @if (actingOn() === p.id) {
+            <div class="person-actions">
+              @if (removing() === p.id) {
+                <span class="ask">{{ removeQuestion(p) }}</span>
+                <button type="button" class="link danger" (click)="remove(p)" [disabled]="busy()">{{ 'Remove' | t }}</button>
+                <button type="button" class="link" (click)="removing.set(null)">{{ 'Keep' | t }}</button>
+              } @else {
+                @if (!p.isAdmin) {
+                  <button type="button" class="link" (click)="makeAdmin(p)" [disabled]="busy()">{{ 'Make admin' | t }}</button>
+                }
+                <button type="button" class="link danger" (click)="removing.set(p.id)">{{ 'Remove from group' | t }}</button>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <footer class="foot" [class.asking]="leaving()">
+      @if (leaving()) {
+        <p class="ask">{{ leaveQuestion(c.name) }}</p>
+        <span class="foot-buttons">
+          <button type="button" class="quiet" (click)="leaving.set(false)">{{ 'Stay' | t }}</button>
+          <button type="button" class="danger-btn" (click)="leave()" [disabled]="busy()">{{ 'Leave group' | t }}</button>
+        </span>
+      } @else {
+        <button type="button" class="leave" (click)="leaving.set(true)">
+          <!-- The way out points toward the end edge. -->
+          <app-chat-icon name="leave" [size]="15" class="mq-flip" /> {{ 'Leave group' | t }}
+        </button>
+      }
+    </footer>
+  }
+}

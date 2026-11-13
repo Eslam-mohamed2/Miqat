@@ -1,0 +1,83 @@
+<div class="scroll">
+  <div class="groups">
+    @for (section of view(); track section.key) {
+      <div class="group">
+        <button type="button" class="group-head" [attr.aria-expanded]="section.open" (click)="fold.emit(section.key)">
+          <svg class="chevron" [class.open]="section.open" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+          <span class="group-title" [attr.data-tone]="section.tone" [attr.data-show]="'show' | t">
+            <span class="title-long">{{ section.title }}</span><span class="title-short">{{ section.shortTitle }}</span>
+          </span>
+          <span class="group-meta">{{ section.meta }}</span>
+        </button>
+
+        @if (section.open) {
+          <div class="rows">
+            @for (row of section.rows; track row.task.id) {
+              <div class="swipe" [class.swiped]="swipedId() === row.task.id">
+                @if (swipedId() === row.task.id) {
+                  <div class="swipe-actions">
+                    <button type="button" class="swipe-later" (click)="postpone(row.task, $event)">{{ 'Tomorrow' | t }}</button>
+                    <button type="button" class="swipe-schedule" (click)="schedule(row.task, $event)">{{ 'Schedule' | t }}</button>
+                  </div>
+                }
+
+                <div class="trow" [class.on]="row.task.id === selectedId()" [class.done]="row.done"
+                     [attr.data-task]="row.task.id" (click)="open(row.task)"
+                     (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd(row.task, $event)">
+                  <button type="button" role="checkbox" class="box" [class.just]="row.justDone"
+                          [attr.data-priority]="row.task.priority" [attr.aria-checked]="row.done"
+                          [attr.aria-label]="row.checkLabel" (click)="toggle(row.task, $event)">
+                    @if (row.done) {
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                    }
+                  </button>
+
+                  <button type="button" class="pick" [attr.aria-pressed]="row.task.id === selectedId()"
+                          (click)="$event.stopPropagation(); open(row.task)">
+                    <span class="title" dir="auto">{{ row.task.title }}</span>
+                    <app-task-marks [task]="row.task" />
+
+                    <!-- Phones: the project and the time under the title. -->
+                    <span class="meta">
+                      @if (row.project) {
+                        <span class="dot" [style.--tone]="row.color"></span><span class="meta-project" dir="auto">{{ row.project }}</span>
+                      }
+                      @if (row.block) {
+                        <span class="meta-block">{{ row.block }}</span>
+                      } @else if (row.due && !row.closed) {
+                        <span class="meta-due" [class.late]="row.late">{{ row.due }}</span>
+                      }
+                    </span>
+
+                    <span class="project">
+                      @if (row.project) { <span class="dot" [style.--tone]="row.color"></span><span dir="auto">{{ row.project }}</span> }
+                    </span>
+                    <span class="est">{{ row.est }}</span>
+                  </button>
+
+                  @if (row.block) {
+                    <button type="button" class="sched has" (click)="schedule(row.task, $event)"
+                            [attr.aria-label]="row.blockAria">{{ row.block }}</button>
+                  } @else if (!row.closed) {
+                    <button type="button" class="sched" (click)="schedule(row.task, $event)"
+                            [attr.aria-label]="'Schedule on calendar: {title}' | t: { title: row.task.title }">{{ 'Schedule' | t }}</button>
+                  } @else {
+                    <span class="sched none"></span>
+                  }
+
+                  <span class="due" [class.late]="row.late">{{ row.due }}</span>
+
+                  @if (row.who) {
+                    <span class="who" [title]="'Assigned to {name}' | t: { name: row.whoName }">{{ row.who }}</span>
+                  } @else {
+                    <span class="who none" aria-hidden="true"></span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -1,187 +1,233 @@
-<form class="event-dialog" [formGroup]="form" (ngSubmit)="save()" novalidate>
+<form class="editor" [formGroup]="form" (ngSubmit)="save()" novalidate>
 
-  <header class="dialog-head">
-    <h2>{{ heading }}</h2>
-    <button type="button" class="dialog-close" (click)="close()" aria-label="Close">
-      <mat-icon>close</mat-icon>
+  <header class="editor-head">
+    <div class="head-text">
+      <span class="eyebrow">{{ heading }}</span>
+      <label class="mq-sr" for="event-title">{{ 'Title' | t }}</label>
+      <input id="event-title" class="title-input" type="text" formControlName="title" maxlength="200" dir="auto"
+             [placeholder]="'Add a title' | t" autocomplete="off"
+             [class.invalid]="form.get('title')?.invalid && form.get('title')?.touched" />
+    </div>
+    <button type="button" class="icon-btn" (click)="close()" [attr.aria-label]="'Close' | t">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
     </button>
   </header>
 
-  <div class="dialog-body">
+  <div class="editor-body">
 
-    <p class="dialog-note" *ngIf="isOccurrence">
-      <mat-icon>event_repeat</mat-icon>
-      Only this date changes. The other dates of the series stay as they are.
-    </p>
+    @if (isOccurrence) {
+      <p class="note">{{ 'Only this date changes. The other dates of the series stay as they are.' | t }}</p>
+    }
 
-    <div class="field">
-      <label for="event-title">Title</label>
-      <input id="event-title" type="text" formControlName="title" maxlength="200"
-             placeholder="Team meeting, dentist, lunch with Sam…" autocomplete="off"
-             [class.invalid]="form.get('title')?.invalid && form.get('title')?.touched" />
-    </div>
-
-    <label class="switch-row" *ngIf="!isOccurrence">
-      <input type="checkbox" formControlName="isAllDay" (change)="allDayChanged()" />
-      <span class="switch" aria-hidden="true"></span>
-      <span>All day</span>
-    </label>
-
-    <div class="when-grid" [class.all-day]="isAllDay">
+    <div class="when" [class.all-day]="isAllDay">
       <div class="field">
-        <label for="event-start-date">Starts</label>
+        <label for="event-start-date">{{ 'Starts' | t }}</label>
         <div class="date-time">
           <input id="event-start-date" type="date" formControlName="startDate" (change)="startChanged()" />
-          <input type="time" formControlName="startTime" (change)="startChanged()" *ngIf="!isAllDay"
-                 aria-label="Start time" />
+          @if (!isAllDay) {
+            <input type="time" formControlName="startTime" (change)="startChanged()" [attr.aria-label]="'Start time' | t" />
+          }
         </div>
       </div>
       <div class="field">
-        <label for="event-end-date">Ends</label>
+        <label for="event-end-date">{{ 'Ends' | t }}</label>
         <div class="date-time">
           <input id="event-end-date" type="date" formControlName="endDate" (change)="endChanged()" />
-          <input type="time" formControlName="endTime" (change)="endChanged()" *ngIf="!isAllDay"
-                 aria-label="End time" />
+          @if (!isAllDay) {
+            <input type="time" formControlName="endTime" (change)="endChanged()" [attr.aria-label]="'End time' | t" />
+          }
         </div>
       </div>
     </div>
-    <p class="field-hint"><mat-icon>language</mat-icon> Times are in {{ zoneLabel }}.</p>
 
-    <p class="busy-note" *ngIf="busyText()" role="status">
-      <mat-icon>event_busy</mat-icon><span>{{ busyText() }}</span>
-    </p>
+    <div class="when-foot">
+      @if (!isOccurrence) {
+        <span class="switch-row">
+          <button type="button" class="mq-switch" role="switch" [attr.aria-checked]="isAllDay"
+                  [attr.aria-label]="'All day' | t" (click)="toggleAllDay()"><span></span></button>
+          {{ 'All day' | t }}
+        </span>
+      }
+      <span class="hint">{{ 'Times are in {zone}.' | t: { zone: zoneLabel } }}</span>
+    </div>
 
-    <ng-container *ngIf="!isOccurrence">
+    @if (busyText()) {
+      <p class="busy-note" role="status">{{ busyText() }}</p>
+    }
+
+    @if (!isOccurrence) {
 
       <!-- ── Guests ───────────────────────────────────────────────────────── -->
       <div class="field">
-        <label for="event-guests">Guests</label>
+        <label for="event-guests">{{ 'Guests' | t }}</label>
 
-        <div class="guest-chips" *ngIf="guests().length">
-          <span class="guest-chip" *ngFor="let guest of guests(); trackBy: trackByGuest">
-            <img *ngIf="guest.picture; else guestInitials" [src]="guest.picture" alt="" />
-            <ng-template #guestInitials><span class="guest-initials">{{ initials(guest.name) }}</span></ng-template>
-            <span class="guest-name">{{ guest.name }}</span>
-            <button type="button" (click)="removeGuest(guest)" [attr.aria-label]="'Remove ' + guest.name">
-              <mat-icon>close</mat-icon>
-            </button>
-          </span>
-        </div>
+        @if (guests().length) {
+          <div class="guest-chips">
+            @for (guest of guests(); track guest.id) {
+              <span class="guest-chip">
+                @if (guest.picture) {
+                  <img [src]="guest.picture" alt="" referrerpolicy="no-referrer" />
+                } @else {
+                  <span class="avatar">{{ initials(guest.name) }}</span>
+                }
+                <span class="guest-name">{{ guest.name }}</span>
+                <button type="button" (click)="removeGuest(guest)" [attr.aria-label]="'Remove {name}' | t: { name: guest.name }">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+              </span>
+            }
+          </div>
+        }
 
         <div class="guest-picker">
-          <input id="event-guests" #guestInput type="text" autocomplete="off"
-                 placeholder="Add a friend or teammate by name"
+          <input id="event-guests" #guestInput type="text" autocomplete="off" dir="auto"
+                 [placeholder]="'Add a friend or teammate by name' | t"
                  (input)="searchGuests($event)" (focus)="guestListOpen.set(true)" (blur)="closeGuestList()" />
 
-          <div role="list" class="guest-list" *ngIf="guestListOpen() && guestMatches().length">
-            <div role="listitem" *ngFor="let contact of guestMatches(); trackBy: trackByContact">
-              <!-- mousedown, not click: the input's blur would close the list first. -->
-              <button type="button" (mousedown)="$event.preventDefault(); addGuest(contact, guestInput)">
-                <img *ngIf="contact.profilePictureUrl; else contactInitials" [src]="contact.profilePictureUrl" alt="" />
-                <ng-template #contactInitials><span class="guest-initials">{{ initials(contact.fullName) }}</span></ng-template>
-                <span class="guest-text">
-                  <strong>{{ contact.fullName }}</strong>
-                  <small>{{ contact.relationship || contact.email }}</small>
-                </span>
-              </button>
+          @if (guestListOpen() && guestMatches().length) {
+            <div role="list" class="mq-menu guest-list">
+              @for (contact of guestMatches(); track contact.id) {
+                <div role="listitem">
+                  <!-- mousedown, not click: the input's blur would close the list first. -->
+                  <button type="button" class="mq-menu-item guest-option"
+                          (mousedown)="$event.preventDefault(); addGuest(contact, guestInput)">
+                    @if (contact.profilePictureUrl) {
+                      <img [src]="contact.profilePictureUrl" alt="" referrerpolicy="no-referrer" />
+                    } @else {
+                      <span class="avatar">{{ initials(contact.fullName) }}</span>
+                    }
+                    <span class="guest-text">
+                      <span>{{ contact.fullName }}</span>
+                      @if (contact.relationship) {
+                        <small>{{ contact.relationship | t }}</small>
+                      } @else {
+                        <small class="mq-ltr">{{ contact.email }}</small>
+                      }
+                    </span>
+                  </button>
+                </div>
+              }
             </div>
-          </div>
-          <p class="guest-none" *ngIf="guestListOpen() && !guestMatches().length && guestQuery().trim()">
-            Nobody by that name among your friends and teammates.
-          </p>
+          }
+          @if (guestListOpen() && !guestMatches().length && guestQuery().trim()) {
+            <p class="hint">{{ 'Nobody by that name among your friends and teammates.' | t }}</p>
+          }
         </div>
       </div>
 
       <!-- ── Find a time ──────────────────────────────────────────────────── -->
-      <div class="find-time" *ngIf="!isAllDay">
-        <button type="button" class="link-btn" (click)="findTimes()" [disabled]="suggesting()">
-          <mat-icon>auto_awesome</mat-icon>
-          {{ suggesting() ? 'Looking…' : (guests().length ? 'Find a time everyone is free' : 'Find a time I am free') }}
-        </button>
-
-        <div class="slot-list" *ngIf="suggestions() as slots">
-          <button type="button" class="slot" *ngFor="let slot of slots" (click)="useSlot(slot)">
-            {{ slotLabel(slot) }}
+      @if (!isAllDay) {
+        <div class="find-time">
+          <span class="find-text">
+            {{ (guests().length ? 'Not sure when everyone is free?' : 'Not sure when you are free?') | t }}
+          </span>
+          <button type="button" class="btn-small" (click)="findTimes()" [disabled]="suggesting()">
+            {{ (suggesting() ? 'Looking…' : 'Find a time') | t }}
           </button>
-          <p class="field-hint" *ngIf="!slots.length">
-            No free time inside working hours in the next two weeks.
-          </p>
+
+          @if (suggestions(); as slots) {
+            <div class="slots">
+              @for (slot of slots; track slot.start) {
+                <button type="button" class="slot" (click)="useSlot(slot)">{{ slotLabel(slot) }}</button>
+              }
+              @if (!slots.length) {
+                <p class="hint">{{ 'No free time inside working hours in the next two weeks.' | t }}</p>
+              }
+            </div>
+          }
         </div>
-      </div>
+      }
 
       <!-- ── Repeat ───────────────────────────────────────────────────────── -->
       <div class="field">
-        <label for="event-repeat">Repeat</label>
+        <label for="event-repeat">{{ 'Repeat' | t }}</label>
         <select id="event-repeat" formControlName="recurrence">
-          <option *ngFor="let repeat of repeats" [value]="repeat.value">{{ repeat.label }}</option>
+          @for (repeat of repeats; track repeat.value) {
+            <option [value]="repeat.value">{{ repeat.label }}</option>
+          }
         </select>
       </div>
 
-      <div class="repeat-grid" *ngIf="repeatsNow">
-        <div class="field">
-          <label for="event-interval">Every</label>
-          <div class="with-unit">
-            <input id="event-interval" type="number" min="1" max="99" formControlName="recurrenceInterval"
-                   [class.invalid]="form.get('recurrenceInterval')?.invalid" />
-            <span>{{ repeatUnit }}</span>
+      @if (repeatsNow) {
+        <div class="two-col">
+          <div class="field">
+            <label for="event-interval">{{ 'Every' | t }}</label>
+            <div class="with-unit">
+              <input id="event-interval" type="number" min="1" max="99" formControlName="recurrenceInterval"
+                     [class.invalid]="form.get('recurrenceInterval')?.invalid" />
+              <span>{{ repeatUnit }}</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="event-until">{{ 'Until' | t }} <span class="optional">{{ '(optional)' | t }}</span></label>
+            <input id="event-until" type="date" formControlName="recurrenceEndDate" />
           </div>
         </div>
-        <div class="field">
-          <label for="event-until">Until <span class="optional">(optional)</span></label>
-          <input id="event-until" type="date" formControlName="recurrenceEndDate" />
-        </div>
-      </div>
+      }
 
       <div class="two-col">
-        <div class="field" *ngIf="calendarData.calendars().length">
-          <label for="event-calendar">Calendar</label>
-          <select id="event-calendar" formControlName="calendarId">
-            <option *ngFor="let calendar of calendarData.calendars()" [value]="calendar.id">{{ calendar.name }}</option>
-          </select>
-        </div>
+        @if (calendarData.calendars().length) {
+          <div class="field">
+            <label for="event-calendar">{{ 'Calendar' | t }}</label>
+            <select id="event-calendar" formControlName="calendarId">
+              @for (calendar of calendarData.calendars(); track calendar.id) {
+                <option [value]="calendar.id">{{ calendar.name }}</option>
+              }
+            </select>
+          </div>
+        }
 
-        <div class="field" *ngIf="!isEdit">
-          <label for="event-reminder">Remind me</label>
-          <select id="event-reminder" formControlName="reminder">
-            <option value="default">{{ defaultReminderLabel }}</option>
-            <option value="none">No reminder</option>
-            <option *ngFor="let choice of reminderChoices" [value]="choice.value">{{ choice.label }}</option>
-          </select>
-        </div>
+        @if (!isEdit) {
+          <div class="field">
+            <label for="event-reminder">{{ 'Remind me' | t }}</label>
+            <select id="event-reminder" formControlName="reminder">
+              <option value="default">{{ defaultReminderLabel }}</option>
+              <option value="none">{{ 'No reminder' | t }}</option>
+              @for (choice of reminderChoices; track choice.value) {
+                <option [value]="choice.value">{{ choice.label }}</option>
+              }
+            </select>
+          </div>
+        }
       </div>
 
-      <div class="field" *ngIf="calendarData.groups().length">
-        <label for="event-project">Project <span class="optional">(optional)</span></label>
-        <select id="event-project" formControlName="groupId">
-          <option value="">No project</option>
-          <option *ngFor="let group of calendarData.groups()" [value]="group.id">{{ group.name }}</option>
-        </select>
-        <p class="field-hint">Everyone on the project can see an event that belongs to it.</p>
-      </div>
-    </ng-container>
+      @if (calendarData.groups().length) {
+        <div class="field">
+          <label for="event-project">{{ 'Project' | t }} <span class="optional">{{ '(optional)' | t }}</span></label>
+          <select id="event-project" formControlName="groupId">
+            <option value="">{{ 'No project' | t }}</option>
+            @for (group of calendarData.groups(); track group.id) {
+              <option [value]="group.id">{{ group.name }}</option>
+            }
+          </select>
+          <p class="hint">{{ 'Everyone on the project can see an event that belongs to it.' | t }}</p>
+        </div>
+      }
+    }
 
     <div class="field">
-      <label for="event-location">Where <span class="optional">(optional)</span></label>
-      <input id="event-location" type="text" formControlName="location" maxlength="300"
-             placeholder="Room, address or a link" autocomplete="off" />
+      <label for="event-location">{{ 'Where' | t }} <span class="optional">{{ '(optional)' | t }}</span></label>
+      <input id="event-location" type="text" formControlName="location" maxlength="300" dir="auto"
+             [placeholder]="'Room, address or a meeting link' | t" autocomplete="off" />
     </div>
 
-    <div class="field" *ngIf="!isOccurrence">
-      <label for="event-description">Notes <span class="optional">(optional)</span></label>
-      <textarea id="event-description" rows="3" formControlName="description" maxlength="2000"
-                placeholder="Agenda, what to bring…"></textarea>
-    </div>
+    @if (!isOccurrence) {
+      <div class="field">
+        <label for="event-description">{{ 'Agenda' | t }} <span class="optional">{{ '(optional)' | t }}</span></label>
+        <textarea id="event-description" rows="3" formControlName="description" maxlength="2000" dir="auto"
+                  [placeholder]="'One line for each point' | t"></textarea>
+      </div>
+    }
 
-    <p class="dialog-error" *ngIf="error()" role="alert">
-      <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
-    </p>
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
   </div>
 
-  <footer class="dialog-foot">
-    <button type="button" class="btn-quiet" (click)="close()">Cancel</button>
-    <button type="submit" class="btn-main" [disabled]="saving()">
-      <span class="spinner" *ngIf="saving()"></span>
-      {{ saving() ? 'Saving…' : (isEdit ? 'Save changes' : 'Create event') }}
+  <footer class="editor-foot">
+    <button type="button" class="btn-cancel" (click)="close()">{{ 'Cancel' | t }}</button>
+    <button type="submit" class="btn-save" [disabled]="saving()">
+      {{ (saving() ? 'Saving…' : (isEdit ? 'Save changes' : 'Create event')) | t }}
     </button>
   </footer>
 </form>

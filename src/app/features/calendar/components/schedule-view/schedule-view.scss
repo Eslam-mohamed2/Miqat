@@ -1,0 +1,223 @@
+@use '../../../../../styles/tokens' as *;
+@use '../../calendar' as cal;
+
+:host {
+  display: block;
+  min-width: 0;
+  overflow-y: auto;
+  @include mq-scroll;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 20px 24px;
+}
+
+.day {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid $mq-line;
+}
+
+.date {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 148px;
+}
+
+.num {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-family: $mq-serif;
+  font-size: 22px;
+  line-height: 1;
+  color: $mq-text;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: $mq-hover; }
+
+  &.today {
+    background: $mq-accent;
+    color: $mq-on-accent;
+  }
+
+  @include touch {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.date-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 5px;
+}
+
+.dow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: $mq-muted;
+}
+
+.hijri {
+  font-size: 10.5px;
+  color: $mq-muted;
+}
+
+.items {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick, box-shadow $mq-t-change $mq-ease-calm;
+  @include mq-focus(-2px);
+
+  &:hover { background: $mq-row-hover; }
+  &.declined { opacity: .55; }
+  &.selected { box-shadow: inset 0 0 0 1.5px $mq-accent-text; }
+
+  &.done .title {
+    color: $mq-muted;
+    text-decoration: line-through;
+  }
+
+  @include touch { min-height: 44px; }
+}
+
+// A public holiday or an occasion: read, not opened, and quieter than the day's items.
+.entry.occasion {
+  cursor: default;
+
+  &:hover { background: transparent; }
+
+  .time {
+    font-weight: 500;
+    color: $mq-muted;
+  }
+
+  .title { color: $mq-text-3; }
+  &.holiday .title { color: $mq-text-2; }
+  // Its note says where it is kept and that the date may vary: it gets more room.
+  .note { max-width: 60%; }
+}
+
+.glyph {
+  @include cal.occasion-glyph(7px);
+}
+
+.time {
+  flex-shrink: 0;
+  width: 132px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $mq-text-3;
+  white-space: nowrap;
+}
+
+.dot {
+  @include cal.dot(8px, 3px);
+
+  &.planned {
+    box-sizing: border-box;
+    background: transparent;
+    border: 1px dashed $mq-accent-text;
+  }
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  @include mq-ellipsis;
+}
+
+.note {
+  flex-shrink: 1;
+  max-width: 40%;
+  font-size: 11.5px;
+  color: $mq-muted;
+  @include mq-ellipsis;
+}
+
+.empty {
+  margin: 0;
+  padding: 48px 0;
+  font-size: 13px;
+  color: $mq-muted;
+  text-align: center;
+}
+
+// Phones: the date sits above its items.
+@include below($bp-tablet-sm) {
+  .list { padding-inline: 16px; }
+
+  .day {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .date { width: auto; }
+  .entry { padding-inline: 4px; }
+  .time { width: 104px; }
+  .note { display: none; }
+
+  // An occasion keeps its note ("Egypt · Date may vary"), on a line of its own.
+  .entry.occasion {
+    flex-wrap: wrap;
+    row-gap: 2px;
+
+    .title { flex: 1 1 0; }
+
+    .note {
+      display: block;
+      flex-basis: 100%;
+      max-width: none;
+    }
+  }
+}
+
+// Calendar and project colours, as the theme draws them (see cal.tone).
+.dot {
+  @include cal.tone;
+}
+
+// Arabic: a title a person typed keeps its own direction (dir="auto"), so an English
+// one would stretch away to the far edge. It stays beside its dot, and the note
+// goes to the end of the row.
+:host-context([dir='rtl']) .entry {
+  .title { flex: 0 1 auto; }
+  .note { margin-right: auto; }
+}

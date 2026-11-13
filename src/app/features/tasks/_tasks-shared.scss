@@ -1,0 +1,172 @@
+@use '../../../styles/tokens' as *;
+
+// Pieces the Tasks screens and the project page draw the same way
+// (design/miqat-2.0: V2-Tasks, V2-Board).
+
+/// The page header: search box, "Plan my day", "New task" (the user circle is its own component).
+@mixin page-top {
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 18px;
+    padding: 12px 20px;
+    border-bottom: 1px solid $mq-line;
+  }
+
+  .search {
+    // The design's box is content (460 by 38): with padding and hairline it measures 482 by 40.
+    box-sizing: border-box;
+    flex: 1 1 302px;
+    max-width: 482px;
+    height: 40px;
+    margin-inline-start: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 8px 0 12px;
+    border-radius: 10px;
+    background: $mq-field;
+    border: 1px solid $mq-line-2;
+    color: $mq-muted;
+    font: inherit;
+    font-size: 13px;
+    text-align: start;
+    cursor: pointer;
+    transition: border-color $mq-t-press $mq-ease-quick, color $mq-t-press $mq-ease-quick;
+    @include mq-focus;
+
+    :host-context([dir='rtl']) & { padding: 0 12px 0 8px; }
+
+    &:hover {
+      border-color: $mq-line-4;
+      color: $mq-text;
+    }
+
+    svg { flex-shrink: 0; }
+
+    kbd {
+      @include mq-kbd;
+      font-weight: 400;
+    }
+  }
+
+  .search-text {
+    flex: 1;
+    min-width: 0;
+    @include mq-ellipsis;
+  }
+
+  .plan {
+    @include mq-btn-outline(40px, 0 12px, 10px);
+  }
+
+  .new-task {
+    @include mq-btn-primary(38px, 0 14px, 10px);
+  }
+}
+
+/// `--tone` for an element that carries `data-status`: its dot, pill or bar.
+@mixin status-tones {
+  [data-status] { --tone: #{$mq-text-3}; }
+  [data-status='In_progress'] { --tone: #{$mq-accent-text}; }
+  [data-status='On_hold'] { --tone: #{$mq-blue}; }
+  [data-status='Completed'] { --tone: #{$mq-green}; }
+  [data-status='Cancelled'] { --tone: #{$mq-muted}; }
+}
+
+/// `--tone` for an element that carries `data-priority`.
+@mixin priority-tones {
+  [data-priority] { --tone: #{$mq-muted}; }
+  [data-priority='Medium'] { --tone: #{$mq-accent-text}; }
+  [data-priority='High'],
+  [data-priority='Critical'] { --tone: #{$mq-late}; }
+}
+
+/// The round checkbox of a task, ringed in the colour of its priority.
+@mixin check-ring {
+  --tone: #{$mq-muted};
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.8px solid var(--tone);
+  background: color-mix(in srgb, var(--tone) 10%, transparent);
+  color: $mq-on-accent;
+  cursor: pointer;
+  transition: background-color $mq-t-press, border-color $mq-t-press;
+  @include mq-focus;
+
+  &[data-priority='Medium'] { --tone: #{$mq-accent-text}; }
+  &[data-priority='High'],
+  &[data-priority='Critical'] { --tone: #{$mq-late}; }
+  &[data-priority='Critical'] { background: color-mix(in srgb, var(--tone) 24%, transparent); }
+
+  &[aria-checked='true'] {
+    border: 0;
+    background: $mq-accent;
+  }
+}
+
+/// A status or priority pill: the tone as text on 13% of itself.
+@mixin tone-pill {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone) 13%, transparent);
+  color: var(--tone);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+/// The "Done" card of the board header and the project page: a label, a figure and a bar.
+@mixin done-card {
+  .done-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: $mq-card;
+    border: 1px solid $mq-line;
+  }
+
+  .done-main {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 230px;
+  }
+
+  .done-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12px;
+  }
+
+  .done-key { color: $mq-text-4; }
+  .done-value { font-weight: 600; }
+
+  .done-bar {
+    height: 4px;
+    border-radius: 4px;
+    background: $mq-line;
+
+    span {
+      display: block;
+      height: 100%;
+      border-radius: 4px;
+      background: $mq-accent;
+      transition: width 400ms $mq-ease-calm;
+    }
+  }
+}

@@ -1,53 +1,61 @@
 import {
   ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, signal
 } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
-import { ChatConversation, ChatPerson, ChatService, describeCall } from '../../core/services/chat.service';
-import { FriendService } from '../../core/services/friend.service';
+import { ChatConversation, ChatPerson, ChatService } from '../../core/services/chat.service';
+import { CallService } from '../../core/services/call.service';
+import { GroupCallService } from '../../core/services/group-call.service';
+import { chatTitle, isInCall, previewText } from '../../core/services/chat-text';
+import { serverMessage } from '../../core/http/api-error';
+import { locale, num, t } from '../../core/i18n/i18n';
+import { TPipe } from '../../core/i18n/t.pipe';
 import { ChatAvatar } from './chat-avatar';
+import { ChatIcon } from './chat-icon';
 import { ChatWindow } from './chat-window';
+import { NewGroupDialog } from './new-group-dialog';
 
-const shortTime = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
-const shortDate = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
+const shortTime = new Intl.DateTimeFormat(locale(), { hour: 'numeric', minute: '2-digit' });
+const shortDate = new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short' });
 
 /**
  * The chat corner of the app, messenger style: a round button that opens the
  * chat list, the docked chats as small round bubbles above it, and the open
- * chats as pop-up windows beside them.
+ * chats as pop-up windows beside them. It also draws the "New group" dialog,
+ * so that it can be opened from any page.
+ *
+ * It sits in the bottom corner at the end edge: bottom right in English,
+ * bottom left in Arabic, with the windows stacking toward the start.
  *
  * It draws nothing on an API build without chat.
  */
 @Component({
   selector: 'app-chat-dock',
   standalone: true,
-  imports: [MatIconModule, ChatAvatar, ChatWindow],
+  imports: [ChatAvatar, ChatIcon, ChatWindow, NewGroupDialog, TPipe],
   templateUrl: './chat-dock.html',
   styleUrl: './chat-dock.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatDock {
   protected chat = inject(ChatService);
-  private friendService = inject(FriendService);
+  protected calls = inject(CallService);
+  protected groupCalls = inject(GroupCallService);
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly panelOpen = signal(false);
   protected readonly search = signal('');
   protected readonly error = signal('');
-  /** Friends, for starting a chat with someone there is none with yet. */
-  private readonly friends = signal<ChatPerson[]>([]);
 
   protected readonly matchingChats = computed(() => {
     const term = this.search().trim().toLowerCase();
-    return this.chat.conversations().filter(c => !term || c.friend.fullName.toLowerCase().includes(term));
+    return this.chat.conversations().filter(c => !term || chatTitle(c).toLowerCase().includes(term));
   });
 
+  /** Friends there is no chat with yet. */
   protected readonly matchingFriends = computed(() => {
     const term = this.search().trim().toLowerCase();
-    const chatting = new Set(this.chat.conversations().map(c => c.friend.id));
+    const chatting = new Set(this.chat.conversations().filter(c => !c.isGroup).map(c => c.friend.id));
 
-    return this.friends()
-      .filter(f => !chatting.has(f.id) && (!term || f.fullName.toLowerCase().includes(term)))
-      .sort((a, b) => a.fullName.localeCompare(b.fullName));
+    return this.chat.friends().filter(f => !chatting.has(f.id) && (!term || f.fullName.toLowerCase().includes(term)));
   });
 
   protected togglePanel(): void {
@@ -56,7 +64,7 @@ export class ChatDock {
 
     this.search.set('');
     this.error.set('');
-    this.loadFriends();
+    this.chat.loadFriends();
   }
 
   protected openChat(conversation: ChatConversation): void {
@@ -68,20 +76,55 @@ export class ChatDock {
     this.error.set('');
     this.chat.openWith(friend.id).subscribe({
       next: () => this.panelOpen.set(false),
-      error: err => this.error.set(err?.error?.message || 'Could not open the chat. Try again.')
+      error: err => this.error.set(err?.error?.message
+        ? serverMessage(err.error.message)
+        : t('Could not open the chat. Try again.'))
     });
   }
 
+  protected newGroup(): void {
+    this.panelOpen.set(false);
+    this.chat.creatingGroup.set(true);
+  }
+
+  protected title(conversation: ChatConversation): string { return chatTitle(conversation); }
+
   /** What the list shows under a name: the newest message, in a few words. */
   protected preview(conversation: ChatConversation): string {
-    const last = conversation.lastMessage;
-    if (!last) return '';
+    return previewText(conversation, this.chat.currentUserId);
+  }
 
-    const mine = last.senderId === this.chat.currentUserId;
-    if (last.callOutcome) return describeCall(last, mine);
+  /** "typing…" for a friend, who it is in a group. Empty when nobody is. */
+  protected typingLine(conversation: ChatConversation): string {
+    if (!this.chat.isTyping(conversation.id)) return '';
+    return conversation.isGroup ? this.chat.typingText(conversation.id) : t('typing…');
+  }
 
-    const text = last.isDeleted ? 'Message deleted' : last.body;
-    return mine ? `You: ${text}` : text;
+  /** What a screen reader says for a chat's bubble: who it is with, and how much is unread. */
+  protected headLabel(conversation: ChatConversation): string {
+    const name = chatTitle(conversation);
+    return conversation.unreadCount
+      ? t('Chat with {name}, {n} unread', { name, n: conversation.unreadCount })
+      : t('Chat with {name}', { name });
+  }
+
+  /** The same for the round button of the list. */
+  protected launcherLabel(): string {
+    const unread = this.chat.unreadTotal();
+    return unread ? t('Chats, {n} unread', { n: unread }) : t('Chats');
+  }
+
+  /** A call is going on in this group that this account is not in: the list offers to join it. */
+  protected canJoin(conversation: ChatConversation): boolean {
+    return this.calls.supported && !!conversation.activeCall && !isInCall(conversation, this.chat.currentUserId);
+  }
+
+  protected joinCall(conversation: ChatConversation): void {
+    if (!conversation.activeCall) return;
+
+    this.groupCalls.join(conversation.activeCall, chatTitle(conversation));
+    this.chat.open(conversation.id);
+    this.panelOpen.set(false);
   }
 
   /** The time today, otherwise the date. */
@@ -93,7 +136,7 @@ export class ChatDock {
   }
 
   protected badge(count: number): string {
-    return count > 9 ? '9+' : String(count);
+    return num(count > 9 ? '9+' : String(count));
   }
 
   // A click anywhere else, or Escape, puts the list away.
@@ -105,22 +148,5 @@ export class ChatDock {
   @HostListener('document:keydown.escape')
   protected onEscape(): void {
     this.panelOpen.set(false);
-  }
-
-  private loadFriends(): void {
-    const me = this.chat.currentUserId;
-
-    this.friendService.getMyFriends().subscribe({
-      next: rows => this.friends.set(rows.map(row => {
-        const friendIsSender = row.senderId !== me;
-        return {
-          id: row.friendId ?? (friendIsSender ? row.senderId : row.receiverId),
-          fullName: row.friendName ?? (friendIsSender ? row.senderName : row.receiverName) ?? 'Friend',
-          profilePictureUrl: row.friendProfilePictureUrl ??
-            (friendIsSender ? row.senderProfilePictureUrl : row.receiverProfilePictureUrl)
-        };
-      })),
-      error: () => { /* the chats that exist are still listed */ }
-    });
   }
 }

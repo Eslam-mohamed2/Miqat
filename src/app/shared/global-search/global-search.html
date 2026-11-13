@@ -1,59 +1,196 @@
-<!-- The topbar's search box. Read-only: clicking it opens the palette, which is
-     where the real input lives, so focus and results share one element. -->
-<button type="button" class="search-trigger" (click)="openPalette()"
-        aria-label="Search tasks, projects, events and people">
-  <mat-icon class="search-icon">search</mat-icon>
-  <span class="trigger-text">Search tasks, projects, events or people</span>
-  <span class="trigger-kbd">Ctrl K</span>
-</button>
+@if (open()) {
+  <div class="qa-backdrop" [class.phone]="phone()" (pointerdown)="onBackdrop($event)">
+    <div #panel class="qa-dialog" role="dialog" aria-modal="true"
+         [attr.aria-label]="(phone() ? 'Quick add' : 'Create or search') | t" (keydown)="onDialogKeydown($event)">
 
-<div class="palette-backdrop" *ngIf="open()" (click)="close()">
-  <!-- Stops a click inside the panel from reaching the backdrop's close. -->
-  <div class="palette" (click)="$event.stopPropagation()" role="dialog" aria-label="Search">
+      @if (phone()) {
+        <span class="qa-grabber" aria-hidden="true"></span>
+        <div class="qa-sheet-head">
+          <button type="button" class="qa-cancel" (click)="close()">{{ 'Cancel' | t }}</button>
+          <span class="qa-sheet-title">{{ 'New' | t }}</span>
+          <div class="qa-seg" role="group" [attr.aria-label]="'Type' | t">
+            <button type="button" [attr.aria-pressed]="kind() === 'event'" (click)="chooseKind('event')">{{ 'Event' | t }}</button>
+            <button type="button" [attr.aria-pressed]="kind() === 'task'" (click)="chooseKind('task')">{{ 'Task' | t }}</button>
+          </div>
+        </div>
+      } @else {
+        <div class="qa-head">
+          <span class="qa-eyebrow">{{ eyebrow() }}</span>
+          <div class="qa-seg" role="group" [attr.aria-label]="'Sentence language' | t">
+            <button type="button" lang="en" [attr.aria-pressed]="!arabic()" (click)="setLanguage('en')">English</button>
+            <button type="button" class="ar" lang="ar" [attr.aria-pressed]="arabic()" (click)="setLanguage('ar')">عربي</button>
+          </div>
+        </div>
+      }
 
-    <div class="palette-input">
-      <mat-icon>search</mat-icon>
-      <input #input type="text" [value]="query()"
-             (input)="onInput($event)" (keydown)="onKeydown($event)"
-             placeholder="Search tasks, projects, events or people…"
-             autocomplete="off" spellcheck="false" />
-      <span class="spinner" *ngIf="searching()" role="status" aria-label="Searching"></span>
-      <button type="button" class="esc" (click)="close()">esc</button>
-    </div>
+      <!-- The sentence. The text field itself is invisible: its words are drawn here as
+           coloured parts, with its caret and selection, so each part can have its own look. -->
+      <div class="qa-entry">
+        @if (!phone()) {
+          <svg class="qa-plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        }
+        <div #line class="qa-line" [class.rtl]="arabic()" [attr.dir]="arabic() ? 'rtl' : 'ltr'"
+             (pointerdown)="onLinePointerDown($event)" (pointermove)="onLinePointerMove($event)"
+             (pointerup)="onLinePointerUp()" (pointercancel)="onLinePointerUp()" (dblclick)="onLineDoubleClick($event)">
+          @for (piece of shown(); track piece.start) {
+            @if (piece.caretBefore) { <span class="qa-caret" aria-hidden="true"></span> }
+            <span class="qa-piece" dir="auto" aria-hidden="true" [attr.data-kind]="piece.kind" [attr.data-part]="piece.part || null"
+                  [attr.data-start]="piece.start">{{ piece.pre }}@if (piece.caretIn) {<i class="qa-caret-in"></i>}@if (piece.sel) {<mark>{{ piece.sel }}</mark>}{{ piece.post }}</span>
+          }
+          @if (caretAtEnd()) { <span class="qa-caret" aria-hidden="true"></span> }
+          @if (!text()) { <span class="qa-placeholder" aria-hidden="true">{{ placeholder() }}</span> }
+          <input #input class="qa-input" type="text" [value]="text()" dir="auto"
+                 [attr.lang]="arabic() ? 'ar' : 'en'"
+                 [attr.aria-label]="(phone() ? 'What to add' : 'Create or search: type it the way you would say it') | t"
+                 (input)="onInput($event)" (keydown)="onKeydown($event)"
+                 (focus)="focused.set(true)" (blur)="onBlur()"
+                 autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="done" />
+        </div>
+      </div>
 
-    <div class="palette-results" *ngIf="results().length; else noResults">
-      <ng-container *ngFor="let row of results(); let i = index; trackBy: trackByRow">
-        <p class="group-label" *ngIf="isFirstOfKind(i)">{{ kindLabel(row.kind) }}</p>
+      @switch (mode()) {
+        @case ('create') {
+          @if (phone()) {
+            <div class="qa-rows">
+              @for (fact of facts(); track fact.key) {
+                <div class="qa-row" [attr.data-tone]="fact.tone">
+                  <span class="qa-key">{{ fact.label }}</span>
+                  <span class="qa-row-text"><span class="qa-row-value">{{ fact.value }}</span><span class="qa-row-note">{{ fact.note }}</span></span>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="qa-preview">
+              <div class="qa-title-row">
+                <span class="qa-title" dir="auto">{{ parsed().title }}</span>
+                <span class="qa-meta">{{ meta() }}</span>
+              </div>
+              <div class="qa-facts">
+                @for (fact of facts(); track fact.key) {
+                  <div class="qa-fact" [attr.data-tone]="fact.tone">
+                    <span class="qa-key">{{ fact.label }}</span>
+                    <span class="qa-fact-value">{{ fact.value }}</span>
+                    <span class="qa-fact-note">{{ fact.note }}</span>
+                  </div>
+                }
+              </div>
+              <ng-container *ngTemplateOutlet="noteBox"></ng-container>
+              @if (error()) { <p class="qa-error" role="alert">{{ error() }}</p> }
+            </div>
+          }
+        }
+        @case ('goto') {
+          <div class="qa-preview">
+            <div class="qa-title-row">
+              <span class="qa-title">{{ goToLabel() || ('Go to a date' | t) }}</span>
+              <span class="qa-meta">{{ goToLabel() ? ('Opens the calendar on that day' | t) : ('Type a day: today, friday, 15 nov' | t | num) }}</span>
+            </div>
+            @if (error()) { <p class="qa-error" role="alert">{{ error() }}</p> }
+          </div>
+        }
+      }
 
-        <button type="button" class="result" [class.active]="i === activeIndex()"
-                (mouseenter)="activeIndex.set(i)" (click)="go(row)">
-          <span class="result-dot" *ngIf="row.accent" [style.background]="row.accent"></span>
-          <mat-icon class="result-icon" *ngIf="!row.accent">{{ row.icon }}</mat-icon>
-          <span class="result-text">
-            <strong>{{ row.title }}</strong>
-            <small>{{ row.subtitle }}</small>
-          </span>
-          <mat-icon class="result-go">arrow_forward</mat-icon>
-        </button>
-      </ng-container>
-    </div>
+      @if (phone() && mode() === 'create') {
+        <ng-container *ngTemplateOutlet="noteBox"></ng-container>
+        @if (error()) { <p class="qa-error" role="alert">{{ error() }}</p> }
+        <div class="qa-chips">
+          @for (chip of chips(); track chip.label) {
+            <button type="button" class="qa-chip" [attr.aria-pressed]="chip.pressed === undefined ? null : chip.pressed"
+                    (click)="chip.run()">{{ chip.label }}</button>
+          }
+        </div>
+      }
 
-    <ng-template #noResults>
-      <p class="palette-empty" *ngIf="searching(); else nothingFound">
-        Searching for “{{ query() }}”…
-      </p>
-      <ng-template #nothingFound>
-        <p class="palette-empty">
-          Nothing matches “{{ query() }}”.
-          <span>Tasks, projects and events search what you can see; people search everyone.</span>
-        </p>
-      </ng-template>
-    </ng-template>
+      <!-- The phone sheet shows the form alone while something is being created, as in the mobile design. -->
+      @if (rows().length && !(phone() && mode() === 'create')) {
+        <div class="qa-list">
+          @for (row of rows(); track row.id; let i = $index) {
+            @if (i === 0 || rows()[i - 1].section !== row.section) {
+              <span class="qa-section">{{ row.section }}</span>
+            }
+            <button type="button" class="qa-opt" [class.active]="i === activeIndex()" tabindex="-1"
+                    (mouseenter)="hover(i)" (click)="row.run()">
+              <span class="qa-glyph" [class.toned]="!!row.tone" [style.--tone]="row.tone || null" aria-hidden="true">
+                @switch (row.icon) {
+                  @case ('task') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg> }
+                  @case ('project') { <span class="qa-dot"></span> }
+                  @case ('event') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg> }
+                  @case ('calendar') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg> }
+                  @case ('plan') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg> }
+                  @case ('board') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg> }
+                  @case ('flow') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"></circle><circle cx="18" cy="6" r="2.5"></circle><circle cx="18" cy="18" r="2.5"></circle><path d="M8.5 6h7M6 8.5v4a3 3 0 0 0 3 3h6.5"></path></svg> }
+                  @case ('people') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"></path></svg> }
+                  @case ('person') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path></svg> }
+                  @case ('inbox') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg> }
+                  @case ('settings') { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg> }
+                  @default { {{ row.glyph }} }
+                }
+              </span>
+              <span class="qa-opt-label" dir="auto">{{ row.title }}</span>
+              @if (row.subtitle) { <span class="qa-opt-sub">{{ row.subtitle }}</span> }
+              @if (row.key) { <kbd [attr.title]="row.keyTitle || null">{{ row.key }}</kbd> }
+            </button>
+          }
+          @if (mode() === 'search') {
+            @if (searching()) {
+              <span class="qa-wait" role="status" [attr.aria-label]="'Searching' | t"><i></i><i></i><i></i></span>
+            }
+          }
+        </div>
+      }
 
-    <div class="palette-foot">
-      <span><b>↑</b><b>↓</b> navigate</span>
-      <span><b>↵</b> open</span>
-      <span><b>esc</b> close</span>
+      @if (phone()) {
+        @if (mode() === 'create' || mode() === 'search') {
+          <button type="button" class="qa-cta" [disabled]="creating() || !parsed().title" (click)="createFromSheet()">
+            {{ mode() === 'search' ? ('Add task' | t) : cta() }}
+          </button>
+        } @else if (mode() === 'goto') {
+          <button type="button" class="qa-cta" [disabled]="!goToLabel()" (click)="goToDate()">{{ 'Open that day' | t }}</button>
+        }
+      } @else {
+        <div class="qa-foot">
+          @switch (mode()) {
+            @case ('create') {
+              <button type="button" [disabled]="creating()" (click)="create(false)"><kbd>Enter</kbd>{{ 'Create' | t }}</button>
+              <button type="button" [disabled]="creating()" (click)="create(true)"><kbd>Ctrl Enter</kbd>{{ 'Create and invite' | t }}</button>
+              <button type="button" (click)="openEditor()"><kbd>Tab</kbd>{{ 'Edit details' | t }}</button>
+            }
+            @case ('goto') {
+              <button type="button" (click)="goToDate()"><kbd>Enter</kbd>{{ 'Go@@to the day' | t }}</button>
+            }
+            @default {
+              <span><kbd>Enter</kbd>{{ 'Open' | t }}</span>
+              <span><kbd>↑ ↓</kbd>{{ 'Move@@through the list' | t }}</span>
+              @if (parsed().title) {
+                <button type="button" (click)="openEditor()"><kbd>Tab</kbd>{{ 'Edit details' | t }}</button>
+              }
+            }
+          }
+          <button type="button" class="qa-close" (click)="close()"><kbd>Esc</kbd>{{ 'Close' | t }}</button>
+        </div>
+      }
     </div>
   </div>
-</div>
+}
+
+<!-- "Tomorrow is Friday, outside your working week": only with a real reason, and real times. -->
+<ng-template #noteBox>
+  @if (note(); as hint) {
+    <div class="qa-note" role="status">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>
+      <div class="qa-note-body">
+        <span class="qa-note-text">@for (part of hint.parts; track $index) {@if (part.strong) {<strong>{{ part.text }}</strong>} @else {<span>{{ part.text }}</span>}}<span>{{ hint.lead }}</span></span>
+        @if (hint.loading) {
+          <span class="qa-slots" aria-hidden="true"><i class="qa-slot-wait"></i><i class="qa-slot-wait"></i><i class="qa-slot-wait"></i></span>
+        } @else if (hint.slots.length) {
+          <span class="qa-slots">
+            @for (option of hint.slots; track option.start) {
+              <button type="button" class="qa-slot" [attr.aria-pressed]="slot()?.start === option.start"
+                      (click)="pickSlot(option)">{{ slotLabel(option) }}</button>
+            }
+          </span>
+        }
+      </div>
+    </div>
+  }
+</ng-template>

@@ -1,0 +1,458 @@
+@use '../../../../styles/tokens' as *;
+@use '../tasks-shared' as shared;
+
+
+:host {
+  display: block;
+}
+
+.board {
+  min-width: 1040px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+// ── Column headers ──────────────────────────────────────────────────────────
+.heads,
+.cols {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cols { align-items: stretch; }
+
+.head {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.head-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// The colour of a status: its dot, and the fill of its work-in-progress bar.
+@include shared.status-tones;
+
+.status-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+h2 {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.head-title {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: $mq-text;
+  font: inherit;
+  cursor: pointer;
+  @include mq-focus(3px);
+}
+
+.head-count {
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.head-est {
+  margin-inline-start: auto;
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+.wip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wip-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: $mq-line;
+}
+
+.wip-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--tone);
+  transition: width 400ms $mq-ease-calm, background-color 300ms;
+
+  &.over { background: $mq-late; }
+}
+
+.wip-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: $mq-muted;
+
+  &.over { color: $mq-late; }
+}
+
+.limit-editor {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-start: 0;
+  z-index: 20;
+  width: 264px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+}
+
+.limit-title {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.limit-note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: $mq-muted;
+}
+
+.limit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.limit-step {
+  @include mq-btn-outline(30px, 0, 8px);
+  width: 30px;
+  flex-shrink: 0;
+}
+
+.limit-input {
+  @include mq-field(30px, 8px);
+  width: 62px;
+  padding: 0 6px;
+  text-align: center;
+  appearance: textfield;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button { appearance: none; margin: 0; }
+}
+
+.limit-clear {
+  @include mq-btn-ghost(30px, 0 10px, 8px);
+  margin-inline-start: auto;
+  font-size: 12px;
+}
+
+// ── Rows by project ─────────────────────────────────────────────────────────
+.lane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lane-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 0;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.lane-dot {
+  @include mq-dot(8px, 2px);
+}
+
+.lane-count {
+  font-weight: 500;
+  color: $mq-muted;
+}
+
+// ── Columns ─────────────────────────────────────────────────────────────────
+.zone {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 520px;
+  padding: 10px;
+  border-radius: 16px;
+  background: $mq-canvas;
+  border: 1px solid $mq-hover;
+  transition: background $mq-t-press;
+
+  &.short { min-height: 90px; }
+
+  // A card is over this column.
+  &.cdk-drop-list-dragging {
+    background: color-mix(in srgb, #{$mq-accent} 8%, #{$mq-card});
+    border: 1px dashed $mq-accent-text;
+
+    .zone-empty { display: none; }
+  }
+}
+
+.zone-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  border-radius: 12px;
+  border: 1px dashed $mq-line-2;
+  font-size: 12px;
+  color: $mq-muted;
+}
+
+.zone-more {
+  @include mq-btn-ghost(32px, 0 10px, 9px);
+  align-self: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: $mq-muted;
+}
+
+// ── Card ────────────────────────────────────────────────────────────────────
+// Top-level rules on purpose: while a card is dragged, its copy lives outside
+// this component and only rules that do not depend on a parent still reach it.
+.tcard {
+  --block-line: color-mix(in srgb, #{$mq-accent} 55%, transparent);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 12px 10px;
+  border-radius: 12px;
+  background: $mq-card-4;
+  border: 1px solid $mq-chip;
+  color: $mq-text;
+  font-family: $mq-font;
+  font-size: 13px;
+  cursor: grab;
+  transition: scale 160ms $mq-ease-calm, rotate 160ms $mq-ease-calm, box-shadow 160ms, border-color $mq-t-press;
+
+  &:hover { border-color: $mq-line-5; }
+
+  // Picked up: larger, tilted, with a deep shadow (V2-Motion).
+  &:active:not(:has(button:active)),
+  &.cdk-drag-preview {
+    cursor: grabbing;
+    scale: 1.03;
+    rotate: 1.5deg;
+    box-shadow: 0 18px 32px mq-shadow(.55);
+  }
+
+  &.done { opacity: .72; }
+
+  &.on { border-color: $mq-accent; }
+
+  // Landed in its new column: the one place the spring curve is used.
+  &.landed { animation: mq-land $mq-t-arrive $mq-ease-spring; }
+}
+
+:host-context(html[data-theme='light']) .tcard {
+  --block-line: #{$mq-accent-text};
+}
+
+// Where the card will go while it is dragged.
+.tcard-ghost {
+  height: 64px;
+  border-radius: 12px;
+  border: 1px dashed $mq-accent-text;
+  background: color-mix(in srgb, #{$mq-accent} 6%, transparent);
+}
+
+.cdk-drag-animating {
+  transition: transform $mq-t-change $mq-ease-calm;
+}
+
+.tcard-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  // The height the design's ticket number gave this row.
+  min-height: 13px;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 10px;
+
+  span {
+    width: 3px;
+    border-radius: 1px;
+    background: $mq-line-3;
+
+    &:nth-child(1) { height: 4px; }
+    &:nth-child(2) { height: 7px; }
+    &:nth-child(3) { height: 10px; }
+  }
+
+  &[data-level='1'] span:nth-child(1) { background: $mq-text-4; }
+  &[data-level='2'] span:nth-child(-n + 2) { background: $mq-accent; }
+  &[data-level='3'] span { background: $mq-late; }
+}
+
+.tcard-move {
+  @include mq-icon-btn(26px, 7px);
+  margin-inline-start: auto;
+  color: $mq-muted;
+  // Its arrow carries the global `mq-flip`, which also reaches the copy that is dragged.
+}
+
+.tcard-title {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: $mq-text;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  @include mq-focus;
+}
+
+.tcard.done .tcard-title {
+  color: $mq-muted;
+  text-decoration: line-through;
+  text-decoration-color: $mq-line-6;
+}
+
+.tcard-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tcard-project {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: $mq-text-4;
+}
+
+.project-dot {
+  @include mq-dot(6px, 2px);
+}
+
+.tcard-label {
+  padding: 0 6px;
+  border-radius: 5px;
+  border: 1px solid $mq-line-2;
+  font-size: 10.5px;
+  color: $mq-text-4;
+}
+
+.tcard-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sub-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: $mq-seg-on;
+}
+
+.sub-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: $mq-accent;
+
+  &.full { background: $mq-green; }
+}
+
+.sub-label {
+  font-size: 11px;
+  color: $mq-text-4;
+}
+
+.tcard-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.tcard-when {
+  padding-block: 2px;
+  padding-inline: 0 7px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  color: $mq-muted;
+  white-space: nowrap;
+
+  &.late { color: $mq-late; }
+
+  &.block {
+    padding: 2px 7px;
+    color: $mq-accent-text;
+    border: 1px dashed var(--block-line);
+  }
+}
+
+.tcard-blocked {
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: $mq-late;
+  background: color-mix(in srgb, #{$mq-late} 12%, transparent);
+}
+
+.tcard-comments {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: $mq-muted;
+}
+
+.tcard-who {
+  @include mq-avatar(24px);
+  margin-inline-start: auto;
+  background: $mq-seg-on;
+  font-size: 9.5px;
+  color: $mq-text-2;
+}
+
+.foot {
+  padding: 6px 4px 0;
+  font-size: 11.5px;
+  color: $mq-muted;
+}
+
+@include touch {
+  .tcard-move {
+    width: 36px;
+    height: 36px;
+  }
+}

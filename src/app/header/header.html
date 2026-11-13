@@ -1,29 +1,23 @@
-<nav class="navbar navbar-expand-lg navbar-light navbar-primary position-sticky top-0 w-100">
-   <div class="clock-falls" aria-hidden="true">
-    <span class="mini-clock" *ngFor="let clock of clocks">
-      <img [src]="clock" alt="clock icon">
-    </span>
-  </div>
-  <div class="container-fluid Custmizable-Header d-flex justify-content-between">
-    <img src="../../assets/Light-mode-logo.png" class="w-10 LOGO" alt="">
-    <button class="navbar-toggler border-0 shadow-none" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" [ngClass]="{'show': isMenuOpen}" id="navbarNavAltMarkup">
+<header class="bar">
+  <div class="inner">
+    <a class="brand" routerLink="/home">
+      <app-miqat-logo variant="wordmark" [height]="22" />
+    </a>
 
-      <div class="navbar-nav ms-3">
-        <a class="nav-link active position-relative Font-Title" aria-current="page" href="#about us">about us</a>
-        <a class="nav-link position-relative Font-Title" href="#Services">Key Services</a>
-        <a class="nav-link position-relative Font-Title" href="#Features">Features</a>
-      </div>
-      <div class="clock m-auto rounded Font-Title">
-        {{ time }}
-      </div>
-      <div class="Authentication-Buttons d-flex ms-auto align-items-center">
-        <button  class="btn btn-login me-2 Font-Title" (click)="goToLogin()">Login <i class="fa-solid fa-right-to-bracket fa-beat"></i></button>
-        <button class="btn btn-join-us Font-Title" (click)="goToRegister()">Get Started</button>
-      </div>
+    <nav class="sections" [attr.aria-label]="'Main@@navigation' | t">
+      <a href="/home#product">{{ 'Product' | t }}</a>
+      <a href="/home#day">{{ 'How it works' | t }}</a>
+      <a href="/home#region">{{ 'Arabic and Hijri' | t }}</a>
+      <a href="/home#faq">{{ 'Questions' | t }}</a>
+    </nav>
+
+    <div class="actions">
+      <!-- Written in the language it switches to, so the person it is for can read it. -->
+      <button type="button" class="lang" [class.latin]="other === 'en'" [attr.lang]="other"
+        [attr.aria-label]="other === 'ar' ? 'Switch to Arabic' : 'Switch to English'"
+        (click)="switchLanguage()">{{ other === 'ar' ? 'العربية' : 'English' }}</button>
+      <a class="sign-in" routerLink="/login">{{ 'Sign in' | t }}</a>
+      <a class="start" routerLink="/register">{{ 'Get started' | t }}</a>
     </div>
   </div>
-</nav>
-
+</header>

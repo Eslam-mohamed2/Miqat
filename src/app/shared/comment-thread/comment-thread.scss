@@ -1,454 +1,493 @@
 @use '../../../styles/tokens' as *;
 
+
+// The "Activity" rows and the comment box of the task panel (design/miqat-2.0: V2-Tasks).
+:host {
+  display: block;
+}
+
 .thread {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .thread-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
 
-  h4 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 700;
-    color: $text-primary;
-  }
+.eyebrow {
+  @include mq-eyebrow;
+}
 
-  .count {
-    min-width: 22px;
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: $bg-input;
-    border: 1px solid $border-card;
-    font-size: 12px;
-    font-weight: 600;
-    color: $text-secondary;
-    text-align: center;
-  }
+.count {
+  font-size: 12px;
+  color: $mq-text-3;
 }
 
 .hint {
-  margin: 0;
-  font-size: 13px;
-  color: $text-muted;
-
-  b { color: $teal-primary; }
-}
-
-.error {
-  margin: 0;
   font-size: 12.5px;
-  color: #ef4444;
+  line-height: 1.5;
+  color: $mq-muted;
+
+  b { color: $mq-text-3; font-weight: 600; }
 }
 
-// ── Thread ──────────────────────────────────────────────────────────────────
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  // Long threads scroll inside the card rather than pushing the composer away.
-  max-height: 420px;
-  overflow-y: auto;
-  // Setting overflow on one axis makes the other compute to `auto` too, so any
-  // stray pixel of horizontal overflow shows a scrollbar. Nothing here is meant
-  // to scroll sideways — every text run already wraps.
-  overflow-x: clip;
-  padding-right: 4px;
-}
-
-// Named `comment-row`, not `row`: Bootstrap's grid is global here and its
-// `.row { margin-inline: -12px }` plus `.row > * { width: 100%; padding-inline:
-// 12px }` both applied. The negative margins made every row 24px wider than the
-// scroll container (the stray horizontal scrollbar), and the 12px side padding
-// ate a border-box avatar down to a 10px-wide sliver stretched to full height.
+// ── A comment ───────────────────────────────────────────────────────────────
 .comment-row {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
-}
+  font-size: 12.5px;
+  line-height: 1.5;
+  border-radius: 8px;
 
-// The comment a notification pointed at. Marked rather than merely scrolled to,
-// because "somewhere in the middle of the screen" is not an answer to "which
-// comment did they mean".
-.comment-row.focused .bubble {
-  border-color: $teal-primary;
-  box-shadow: 0 0 0 3px var(--teal-glow);
-}
+  // Arrived at from a notification: the linked comment is marked for a moment.
+  &.focused {
+    margin: -6px;
+    padding: 6px;
+    background: color-mix(in srgb, #{$mq-accent} 10%, transparent);
+    box-shadow: inset 2px 0 0 $mq-accent;
 
-.avatar {
-  flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  // Belt and braces against global rules like Bootstrap's `.row > *`: with
-  // border-box sizing, injected side padding shrinks the *content* box and a
-  // photo renders as a squashed sliver. A min-width plus a square aspect ratio
-  // keeps the circle round whatever else the cascade adds.
-  min-width: 34px;
-  aspect-ratio: 1;
-  padding: 0;
-  border-radius: 50%;
-  object-fit: cover;
-  background: $bg-input;
-
-  &.initials {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: $teal-primary;
-    border: 1px solid $border-card;
+    @include mq-rtl { box-shadow: inset -2px 0 0 $mq-accent; }
   }
 }
 
-.bubble-wrap {
-  min-width: 0;
+.avatar {
+  @include mq-avatar(22px);
+  font-size: 9.5px;
+  color: $mq-text;
+  @include mq-focus;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.body {
   flex: 1;
-}
-
-// Facebook-style: the name sits inside the bubble, the timestamp under it.
-.bubble {
-  display: inline-block;
-  max-width: 100%;
-  padding: 8px 12px 9px;
-  border-radius: 16px;
-  background: $bg-input;
-  border: 1px solid $border-card;
-}
-
-.author {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  color: $text-primary;
-  text-decoration: none;
-
-  &:hover { text-decoration: underline; }
+  min-width: 0;
 }
 
 .text {
-  margin: 2px 0 0;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: $text-primary;
-  // Comments are free text: honour typed newlines, and never let an unbroken
-  // string widen the card.
+  // As wide as what was written, at the start edge of the row: a comment in the
+  // other direction (dir="auto") reads its own way and still sits by its author.
+  width: fit-content;
+  max-width: 100%;
+  color: $mq-text-3;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.mention {
-  color: $teal-primary;
-  font-weight: 600;
-  text-decoration: none;
-  border-radius: 4px;
-  padding: 0 2px;
-  background: var(--teal-glow);
-
-  &:hover { text-decoration: underline; }
+.when {
+  color: $mq-muted;
+  white-space: nowrap;
 }
 
-.meta {
+.mention {
+  color: $mq-accent-text;
+  font-weight: 600;
+
+  &:hover { text-decoration: underline !important; }
+}
+
+// "Edit" and "Delete" on the author's own comments.
+.row-actions {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 4px 0 0 12px;
-  font-size: 12px;
-  color: $text-muted;
+  gap: 10px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity $mq-t-press $mq-ease-quick;
+
+  .comment-row:hover &,
+  .comment-row:focus-within & {
+    max-height: 24px;
+    opacity: 1;
+  }
+
+  @include touch {
+    max-height: none;
+    opacity: 1;
+  }
 }
 
 .link-btn {
-  border: 0;
-  background: none;
   padding: 0;
-  font: inherit;
-  color: $text-muted;
-  cursor: pointer;
-
-  &:hover { color: #ef4444; }
-}
-
-// ── Composer ────────────────────────────────────────────────────────────────
-
-.composer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid $border-card;
-}
-
-.composer-box {
-  position: relative;
-
-  textarea {
-    width: 100%;
-    resize: vertical;
-    min-height: 62px;
-    padding: 10px 12px;
-    border-radius: $radius-input;
-    border: 1px solid $border-input;
-    background: $bg-input;
-    color: $text-primary;
-    font: inherit;
-    font-size: 13.5px;
-    line-height: 1.5;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-
-    &::placeholder { color: $text-muted; }
-
-    &:focus {
-      outline: none;
-      border-color: $teal-primary;
-      box-shadow: 0 0 0 3px var(--teal-glow);
-    }
-  }
-}
-
-// ── @mention menu ───────────────────────────────────────────────────────────
-// Anchored above the textarea so it never falls off the bottom of a dialog.
-.mention-menu {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 30;
-  margin: 0;
-  padding: 6px;
-  list-style: none;
-  max-height: 260px;
-  overflow-y: auto;
-  border-radius: 10px;
-  border: 1px solid $border-card;
-  background: $bg-card;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 7px 8px;
-    border-radius: 8px;
-    cursor: pointer;
-
-    &.active { background: $bg-card-hover; }
-  }
-}
-
-.menu-avatar {
-  flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: $bg-input;
-
-  &.initials {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: $teal-primary;
-    border: 1px solid $border-card;
-  }
-}
-
-.menu-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-
-  strong {
-    font-size: 13px;
-    font-weight: 600;
-    color: $text-primary;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  small {
-    font-size: 12px;
-    color: $text-muted;
-  }
-}
-
-.menu-tag {
-  flex: 0 0 auto;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--orange-accent);
-  background: rgba(244, 132, 95, 0.14);
-  border: 1px solid rgba(244, 132, 95, 0.3);
-}
-
-.grant-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: $text-secondary;
-  background: rgba(244, 132, 95, 0.1);
-  border: 1px solid rgba(244, 132, 95, 0.25);
-
-  mat-icon {
-    flex: 0 0 auto;
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    color: var(--orange-accent);
-  }
-
-  b { color: $text-primary; }
-}
-
-.composer-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.shortcut {
-  font-size: 12px;
-  color: $text-muted;
-}
-
-.send {
-  padding: 8px 22px;
   border: 0;
-  border-radius: 999px;
-  font-size: 13px;
+  background: transparent;
+  color: $mq-muted;
+  font: inherit;
+  font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
-  color: $btn-quick-add-text;
-  background: $teal-primary;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  @include mq-focus;
 
-  &:hover:not(:disabled) { background: $teal-dark; }
+  &:hover { color: $mq-text; }
+  &.danger:hover { color: $mq-late; }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  @include touch { min-height: 32px; }
 }
 
-// ── Compact variant (dialog) ────────────────────────────────────────────────
-
-.thread.compact {
-  .list { max-height: 240px; }
-  .avatar { width: 30px; height: 30px; min-width: 30px; }
-}
-
-@include below($bp-phone-lg) {
-  .composer-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-  .shortcut { text-align: center; }
-  .send { width: 100%; }
-  .list { max-height: 320px; }
-}
-
-// ── Editing a comment in place ──────────────────────────────────────────────
-
-// While its text is being edited the bubble takes the full width, so the box is
-// as roomy as the composer instead of as narrow as the old sentence.
-.bubble:has(.edit-box) {
-  display: block;
-}
-
+// ── Editing a comment ───────────────────────────────────────────────────────
 .edit-box {
-  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 
   textarea {
-    display: block;
     width: 100%;
-    min-height: 62px;
-    resize: vertical;
+    min-height: 56px;
     padding: 8px 10px;
-    border-radius: $radius-input;
-    border: 1px solid $border-input;
-    background: $bg-card;
-    color: $text-primary;
+    border-radius: 10px;
+    border: 1px solid $mq-accent;
+    background: $mq-field;
+    color: $mq-text;
     font: inherit;
-    font-size: 13.5px;
+    font-size: 13px;
     line-height: 1.5;
-
-    &:focus {
-      outline: none;
-      border-color: $teal-primary;
-      box-shadow: 0 0 0 3px var(--teal-glow);
-    }
+    resize: vertical;
+    outline: none;
   }
 }
 
-.edit-note {
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: $text-muted;
+.edit-note,
+.shortcut {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: $mq-muted;
 }
 
 .edit-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
 
-  .shortcut { margin-right: auto; }
-  .send { padding: 6px 18px; }
+  .shortcut { margin-inline-end: auto; }
 }
 
 .edit-cancel {
-  padding: 6px 14px;
-  border: 1px solid $border-card;
-  border-radius: 999px;
-  background: transparent;
-  color: $text-secondary;
-  font-size: 13px;
-  font-weight: 600;
+  @include mq-btn-ghost(28px, 0 10px, 8px);
+  font-size: 12px;
+}
+
+.edit-save {
+  @include mq-btn-primary(28px, 0 12px, 8px);
+  font-size: 12px;
+}
+
+// ── Composer ────────────────────────────────────────────────────────────────
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.composer-box {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  // 40px of content inside the hairline.
+  min-height: 42px;
+  box-sizing: border-box;
+  padding-block: 0;
+  padding-inline: 12px 6px;
+  border-radius: 10px;
+  background: $mq-field;
+  border: 1px solid $mq-line-2;
+  transition: border-color $mq-t-press $mq-ease-quick;
+
+  &:focus-within { border-color: $mq-accent; }
+
+  textarea {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    max-height: 132px;
+    padding: 10px 0;
+    border: 0;
+    background: transparent;
+    color: $mq-text;
+    font: inherit;
+    font-size: 13px;
+    line-height: 20px;
+    resize: none;
+    outline: none;
+
+    &::placeholder { color: $mq-muted; opacity: 1; }
+  }
+}
+
+.send {
+  @include mq-btn-primary(26px, 0, 7px);
+  width: 26px;
+  flex-shrink: 0;
+  margin-bottom: 7px;
+
+  @include touch {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 3px;
+  }
+}
+
+// Opens upward: the composer sits at the bottom of the panel.
+.mention-menu {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 6px);
+  z-index: 30;
+  max-height: 260px;
+  overflow-y: auto;
+  @include mq-scroll;
+}
+
+.mention-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 4px 8px;
+  border-radius: 9px;
   cursor: pointer;
 
-  &:hover:not(:disabled) { background: $bg-card-hover; color: $text-primary; }
-  &:disabled { opacity: 0.5; cursor: default; }
+  &.active { background: $mq-hover-2; }
+
+  .avatar { @include mq-avatar(24px); font-size: 9.5px; }
 }
 
-.edited {
-  font-style: italic;
+.menu-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+
+  strong {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $mq-text;
+    @include mq-ellipsis;
+  }
+
+  small { font-size: 11px; color: $mq-muted; }
 }
 
-// "Edit" is not a destructive action, so it does not turn red like "Delete".
-.link-btn.plain:hover {
-  color: $text-primary;
+.menu-tag {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: $mq-accent-text;
+  background: color-mix(in srgb, #{$mq-accent} 13%, transparent);
+}
+
+.grant-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: $mq-text-3;
+
+  b { color: $mq-text; font-weight: 600; }
+}
+
+.error {
+  font-size: 12px;
+  font-weight: 600;
+  color: $mq-late;
+}
+
+// ── A project's discussion ──────────────────────────────────────────────────
+// The same rows, drawn for a page instead of a side panel: the author's name
+// above the text, a little more room, and replies set in under their comment.
+// No design file draws it; it follows the task thread above and the project page.
+.discussion {
+  gap: 18px;
+
+  .thread-block {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .comment-row {
+    gap: 12px;
+    font-size: 13.5px;
+    line-height: 1.55;
+
+    &.focused {
+      margin: -8px;
+      padding: 8px;
+      border-radius: 12px;
+    }
+
+    // On its way: quieter until the server has it.
+    &.sending { opacity: .6; }
+  }
+
+  .avatar {
+    @include mq-avatar(30px);
+    font-size: 11px;
+    color: $mq-text;
+  }
+
+  .who {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+    line-height: 1.4;
+  }
+
+  .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $mq-text;
+    border-radius: 4px;
+    @include mq-focus;
+
+    &:hover { text-decoration: underline !important; }
+  }
+
+  .when {
+    font-size: 12px;
+
+    &.not-sent { color: $mq-late; font-weight: 600; }
+  }
+
+  .text {
+    padding-top: 2px;
+    color: $mq-text-2;
+  }
+
+  // Always there: "Reply" has to be found without hovering.
+  .row-actions {
+    gap: 14px;
+    max-height: none;
+    padding-top: 4px;
+    overflow: visible;
+    opacity: 1;
+  }
+
+  .link-btn { font-size: 12px; }
+
+  // One level in, under the comment they answer, along a hairline.
+  .replies {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-inline-start: 14px;
+    padding-inline-start: 27px;
+    border-inline-start: 1px solid $mq-line-2;
+
+    .avatar {
+      @include mq-avatar(24px);
+      font-size: 9.5px;
+      color: $mq-text;
+    }
+  }
+
+  .mention-option .avatar { @include mq-avatar(24px); font-size: 9.5px; }
+
+  .composer { gap: 8px; }
+
+  .composer-box {
+    min-height: 46px;
+    border-radius: 12px;
+
+    textarea {
+      height: 44px;
+      max-height: 180px;
+      padding: 12px 0;
+      font-size: 13.5px;
+    }
+  }
+
+  .send {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 7px;
+  }
+
+  .hint { font-size: 13px; }
+}
+
+// "Earlier comments", above the oldest comment on screen.
+.older {
+  @include mq-btn-outline(30px, 0 14px, 999px);
+  align-self: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: $mq-text-4;
+}
+
+// Nothing yet, could not load, or a server without discussions.
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 0 6px;
+}
+
+.state-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: $mq-text;
+}
+
+.state-text {
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.6;
+  color: $mq-text-4;
+}
+
+.state-btn {
+  @include mq-btn-outline(36px, 0 12px, 10px);
+  margin-top: 4px;
+  color: $mq-text-3;
+  font-size: 12.5px;
+}
+
+// "Replying to Sara", above the comment box.
+.replying {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: $mq-text-4;
+}
+
+.replying-text {
+  min-width: 0;
+  @include mq-ellipsis;
+}
+
+// The end of the thread: scrolled to when the newest comments are wanted.
+.end {
+  display: block;
+  height: 0;
+  scroll-margin-bottom: 24px;
+}
+
+// On a narrow window the chat button floats over the corner where the comment
+// box ends, and on a phone the tab bar is under it: the discussion leaves room,
+// so the box can be scrolled clear of both.
+@include below(960px) {
+  .discussion .end { height: 56px; }
+}
+
+@include below($bp-tablet) {
+  .end { scroll-margin-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 }
 
 @include touch {
-  .link-btn { min-height: 32px; padding: 0 4px; }
-  .edit-cancel,
-  .edit-actions .send { min-height: 40px; }
-}
-
-@include below($bp-phone-lg) {
-  .edit-actions {
-    flex-wrap: wrap;
-
-    .shortcut { flex: 1 1 100%; text-align: left; }
-    .send { width: auto; flex: 1; }
-    .edit-cancel { flex: 1; }
-  }
+  .discussion .link-btn { min-height: 36px; }
+  .state-btn { height: 44px; }
+  .older { height: 38px; }
 }

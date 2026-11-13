@@ -1,30 +1,32 @@
 @use '../../../styles/tokens' as *;
 
+// A pop-up chat, in the language of design/miqat-2.0: a raised card with hairlines,
+// the accent for the user's own messages and the same controls as the pages.
 :host {
   display: block;
   width: 328px;
   height: min(460px, calc(100vh - 110px));
   // The dock lets clicks through to the page; the window itself takes them.
   pointer-events: auto;
+  line-height: normal;
+  --avatar-ring: #{$mq-card-5};
+}
+
+// Bootstrap gives paragraphs and headings a bottom margin; nothing here wants one.
+p, h1, h2, h3 {
+  margin: 0;
 }
 
 .window {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: $bg-card;
-  border: 1px solid $border-input;
-  border-radius: $radius-card;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
+  background: $mq-card-5;
+  border: 1px solid $mq-line-2;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px mq-shadow(.55);
   overflow: hidden;
-  animation: window-in 0.18s ease-out;
-
-  @include reduced-motion { animation: none; }
-}
-
-@keyframes window-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.98); }
-  to   { opacity: 1; transform: none; }
+  animation: mq-settle $mq-t-arrive $mq-ease-calm;
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -33,9 +35,9 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 8px 8px 8px 10px;
-  border-bottom: 1px solid $border-subtle;
-  background: $bg-topbar;
+  padding-block: 8px;
+  padding-inline: 10px 8px;
+  border-bottom: 1px solid $mq-line;
 }
 
 .who {
@@ -44,67 +46,106 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 2px 6px 2px 2px;
+  padding-block: 3px;
+  padding-inline: 3px 6px;
   border: 0;
-  border-radius: $radius-btn;
+  border-radius: 10px;
   background: transparent;
   color: inherit;
-  text-align: left;
+  font-family: inherit;
+  text-align: start;
   cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus(-2px);
 
-  &:hover { background: $bg-card-hover; }
+  &:hover { background: $mq-hover-2; }
 }
 
 .who-text {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
 .who-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: $text-primary;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: $mq-text;
+  @include mq-ellipsis;
 }
 
 .who-status {
   font-size: 12px;
-  color: $text-muted;
+  color: $mq-muted;
 
-  &.live { color: $text-active; }
+  &.live { color: $mq-accent-text; }
 }
 
 .icon-btn {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: $text-secondary;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  @include mq-icon-btn(32px, 9px);
 
-  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  &:hover:not(:disabled) { background: $mq-hover-2; }
+  &:disabled { opacity: .4; }
 
-  &:hover { background: $bg-card-hover; color: $text-primary; }
-
-  // The call buttons carry the app's colour, so they stand out from minimise and close.
-  &.accent { color: $text-active; }
-  &:disabled { opacity: 0.4; cursor: default; }
-
-  &.small {
+  &.tiny {
     width: 26px;
     height: 26px;
-
-    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    border-radius: 8px;
   }
+}
+
+// A call is going on in this group: a strip under the header with "Join".
+.live-call {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 7px;
+  padding-inline: 14px 10px;
+  border-bottom: 1px solid $mq-line;
+  background: color-mix(in srgb, var(--mq-green) 10%, transparent);
+  color: $mq-text-2;
+  font-size: 12.5px;
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+
+  app-chat-icon { color: $mq-green; }
+}
+
+.live-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: $mq-green;
+  animation: live-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes live-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .35; }
+}
+
+.live-text {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  @include mq-ellipsis;
+}
+
+.join {
+  @include mq-btn-primary(28px, 0 14px, 999px);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+// The messages and the box to write in; a group's members panel lies over both.
+.body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 // ── Messages ──────────────────────────────────────────────────────────────────
@@ -119,22 +160,16 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  @include mq-scroll;
 }
 
 .older {
+  @include mq-btn-outline(28px, 0 12px, 999px);
   align-self: center;
+  flex-shrink: 0;
   margin-bottom: 6px;
-  padding: 4px 12px;
-  border: 1px solid $border-card;
-  border-radius: 999px;
-  background: transparent;
-  color: $text-secondary;
   font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:hover:not(:disabled) { background: $bg-card-hover; color: $text-primary; }
-  &:disabled { cursor: default; opacity: 0.7; }
+  color: $mq-text-4;
 }
 
 .state {
@@ -143,11 +178,9 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: $text-muted;
+  color: $mq-muted;
   font-size: 13px;
   text-align: center;
-
-  p { margin: 0; }
 }
 
 .day {
@@ -155,11 +188,7 @@
   justify-content: center;
   margin: 10px 0 6px;
 
-  span {
-    font-size: 12px;
-    font-weight: 600;
-    color: $text-muted;
-  }
+  span { @include mq-eyebrow(10.5px); }
 }
 
 .line {
@@ -174,93 +203,121 @@
     flex-direction: row-reverse;
 
     .bubble {
-      background: $teal-primary;
-      color: $btn-quick-add-text;
-      border-bottom-right-radius: 6px;
+      background: $mq-accent;
+      color: $mq-on-accent;
+      border-end-end-radius: 4px;
     }
   }
 
-  &:not(.mine) .bubble { border-bottom-left-radius: 6px; }
+  &:not(.mine) .bubble { border-end-start-radius: 4px; }
+}
+
+// In a group: who wrote the run of messages that starts here, and their picture
+// beside its last message (the slot keeps the other bubbles of the run in line).
+.from-name {
+  flex-shrink: 0;
+  margin: 4px 0 1px;
+  margin-inline-start: 42px;
+  font-size: 11px;
+  font-weight: 600;
+  color: $mq-text-4;
+  @include mq-ellipsis;
+}
+
+.from-face {
+  flex-shrink: 0;
+  align-self: flex-end;
+  display: flex;
+  width: 24px;
+  height: 24px;
+  margin-inline-end: 2px;
+}
+
+// What happened to the group ("Sara added Omar"): centred and quiet.
+.event {
+  flex-shrink: 0;
+  align-self: center;
+  max-width: 88%;
+  margin: 6px 0 8px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: $mq-muted;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.typing-who {
+  font-size: 11.5px;
+  color: $mq-muted;
 }
 
 .bubble {
   max-width: 78%;
   padding: 7px 12px;
-  border-radius: 18px;
-  background: $bg-input;
-  color: $text-primary;
-  font-size: 14px;
-  line-height: 1.4;
+  border-radius: 14px;
+  background: $mq-line;
+  color: $mq-text;
+  font-size: 13px;
+  line-height: 1.45;
   // Long words and links wrap instead of widening the window.
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 
-  &.sending { opacity: 0.65; }
-  &.failed { outline: 1px solid $text-danger; opacity: 0.8; }
+  &.sending { opacity: .65; }
+  &.failed { outline: 1px solid $mq-late; opacity: .8; }
 
   &.deleted {
     background: transparent !important;
-    border: 1px dashed $border-input;
-    color: $text-muted !important;
-    font-style: italic;
+    border: 1px dashed $mq-line-2;
+    color: $mq-muted !important;
   }
 }
 
 // The record of a call: a pill in the middle of the chat.
 .call-line {
+  @include mq-btn-outline(30px, 0 12px, 999px);
   align-self: center;
-  display: inline-flex;
-  align-items: center;
+  flex-shrink: 0;
   gap: 6px;
   margin: 6px 0 8px;
-  padding: 6px 12px;
-  border: 1px solid $border-card;
-  border-radius: 999px;
-  background: $bg-input;
-  color: $text-secondary;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
+  font-size: 12px;
+  color: $mq-text-3;
 
-  mat-icon { font-size: 16px; width: 16px; height: 16px; color: $text-active; }
-
-  &.missed mat-icon { color: $text-danger; }
-  &:hover:not(:disabled) { background: $bg-card-hover; color: $text-primary; }
-  &:disabled { cursor: default; }
+  app-chat-icon { color: $mq-green; }
+  &.missed app-chat-icon { color: $mq-late; }
+  &:disabled { opacity: 1; }
 }
 
 .call-time {
   font-weight: 400;
-  color: $text-muted;
+  color: $mq-muted;
 }
 
 .deleted-text {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-
-  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  gap: 5px;
+  font-size: 12.5px;
 }
 
 .edited {
-  margin-left: 6px;
+  margin-inline-start: 6px;
   font-size: 11px;
-  opacity: 0.75;
+  opacity: .75;
 }
 
 // Edit and delete appear next to an own message on hover or keyboard focus.
 .actions {
   display: flex;
   opacity: 0;
-  transition: opacity 0.12s ease;
+  transition: opacity $mq-t-press $mq-ease-quick;
 }
 
 .line:hover .actions,
 .line:focus-within .actions { opacity: 1; }
 
 @include touch {
-  .actions { opacity: 0.7; }
+  .actions { opacity: .7; }
 }
 
 .ask {
@@ -268,32 +325,33 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: $text-secondary;
+  color: $mq-text-4;
 }
 
 .link {
   padding: 0;
   border: 0;
   background: transparent;
-  color: $text-link;
+  color: $mq-accent-text;
+  font-family: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
+  @include mq-focus;
 
-  &:hover { text-decoration: underline; }
-  &.danger { color: $text-danger; }
+  &.danger { color: $mq-late; }
 }
 
 .retry {
   flex-basis: 100%;
-  text-align: right;
+  text-align: end;
 }
 
 .receipt {
   align-self: flex-end;
   margin-top: -4px;
   font-size: 11px;
-  color: $text-muted;
+  color: $mq-muted;
 }
 
 .typing {
@@ -306,18 +364,16 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: $text-muted;
+    background: $mq-muted;
     animation: typing-dot 1.1s infinite ease-in-out;
 
-    &:nth-child(2) { animation-delay: 0.15s; }
-    &:nth-child(3) { animation-delay: 0.3s; }
-
-    @include reduced-motion { animation: none; }
+    &:nth-child(2) { animation-delay: .15s; }
+    &:nth-child(3) { animation-delay: .3s; }
   }
 }
 
 @keyframes typing-dot {
-  0%, 60%, 100% { transform: none; opacity: 0.5; }
+  0%, 60%, 100% { transform: none; opacity: .5; }
   30%           { transform: translateY(-4px); opacity: 1; }
 }
 
@@ -325,7 +381,7 @@
 
 .foot {
   padding: 8px 10px 10px;
-  border-top: 1px solid $border-subtle;
+  border-top: 1px solid $mq-line;
 }
 
 .error,
@@ -334,16 +390,14 @@
   font-size: 12.5px;
 }
 
-.error { color: $text-danger; }
+.error { color: $mq-late; }
 
 .closed {
   display: flex;
   align-items: center;
   gap: 6px;
   margin: 4px 0;
-  color: $text-muted;
-
-  mat-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
+  color: $mq-muted;
 }
 
 .editing {
@@ -352,9 +406,8 @@
   gap: 6px;
   margin-bottom: 6px;
   font-size: 12px;
-  color: $text-secondary;
+  color: $mq-text-4;
 
-  mat-icon { font-size: 14px; width: 14px; height: 14px; }
   span { flex: 1; }
 }
 
@@ -365,41 +418,35 @@
 }
 
 textarea {
+  box-sizing: border-box;
   flex: 1;
   min-width: 0;
+  min-height: 38px;
   max-height: 110px;
-  padding: 8px 14px;
-  border: 1px solid $border-input;
-  border-radius: 18px;
-  background: $bg-input;
-  color: $text-primary;
+  padding: 9px 12px;
+  border: 1px solid $mq-line-2;
+  border-radius: 10px;
+  background: $mq-field;
+  color: $mq-text;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.4;
   resize: none;
   outline: none;
+  transition: border-color $mq-t-press $mq-ease-quick;
 
-  &::placeholder { color: $text-muted; }
-  &:focus { border-color: $teal-primary; }
+  &::placeholder { color: $mq-placeholder; opacity: 1; }
+  &:focus { border-color: $mq-accent; }
 }
 
 .send {
+  @include mq-btn-primary(38px, 0, 10px);
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: $teal-primary;
-  color: $btn-quick-add-text;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.12s ease, opacity 0.12s ease;
+  width: 38px;
+}
 
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-
-  &:hover:not(:disabled) { transform: scale(1.06); }
-  &:disabled { opacity: 0.4; cursor: default; }
+@include below($bp-tablet) {
+  .icon-btn:not(.tiny) { width: 40px; height: 40px; }
+  .send { width: 44px; height: 44px; }
+  textarea { min-height: 44px; font-size: 16px; }
 }

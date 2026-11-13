@@ -26,7 +26,13 @@ export function notificationTarget(n: NotificationDto): NotificationTarget | nul
       : { commands: ['/tasks', id] };
   }
 
-  if (entity === 'group' && id) return { commands: ['/projects', id] };
+  // A project: news about the project itself, or a comment in its discussion
+  // (a mention or a reply), which opens the discussion at that comment.
+  if (entity === 'group' && id) {
+    return n.linkedCommentId
+      ? { commands: ['/projects', id, 'discussion'], queryParams: { comment: n.linkedCommentId } }
+      : { commands: ['/projects', id] };
+  }
 
   // A calendar event: an invitation, an answer, a change, or a reminder set on it.
   if (entity === 'event') {

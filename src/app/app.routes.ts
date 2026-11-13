@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
-import { Main } from './main/main';
 
 export const routes: Routes = [
   {
@@ -34,6 +33,17 @@ export const routes: Routes = [
     loadComponent: () => import('./authentication/reset-password/reset-password').then(m => m.ResetPasswordComponent)
   },
   {
+    // "Set up your week": the last step of signing up, once the account is verified.
+    path: 'authentication/setup',
+    canActivate: [authGuard],
+    loadComponent: () => import('./authentication/setup-week/setup-week').then(m => m.SetupWeek)
+  },
+  {
+    // A public booking link. No guard: the visitor need not have an account.
+    path: 'book/:handle',
+    loadComponent: () => import('./features/booking/booking-page').then(m => m.BookingPage)
+  },
+  {
     path: 'home',
     loadComponent: () =>
       import('./home/home')
@@ -52,9 +62,10 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
   {
+    // An old placeholder page. Links to it open the calendar, which replaced it.
     path: 'main',
-    component: Main,
-    canActivate: [authGuard]
+    redirectTo: 'calendar',
+    pathMatch: 'full'
   },
   {
     path: '',
@@ -62,25 +73,41 @@ export const routes: Routes = [
     loadComponent: () => import('./layout/app-shell/app-shell').then(m => m.AppShell),
     children: [
       {
+        // "Plan my day" (design/miqat-2.0), on the address the dashboard used to have.
+        // The design draws it without the rail: a full-window step with its own way back.
         path: 'dashboard',
+        data: { focused: true },
         loadComponent: () => import('./features/dashboard/dashboard-page/dashboard-page').then(m => m.DashboardPage)
       },
       {
-        path: 'tasks',
+        // /tasks and /tasks/:id are one screen: the list or the board, with that
+        // task open in the detail panel. One entry, so choosing a task keeps the page.
+        matcher: segments =>
+          segments[0]?.path === 'tasks' && segments.length <= 2
+            ? { consumed: segments, posParams: segments[1] ? { id: segments[1] } : undefined }
+            : null,
         loadComponent: () => import('./features/tasks/tasks-page').then(m => m.TasksPage)
       },
       {
-        path: 'tasks/:id',
-        loadComponent: () =>
-          import('./features/tasks/task-detail/task-detail-page').then(m => m.TaskDetailPage)
-      },
-      {
-        path: 'projects/:id',
+        // /projects/:id and /projects/:id/discussion are one screen: the project,
+        // with its Discussion section open on the second address. One entry, so
+        // changing section keeps the page (as with /tasks above).
+        matcher: segments =>
+          segments[0]?.path === 'projects' && !!segments[1]
+            && (segments.length === 2 || (segments.length === 3 && segments[2].path === 'discussion'))
+            ? { consumed: segments, posParams: segments[2] ? { id: segments[1], section: segments[2] } : { id: segments[1] } }
+            : null,
         loadComponent: () => import('./features/projects/project-page').then(m => m.ProjectPage)
       },
       {
         path: 'calendar',
         loadComponent: () => import('./features/calendar/calendar-page/calendar-page').then(m => m.CalendarPage)
+      },
+      {
+        // "Find a time" / "Share times": when the people picked are all free.
+        path: 'calendar/find-time',
+        data: { focused: true },
+        loadComponent: () => import('./features/calendar/find-time/find-time-page').then(m => m.FindTimePage)
       },
       {
         path: 'settings',
@@ -91,20 +118,30 @@ export const routes: Routes = [
         loadComponent: () => import('./features/friends/friends-page').then(m => m.FriendsPage)
       },
       {
-        path: 'notifications',
+        // The Inbox (design/miqat-2.0: notifications and mentions in one place).
+        path: 'inbox',
         loadComponent: () => import('./features/notifications/notifications-page').then(m => m.NotificationsPage)
       },
       {
+        // Notifications and mentions used to be pages of their own. Old links open the Inbox.
+        path: 'notifications',
+        redirectTo: '/inbox',
+        pathMatch: 'full'
+      },
+      {
         path: 'mentions',
-        loadComponent: () => import('./features/mentions/mentions-page').then(m => m.MentionsPage)
+        redirectTo: '/inbox?tab=mentions',
+        pathMatch: 'full'
       },
       {
         path: 'help',
         loadComponent: () => import('./features/help/help-page').then(m => m.HelpPage)
       },
       {
+        // A profile is the right-hand side of People (design/miqat-2.0): the old
+        // address opens that screen with the person selected.
         path: 'profile/:id',
-        loadComponent: () => import('./features/profile/profile-page').then(m => m.ProfilePage)
+        redirectTo: ({ params }) => `/friends?person=${encodeURIComponent(params['id'])}`
       },
       {
         // The bare route is the board. `/new` and `/:id` stay so existing links

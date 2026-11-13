@@ -1,280 +1,103 @@
-@use '../../styles/breakpoints' as *;
+@use '../../styles/tokens' as *;
+@use '../home/public' as *;
 
-.navbar-primary {
-  background-color: var(--color-light) !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000 !important;
+:host {
+  @include public-page;
+  @include grow-with-window;
 }
 
-.Custmizable-Header {
-  width: 90% !important;
-  height: 65px !important;
-  margin: 0% auto !important;
-  position: relative;
-  z-index: 5;
+.bar {
+  border-bottom: 1px solid $mq-hover;
 }
 
-nav .btn {
-  padding: 5px 25px !important;
+.inner {
+  box-sizing: border-box;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 32px;
 }
 
-nav a {
-  font-size: 18px !important;
-  font-weight: bold !important;
+.brand {
+  @include brand;
 }
 
-.navbar-nav>a {
-  overflow: hidden;
-  margin-right: 15px;
-}
+.sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 26px;
+  font-size: 14px;
 
-.navbar-nav a::after {
-  content: '';
-  position: absolute;
-  background-color: var(--color-primary);
-  width: 80%;
-  height: 3px;
-  ;
-  top: 90%;
-  left: -80%;
-  transition: all 1s ease-in-out;
-}
+  a {
+    display: inline-block;
+    padding: 10px 0;
+    @include link-color($mq-text-4);
+    transition: color $mq-t-press $mq-ease-quick;
+    @include mq-focus;
+    @include touch-area(4px, 6px);
 
-.navbar-nav>a:hover::after {
-  left: 10% !important;
-}
-
-.btn-login {
-  border: 1px solid var(--color-primary) !important;
-  transition: 1s all;
-}
-
-.btn-login:hover {
-  background-color: var(--color-primary) !important;
-  color: var(--color-light) !important;
-}
-
-.btn-join-us {
-  border: 1px solid var(--color-primary) !important;
-  transition: 1s all;
-}
-
-.btn-join-us:hover {
-  background-color: var(--color-primary) !important;
-  color: var(--color-light) !important;
-}
-
-.clock {
-  font-family: "Poppins", sans-serif;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #ffffff;
-  background-color: var(--color-primary);
-  padding: 10px 25px !important;
-}
-
-//? Scss for floating clocks animation
-$clock-count: 10; // must match number of items in clocks[]
-$clock-size: 24px;
-$primary-color: var(--color-primary, #065a57);
-
-.site-header {
-  position: relative;
-}
-
-// right-side container
-.clock-falls {
-  position: absolute;
-  top: 0;
-  left: -1%;
-  height: 100%;
-  width: 160px; // slope width (adjust to your layout)
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.mini-clock {
-  position: absolute;
-  display: block;
-  width: $clock-size;
-  height: $clock-size;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.15));
+    &:hover { @include link-color($mq-text); }
   }
 }
 
-// floating animation
-@keyframes float-down {
-  0% {
-    transform: translateY(-8px) rotate(0deg);
-  }
-
-  50% {
-    transform: translateY(8px) rotate(10deg);
-  }
-
-  100% {
-    transform: translateY(-8px) rotate(0deg);
-  }
+.actions {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-// stagger placement diagonallyz
-@for $i from 1 through $clock-count {
-  .mini-clock:nth-child(#{$i}) {
-    bottom: calc((100% / #{$clock-count}) * (#{$i - 1}));
-    right: calc(#{$i * 15px});
-    animation: float-down 6s ease-in-out infinite;
-    animation-delay: #{$i * 0.5}s;
-    opacity: 0.85;
-    transform: scale(1 - ($i * 0.03));
-  }
+.lang {
+  @include mq-btn-outline(38px, 0 12px, 10px);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: normal;
+  font-feature-settings: normal;
+  color: $mq-text-3;
+
+  // In the Arabic interface it reads "English", in the page's own Latin face.
+  &.latin { font-family: inherit; }
 }
 
-@include below($bp-laptop) {
+.sign-in {
+  @include mq-btn-ghost(38px, 0 14px, 10px);
+  font-size: 14px;
+  line-height: normal;
+  @include link-color($mq-text-2);
 
-  .clock {
-    display: none !important;
-  }
-
-  .clock-falls {
-    position: absolute;
-    top: 0;
-    left: -1%;
-    height: 100%;
-    width: 160px;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-  }
-
-  .LOGO {
-    width: 15% !important;
-  }
-
-  .nav-link {
-    margin-right: 0px !important;
-  }
-
+  &:hover { @include link-color($mq-text); }
 }
 
-//done 
+.start {
+  @include mq-btn-primary(38px, 0 16px, 10px);
+  font-size: 14px;
+  line-height: normal;
+  @include link-color($mq-on-accent);
+}
+
+@include touch {
+  .lang, .sign-in, .start { height: 44px; }
+}
 
 @include below($bp-tablet) {
-  .clock-falls {
-    position: absolute;
-    top: -5px;
-    left: 82%;
-    height: 100%;
-    // Ends at the screen edge (82% + 18%); a fixed 160px ran past it.
-    width: 18%;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
+  .inner {
+    padding: 12px 16px;
+    column-gap: 8px;
   }
 
-  .LOGO {
-    width: 26% !important;
+  // The section links take a row of their own, under the logo and the buttons.
+  .sections {
+    order: 3;
+    flex-basis: 100%;
+    column-gap: 14px;
   }
 
-  .navbar-toggler {
-    display: block !important;
-    z-index: 10001 !important;
-    position: relative;
-    pointer-events: auto !important;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: background-color 1.3s;
-    background-color: #fffffff0;
-
-    &:active {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .navbar-toggler-icon {
-      width: 1.25em;
-      height: 1.25em;
-    }
-  }
-
-  .navbar-collapse {
-    background-color: var(--color-light) !important;
-    padding: 1.5rem;
-    border-radius: 0 0 16px 16px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    position: absolute;
-    top: 65px;
-    left: 0;
-    width: 100%;
-    z-index: 10000;
-    display: none;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-
-    &.show {
-      display: block !important;
-    }
-  }
-
-  .navbar-nav {
-    margin-bottom: 1.5rem;
-    gap: 12px;
-
-    .nav-link {
-      color: var(--color-primary) !important;
-      padding: 12px 0;
-      font-weight: 600 !important;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-  }
-
-
-
-  .Authentication-Buttons {
-    margin-left: 0 !important;
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 10px;
-
-    .btn {
-      width: 100%;
-      text-align: left;
-    }
-  }
-
-  .clock {
-    display: none;
-  }
-}
-
-// Done
-
-@include below($bp-phone-lg) {
-  .clock-falls {
-    position: absolute;
-    top: -5px;
-    left: 65%;
-    height: 100%;
-    width: 160px;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-  }
-
-  .LOGO {
-    width: 40% !important;
-  }
-}
-
-// The falling-clocks decoration is positioned by percentage and can extend past the
-// right edge on narrow screens. Clip it at the navbar so it cannot widen the page.
-.navbar {
-  overflow-x: clip;
+  .actions { gap: 6px; }
+  .lang { padding: 0 10px; }
+  .sign-in { padding: 0 10px; }
+  .start { padding: 0 12px; }
 }

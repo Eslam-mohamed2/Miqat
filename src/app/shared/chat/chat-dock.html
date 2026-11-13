@@ -13,44 +13,53 @@
         <div class="head" [class.active]="chat.isOpen(c.id)">
           @if (chat.isPeeking(c.id) && c.lastMessage && !c.lastMessage.isDeleted) {
             <button type="button" class="peek" (click)="chat.open(c.id)" tabindex="-1" aria-hidden="true">
-              {{ preview(c) }}
+              <bdi>{{ preview(c) }}</bdi>
             </button>
           }
 
-          <button type="button" class="head-btn" (click)="chat.toggle(c.id)" [title]="c.friend.fullName"
-                  [attr.aria-label]="'Chat with ' + c.friend.fullName + (c.unreadCount ? ', ' + c.unreadCount + ' unread' : '')"
+          <button type="button" class="head-btn" (click)="chat.toggle(c.id)" [title]="title(c)"
+                  [attr.aria-label]="headLabel(c)"
                   [attr.aria-expanded]="chat.isOpen(c.id)">
-            <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl"
-                             [online]="chat.isOnline(c.friend.id)" [size]="52" />
+            <app-chat-avatar [name]="title(c)" [url]="c.friend.profilePictureUrl" [group]="!!c.isGroup"
+                             [online]="!c.isGroup && chat.isOnline(c.friend.id)" [size]="44" />
             @if (c.unreadCount) {
-              <span class="badge">{{ badge(c.unreadCount) }}</span>
+              <span class="count">{{ badge(c.unreadCount) }}</span>
             }
           </button>
 
           <button type="button" class="head-close" (click)="chat.close(c.id)"
-                  [attr.aria-label]="'Close chat with ' + c.friend.fullName" title="Close">
-            <mat-icon>close</mat-icon>
+                  [attr.aria-label]="'Close chat with {name}' | t: { name: title(c) }" [title]="'Close' | t">
+            <app-chat-icon name="close" [size]="11" />
           </button>
         </div>
       }
 
-      <button type="button" class="launcher" (click)="togglePanel()" title="Chats"
-              [attr.aria-label]="'Chats' + (chat.unreadTotal() ? ', ' + chat.unreadTotal() + ' unread' : '')"
+      <button type="button" class="launcher" (click)="togglePanel()" [title]="'Chats' | t"
+              [attr.aria-label]="launcherLabel()"
               [attr.aria-expanded]="panelOpen()">
-        <mat-icon>{{ panelOpen() ? 'close' : 'chat' }}</mat-icon>
+        <app-chat-icon [name]="panelOpen() ? 'close' : 'chat'" [size]="22" />
         @if (chat.unreadTotal() && !panelOpen()) {
-          <span class="badge">{{ badge(chat.unreadTotal()) }}</span>
+          <span class="count">{{ badge(chat.unreadTotal()) }}</span>
         }
       </button>
     </div>
 
     @if (panelOpen()) {
-      <section class="panel" role="dialog" aria-label="Chats">
-        <h3>Chats</h3>
+      <section class="panel" role="dialog" [attr.aria-label]="'Chats' | t">
+        <div class="panel-head">
+          <h3>{{ 'Chats' | t }}</h3>
+          @if (chat.groupsAvailable()) {
+            <button type="button" class="new-group" (click)="newGroup()">
+              <app-chat-icon name="people" [size]="15" /> {{ 'New group' | t }}
+            </button>
+          }
+        </div>
 
         <label class="search">
-          <mat-icon>search</mat-icon>
-          <input type="search" placeholder="Search friends" aria-label="Search friends"
+          <app-chat-icon name="search" [size]="15" />
+          <input type="search" [placeholder]="(chat.groupsAvailable() ? 'Search friends and groups' : 'Search friends') | t"
+                 [attr.aria-label]="(chat.groupsAvailable() ? 'Search friends and groups' : 'Search friends') | t"
+                 [attr.dir]="search() ? 'auto' : null"
                  [value]="search()" (input)="search.set($any($event.target).value)" />
         </label>
 
@@ -60,31 +69,44 @@
 
         <div class="list">
           @for (c of matchingChats(); track c.id) {
-            <button type="button" class="item" [class.unread]="c.unreadCount > 0" (click)="openChat(c)">
-              <app-chat-avatar [name]="c.friend.fullName" [url]="c.friend.profilePictureUrl"
-                               [online]="chat.isOnline(c.friend.id)" [size]="44" />
-              <span class="item-text">
-                <span class="item-name">{{ c.friend.fullName }}</span>
-                <span class="item-last">{{ chat.isTyping(c.id) ? 'typing…' : preview(c) }}</span>
-              </span>
-              <span class="item-side">
-                <span class="item-time">{{ when(c.lastMessageAt) }}</span>
-                @if (c.unreadCount) {
-                  <span class="badge inline">{{ badge(c.unreadCount) }}</span>
+            <div class="item-row">
+              <button type="button" class="item" [class.unread]="c.unreadCount > 0" (click)="openChat(c)">
+                <app-chat-avatar [name]="title(c)" [url]="c.friend.profilePictureUrl" [group]="!!c.isGroup"
+                                 [online]="!c.isGroup && chat.isOnline(c.friend.id)" [size]="38" />
+                <span class="item-text">
+                  <span class="item-name"><bdi>{{ title(c) }}</bdi></span>
+                  @if (c.activeCall) {
+                    <span class="item-last live">{{ 'Call in progress' | t }}</span>
+                  } @else {
+                    <span class="item-last"><bdi>{{ typingLine(c) || preview(c) }}</bdi></span>
+                  }
+                </span>
+                @if (!canJoin(c)) {
+                  <span class="item-side">
+                    <span class="item-time">{{ when(c.lastMessageAt) }}</span>
+                    @if (c.unreadCount) {
+                      <span class="count inline">{{ badge(c.unreadCount) }}</span>
+                    }
+                  </span>
                 }
-              </span>
-            </button>
+              </button>
+              @if (canJoin(c)) {
+                <button type="button" class="join" (click)="joinCall(c)"
+                        [disabled]="!!calls.call() || !!groupCalls.call()"
+                        [attr.aria-label]="'Join the call in {name}' | t: { name: title(c) }">{{ 'Join' | t }}</button>
+              }
+            </div>
           }
 
           @if (matchingFriends().length) {
-            <p class="group-title">Start a chat</p>
+            <p class="group-title">{{ 'Start a chat' | t }}</p>
             @for (f of matchingFriends(); track f.id) {
               <button type="button" class="item" (click)="startChat(f)">
                 <app-chat-avatar [name]="f.fullName" [url]="f.profilePictureUrl"
-                                 [online]="chat.isOnline(f.id)" [size]="44" />
+                                 [online]="chat.isOnline(f.id)" [size]="38" />
                 <span class="item-text">
-                  <span class="item-name">{{ f.fullName }}</span>
-                  <span class="item-last">{{ chat.isOnline(f.id) ? 'Active now' : 'Say hello' }}</span>
+                  <span class="item-name"><bdi>{{ f.fullName }}</bdi></span>
+                  <span class="item-last">{{ (chat.isOnline(f.id) ? 'Online' : 'Say hello') | t }}</span>
                 </span>
               </button>
             }
@@ -92,11 +114,17 @@
 
           @if (!matchingChats().length && !matchingFriends().length) {
             <p class="empty">
-              {{ search().trim() ? 'No friend matches that name.' : 'Add friends to start chatting with them.' }}
+              {{ (search().trim()
+                ? (chat.groupsAvailable() ? 'No friend or group matches that name.' : 'No friend matches that name.')
+                : 'Add friends to start chatting with them.') | t }}
             </p>
           }
         </div>
       </section>
     }
   </div>
+
+  @if (chat.creatingGroup() && chat.groupsAvailable()) {
+    <app-new-group-dialog />
+  }
 }

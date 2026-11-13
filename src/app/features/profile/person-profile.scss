@@ -1,0 +1,443 @@
+@use '../../../styles/tokens' as *;
+
+// The right-hand side of the People screen (design/miqat-2.0, V2-People).
+:host {
+  display: block;
+  min-width: 0;
+  line-height: normal;
+}
+
+// Bootstrap gives paragraphs and headings a bottom margin; nothing here wants one.
+p, h1, h2, h3 {
+  margin: 0;
+}
+
+.profile {
+  box-sizing: border-box;
+  padding: 28px 36px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  animation: mq-fade $mq-t-change $mq-ease-calm;
+}
+
+// Only where the profile takes the whole page.
+.back {
+  @include mq-btn-ghost(36px, 0, 9px);
+  padding-inline: 6px 10px;
+  display: none;
+  align-self: flex-start;
+  margin: -8px 0 -10px;
+  margin-inline-start: -6px;
+  gap: 4px;
+}
+
+// ── Who ──────────────────────────────────────────────────────────────────────
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+
+.portrait {
+  // 84px inside its 1.5px ring, as the design draws it.
+  box-sizing: content-box;
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ring, #{$mq-accent-line});
+  color: $mq-accent-text;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $mq-serif;
+  font-size: 34px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.who {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  h2 {
+    @include mq-serif(42px);
+    overflow-wrap: anywhere;
+  }
+}
+
+.role {
+  font-size: 14px;
+  color: $mq-text-4;
+  @include mq-ellipsis;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: $mq-text-3;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: $mq-placeholder;
+
+  &.online { background: $mq-green; }
+  &.busy { background: $mq-late; }
+}
+
+.actions {
+  margin-inline-start: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.primary { @include mq-btn-primary(40px, 0 16px, 10px); }
+.outline { @include mq-btn-outline(40px, 0 14px, 10px); }
+
+.outline.icon {
+  width: 40px;
+  padding: 0;
+  color: $mq-text-4;
+}
+
+.more {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 20;
+  width: 240px;
+}
+
+.ask {
+  padding: 8px 10px 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $mq-text-3;
+}
+
+.ask-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px 4px 4px;
+
+  .outline { @include mq-btn-outline(34px, 0 10px, 9px); font-size: 12.5px; }
+
+  .danger {
+    @include mq-btn-outline(34px, 0 10px, 9px);
+    border-color: color-mix(in srgb, var(--mq-late) 50%, transparent);
+    color: $mq-late;
+    font-size: 12.5px;
+
+    &:hover:not(:disabled) { color: $mq-late; }
+  }
+}
+
+.error {
+  margin-top: -10px;
+  font-size: 12.5px;
+  color: $mq-late;
+}
+
+.missing {
+  max-width: 560px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: $mq-muted;
+}
+
+// ── Your day and theirs ──────────────────────────────────────────────────────
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: $mq-card;
+  border: 1px solid $mq-line;
+}
+
+.day-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+
+  h3 { font-size: 15px; font-weight: 600; line-height: normal; }
+}
+
+.day-sub {
+  font-size: 12.5px;
+  color: $mq-muted;
+}
+
+.day-overlap {
+  margin-inline-start: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: $mq-accent-text;
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-label {
+  flex-shrink: 0;
+  width: 64px;
+  font-size: 12px;
+  color: $mq-text-4;
+  @include mq-ellipsis;
+}
+
+.track {
+  flex: 1;
+  position: relative;
+  height: 26px;
+  border-radius: 7px;
+  background: $mq-row-hover;
+  overflow: hidden;
+}
+
+.fill {
+  box-sizing: border-box;
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 5px;
+  transition: inset-inline-start $mq-t-arrive $mq-ease-calm, width $mq-t-arrive $mq-ease-calm;
+
+  &.you {
+    background: color-mix(in srgb, var(--mq-accent-text) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mq-accent-text) 50%, transparent);
+  }
+
+  &.them {
+    background: color-mix(in srgb, var(--mq-blue) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mq-blue) 50%, transparent);
+  }
+
+  &.overlap { background: $mq-accent-text; }
+}
+
+.prayer-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-inline-start: 1px dotted color-mix(in srgb, var(--mq-accent) 60%, transparent);
+}
+
+.now-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: $mq-text;
+}
+
+// The light design draws the track in the page colour and the prayer lines in full ink.
+:host-context(html[data-theme='light']) {
+  .track { background: $mq-bg; }
+  .prayer-tick { border-inline-start-color: $mq-accent-text; }
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  padding-inline-start: 76px;
+  font-size: 10.5px;
+  color: $mq-muted;
+}
+
+.day-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: $mq-text-3;
+}
+
+.day-days {
+  font-size: 12.5px;
+  color: $mq-muted;
+}
+
+// ── Next together, shared projects, recently ─────────────────────────────────
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &.next { flex: 1 1 300px; }
+  &.side { flex: 1 1 260px; }
+}
+
+.eyebrow {
+  @include mq-eyebrow;
+
+  &.recently { padding-top: 10px; }
+}
+
+.quiet {
+  font-size: 13px;
+  color: $mq-muted;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid $mq-line;
+  color: $mq-text;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: $mq-card-2; color: $mq-text; }
+}
+
+.item-when {
+  flex-shrink: 0;
+  width: var(--when, 74px);
+  font-size: 12px;
+  font-weight: 600;
+  color: $mq-text-3;
+  white-space: nowrap;
+}
+
+.item-dot {
+  @include mq-dot(7px, 2px);
+  background: mq-tone-text(var(--tone, var(--mq-accent-text)));
+}
+
+.item-title {
+  min-width: 0;
+  font-size: 13px;
+  @include mq-ellipsis;
+}
+
+.project {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid $mq-line;
+  color: $mq-text;
+  transition: background $mq-t-press $mq-ease-quick;
+  @include mq-focus;
+
+  &:hover { background: $mq-card-2; color: $mq-text; }
+}
+
+.project-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+
+  > span:first-child { min-width: 0; @include mq-ellipsis; }
+}
+
+.project-pct {
+  color: $mq-muted;
+}
+
+.project-bar {
+  height: 3px;
+  border-radius: 3px;
+  background: $mq-line;
+
+  > span {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: $mq-accent;
+    transition: width $mq-t-arrive $mq-ease-calm;
+  }
+}
+
+.recent {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $mq-text-4;
+  @include mq-focus;
+
+  &:hover { color: $mq-text; }
+}
+
+// ── Loading ──────────────────────────────────────────────────────────────────
+.portrait.ghost {
+  border-color: $mq-line;
+  background: $mq-card;
+}
+
+.ghost-line {
+  width: 160px;
+  height: 14px;
+  border-radius: 6px;
+  background: $mq-line;
+
+  &.wide { width: 260px; height: 34px; border-radius: 8px; }
+}
+
+// ── Narrow screens: the profile is the whole page ───────────────────────────
+@include below($bp-laptop) {
+  .back { display: inline-flex; }
+}
+
+@include below($bp-tablet) {
+  .profile { padding: 20px 16px 24px; gap: 22px; }
+  .who h2 { font-size: 34px; }
+  .actions { margin-inline-start: 0; width: 100%; }
+  .primary, .outline:not(.icon) { flex: 1; height: 44px; }
+  .outline.icon { width: 44px; height: 44px; }
+  .day { padding: 18px 16px; }
+  .bar-label { width: 52px; }
+  .axis { padding-inline-start: 64px; }
+  .menu { width: min(260px, calc(100vw - 32px)); }
+}
+
+// ── Arabic and right to left ─────────────────────────────────────────────────
+// What a person typed takes its own direction (dir="auto") and still lines up with
+// the rest of the page.
+[dir='auto'] {
+  text-align: left;
+
+  @include mq-rtl { text-align: right; }
+}

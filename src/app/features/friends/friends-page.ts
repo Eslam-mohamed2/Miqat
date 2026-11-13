@@ -1,205 +1,243 @@
-import { Component, DestroyRef, HostListener, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject, forkJoin, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { FriendService } from '../../core/services/friend.service';
-import { ChatService } from '../../core/services/chat.service';
-import { UserService } from '../../core/services/user.service';
+
 import { AuthService } from '../../core/services/auth.service';
-import { FriendshipDto, ProfilePersonDto, UserDto } from '../../models/api.models';
+import { CalendarDataService } from '../../core/services/calendar-data.service';
+import { ChatConversation, ChatService } from '../../core/services/chat.service';
+import { previewText } from '../../core/services/chat-text';
+import { FriendService } from '../../core/services/friend.service';
+import { ScheduleService } from '../../core/services/schedule.service';
+import { UserService } from '../../core/services/user.service';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { locale, num, t, tCount } from '../../core/i18n/i18n';
+import { TCountPipe, TPipe } from '../../core/i18n/t.pipe';
+import { formatTimeInZone, isValidTimeZone } from '../../core/utils/time-zone';
+import { FriendshipDto, UserAvailabilityDto, UserDto } from '../../models/api.models';
+import { UserMenu } from '../../layout/user-menu/user-menu';
+import { ChatAvatar } from '../../shared/chat/chat-avatar';
+import { PersonProfile, RelationChange } from '../profile/person-profile';
+import { zoneCity } from '../profile/day-overlap';
 
-/** The sections of the page. `home` shows requests and suggestions together. */
-export type FriendTab = 'home' | 'pending' | 'suggestions' | 'friends' | 'sent' | 'blocked';
+/** The three lists of the left column. */
+export type PeopleTab = 'friends' | 'requests' | 'blocked';
 
-/** Which list a card belongs to, and so which buttons it gets. */
-export type CardKind = 'suggestion' | 'request' | 'friend' | 'sent' | 'blocked';
-
-/**
- * One card in a grid, normalised so the template never has to care whether it
- * came from a UserDto (suggestions) or a FriendshipDto (the other lists).
- */
-export interface FriendCard {
-  /** The other person's user id. */
+/** One person in a list, whichever endpoint they came from. */
+export interface PersonCard {
   userId: string;
-  /** The friendship row id, needed to accept/reject/unfriend. Absent for suggestions. */
+  /** The friendship row, needed to accept, decline, cancel or remove. Absent for suggestions. */
   friendshipId?: string;
   name: string;
   avatarUrl?: string | null;
-  /** Shown when nothing is known about mutual friends: a country, or when the request was made. */
-  subtitle?: string;
+  country?: string | null;
+  /** When the friendship or the request was made. */
+  since?: string | null;
 }
 
-/** What is known about the friends a person shares with the signed-in user. */
-interface Mutuals {
-  count: number;
-  people: ProfilePersonDto[];
-}
-
-/** How many cards get a mutual-friends lookup (one request each). */
+/** How many people get a mutual-friends lookup (one request each). */
 const MUTUALS_LIMIT = 16;
-/** Cards per section on the home view before "See all". */
-const HOME_PREVIEW = 8;
+/** How many group chats the Friends list shows before "Show all". */
+const GROUPS_SHOWN = 4;
+const DAY_MS = 86_400_000;
 
+/**
+ * People (design/miqat-2.0, V2-People): friends, requests and blocked people on
+ * the left, the selected person's profile on the right. `?person=<id>` selects
+ * someone (also someone who is not a friend); `/profile/:id` redirects here.
+ */
 @Component({
   selector: 'app-friends-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [ChatAvatar, PersonProfile, UserMenu, TPipe, TCountPipe],
   templateUrl: './friends-page.html',
-  styleUrl: './friends-page.scss'
+  styleUrl: './friends-page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class FriendsPage implements OnInit {
+export class FriendsPage {
   private friendService = inject(FriendService);
-  protected chat = inject(ChatService);
   private userService = inject(UserService);
   private authService = inject(AuthService);
+  private schedule = inject(ScheduleService);
+  private calendarData = inject(CalendarDataService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
+  protected chat = inject(ChatService);
 
-  readonly tabs: { key: FriendTab; label: string; icon: string }[] = [
-    { key: 'home',        label: 'Home',            icon: 'home' },
-    { key: 'pending',     label: 'Friend requests', icon: 'group_add' },
-    { key: 'suggestions', label: 'Suggestions',     icon: 'person_search' },
-    { key: 'friends',     label: 'All friends',     icon: 'people' },
-    { key: 'sent',        label: 'Sent requests',   icon: 'send' },
-    { key: 'blocked',     label: 'Blocked',         icon: 'block' }
-  ];
+  protected readonly tab = signal<PeopleTab>('friends');
+  /** "Add friend" is open: the list shows people to add instead of the tabs. */
+  protected readonly adding = signal(false);
+  /** The person named in the address, if any. */
+  private readonly personParam = signal<string | null>(null);
 
-  activeTab = signal<FriendTab>('home');
-
-  // All four lists are loaded together, so switching section is instant and the
-  // menu can show how many are in each.
-  suggestions = signal<FriendCard[]>([]);
-  requests = signal<FriendCard[]>([]);
-  friends = signal<FriendCard[]>([]);
-  sent = signal<FriendCard[]>([]);
-  /** People the user has blocked, kept so each can be unblocked again. */
-  blocked = signal<FriendCard[]>([]);
+  // All lists are loaded together, so switching tab is instant and the tabs can count.
+  protected readonly friends = signal<PersonCard[]>([]);
+  protected readonly requests = signal<PersonCard[]>([]);
+  protected readonly sent = signal<PersonCard[]>([]);
+  protected readonly blocked = signal<PersonCard[]>([]);
+  private readonly suggestions = signal<PersonCard[]>([]);
   /** Directory search results; null when no search is running. */
-  private searchResults = signal<FriendCard[] | null>(null);
+  private readonly found = signal<PersonCard[] | null>(null);
 
-  loading = signal(true);
-  searching = signal(false);
-  errorMessage = signal('');
-  searchText = signal('');
+  protected readonly loading = signal(true);
+  protected readonly searching = signal(false);
+  protected readonly error = signal('');
+  protected readonly query = signal('');
 
-  /** Ids with an in-flight action, so its buttons can disable themselves. */
-  busyIds = signal<ReadonlySet<string>>(new Set());
-  /** Suggestions already requested this session, so the button flips to "Request sent". */
-  requestedIds = signal<ReadonlySet<string>>(new Set());
-  /** Suggestions the user waved away with "Remove". Not stored: they return next visit. */
-  private removedIds = signal<ReadonlySet<string>>(new Set());
-  /** Pictures that failed to load fall back to initials. */
-  private brokenAvatars = signal<ReadonlySet<string>>(new Set());
+  /** Ids with an action on its way, so its buttons can disable themselves. */
+  private readonly busyIds = signal<ReadonlySet<string>>(new Set());
+  /** People asked this visit, so "Add" turns into "Requested". */
+  private readonly requestedIds = signal<ReadonlySet<string>>(new Set());
+  /** Suggestions waved away. Not stored: they return next visit. */
+  private readonly hiddenIds = signal<ReadonlySet<string>>(new Set());
+  /** Requests answered this visit: the card stays and says what happened. */
+  protected readonly answered = signal<ReadonlyMap<string, 'accepted' | 'declined'>>(new Map());
+  /** People unblocked this visit: the card stays and offers "Block again". */
+  protected readonly unblocked = signal<ReadonlySet<string>>(new Set());
   /** Mutual friends per person, filled in after the lists arrive. */
-  private mutuals = signal<ReadonlyMap<string, Mutuals>>(new Map());
-  /** The card whose "more" menu is open. */
-  openMenuId = signal<string | null>(null);
+  private readonly mutuals = signal<ReadonlyMap<string, number>>(new Map());
+  /** Time zone and busy times of each friend, when the API shares them. */
+  private readonly availability = signal<ReadonlyMap<string, UserAvailabilityDto>>(new Map());
+
+  /** Moves the local times along. */
+  private readonly now = signal(new Date());
+  /** True where list and profile fit side by side. */
+  private readonly wide = signal(true);
 
   private searchQuery = new Subject<string>();
-  private currentUserId = this.authService.getCurrentUserId();
+  private readonly myId = this.authService.getCurrentUserId();
 
-  readonly pendingCount = computed(() => this.requests().length);
+  constructor() {
+    const timer = setInterval(() => this.now.set(new Date()), 30_000);
+    this.destroyRef.onDestroy(() => clearInterval(timer));
 
-  /** Suggestions on screen: search results while searching, minus the ones removed. */
-  readonly visibleSuggestions = computed(() => {
-    const removed = this.removedIds();
-    return (this.searchResults() ?? this.suggestions()).filter(card => !removed.has(card.userId));
-  });
-
-  readonly visibleRequests = computed(() => this.filterByName(this.requests()));
-  readonly visibleFriends = computed(() => this.filterByName(this.friends()));
-  readonly visibleSent = computed(() => this.filterByName(this.sent()));
-  readonly visibleBlocked = computed(() => this.filterByName(this.blocked()));
-
-  /** The home view shows the first few of each; "See all" opens the full list. */
-  readonly homeRequests = computed(() => this.visibleRequests().slice(0, HOME_PREVIEW));
-  readonly homeSuggestions = computed(() => this.visibleSuggestions().slice(0, HOME_PREVIEW * 2));
-
-  /** Cards of the single-list sections. */
-  readonly sectionCards = computed<FriendCard[]>(() => {
-    switch (this.activeTab()) {
-      case 'pending':     return this.visibleRequests();
-      case 'suggestions': return this.visibleSuggestions();
-      case 'friends':     return this.visibleFriends();
-      case 'sent':        return this.visibleSent();
-      case 'blocked':     return this.visibleBlocked();
-      default:            return [];
+    if (typeof matchMedia === 'function') {
+      const media = matchMedia('(min-width: 1024px)');
+      const follow = () => this.wide.set(media.matches);
+      follow();
+      media.addEventListener('change', follow);
+      this.destroyRef.onDestroy(() => media.removeEventListener('change', follow));
     }
-  });
 
-  readonly sectionKind = computed<CardKind>(() => {
-    switch (this.activeTab()) {
-      case 'pending': return 'request';
-      case 'friends': return 'friend';
-      case 'sent':    return 'sent';
-      case 'blocked': return 'blocked';
-      default:        return 'suggestion';
-    }
-  });
-
-  readonly sectionTitle = computed(() => {
-    switch (this.activeTab()) {
-      case 'pending':     return 'Friend requests';
-      case 'suggestions': return this.searchResults() ? 'Search results' : 'People you may know';
-      case 'friends':     return 'All friends';
-      case 'sent':        return 'Sent requests';
-      case 'blocked':     return 'Blocked people';
-      default:            return '';
-    }
-  });
-
-  readonly homeIsEmpty = computed(() =>
-    !this.loading() && !this.homeRequests().length && !this.homeSuggestions().length);
-
-  ngOnInit() {
     this.searchQuery
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe(query => this.runSearch(query));
+      .subscribe(text => this.runSearch(text));
 
-    // ?tab=requests opens a section directly (notifications link here).
+    // ?tab=requests opens a list directly (notifications link here); ?person= selects someone.
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(params => this.activeTab.set(this.tabFromQuery(params.get('tab'))));
+      .subscribe(params => {
+        const wanted = (params.get('tab') ?? '').toLowerCase();
+        this.adding.set(wanted === 'suggestions' || wanted === 'add');
+        this.tab.set(this.tabFromQuery(wanted));
+
+        const person = params.get('person');
+        // The user's own profile is edited in Settings.
+        if (person && (person === 'me' || person === this.myId)) {
+          this.router.navigate(['/settings'], { queryParams: { tab: 'profile' }, replaceUrl: true });
+          return;
+        }
+        this.personParam.set(person);
+      });
 
     this.loadData();
   }
 
-  private tabFromQuery(value: string | null): FriendTab {
-    switch ((value ?? '').toLowerCase()) {
-      case 'requests': case 'pending': return 'pending';
-      case 'suggestions':              return 'suggestions';
-      case 'friends': case 'all':      return 'friends';
-      case 'sent':                     return 'sent';
-      case 'blocked':                  return 'blocked';
-      default:                         return 'home';
+  private tabFromQuery(value: string): PeopleTab {
+    switch (value) {
+      case 'requests': case 'pending': case 'sent': return 'requests';
+      case 'blocked': return 'blocked';
+      default: return 'friends';
     }
+  }
+
+  // ── What is shown ──────────────────────────────────────────────────────────
+
+  /** The profile on the right: the person in the address, or on a wide screen the first friend. */
+  protected readonly selectedId = computed(() =>
+    this.personParam() ?? (this.wide() ? this.visibleFriends()[0]?.userId ?? this.friends()[0]?.userId ?? null : null));
+
+  /** On a narrow screen the profile replaces the list. */
+  protected readonly profileOnly = computed(() => !!this.personParam());
+
+  protected readonly visibleFriends = computed(() => this.matching(this.friends()));
+  protected readonly visibleRequests = computed(() => this.matching(this.requests()));
+  protected readonly visibleSent = computed(() => this.matching(this.sent()));
+  protected readonly visibleBlocked = computed(() => this.matching(this.blocked()));
+
+  /** People to add: search results while searching, otherwise the suggestions. */
+  protected readonly candidates = computed(() => {
+    const hidden = this.hiddenIds();
+    return (this.found() ?? this.suggestions()).filter(card => !hidden.has(card.userId));
+  });
+
+  protected readonly showingResults = computed(() => this.found() !== null);
+
+  /** The user asked to see every group, not only the first few. */
+  protected readonly allGroups = signal(false);
+
+  /** The user's group chats, above the friends; typed text narrows them by name. */
+  protected readonly matchingGroups = computed(() => {
+    const term = this.query().trim().toLowerCase();
+    return this.chat.groups().filter(group => !term || (group.name ?? '').toLowerCase().includes(term));
+  });
+
+  protected readonly visibleGroups = computed(() =>
+    this.allGroups() || this.query().trim() ? this.matchingGroups() : this.matchingGroups().slice(0, GROUPS_SHOWN));
+
+  protected readonly moreGroups = computed(() => this.matchingGroups().length - this.visibleGroups().length);
+
+  protected readonly tabs = computed<{ key: PeopleTab; label: string }[]>(() => {
+    const open = this.requests().filter(card => !this.answered().has(card.userId)).length;
+    const blocked = this.blocked().filter(card => !this.unblocked().has(card.userId)).length;
+    return [
+      { key: 'friends', label: t('Friends · {n}', { n: this.friends().length }) },
+      { key: 'requests', label: t('Requests · {n}', { n: open }) },
+      { key: 'blocked', label: t('Blocked · {n}', { n: blocked }) }
+    ];
+  });
+
+  /** Typed text against a person's name, city and country. */
+  private matching(cards: PersonCard[]): PersonCard[] {
+    const term = this.query().trim().toLowerCase();
+    if (!term || this.adding()) return cards;
+    return cards.filter(card =>
+      `${card.name} ${this.city(card.userId)} ${card.country ?? ''}`.toLowerCase().includes(term));
+  }
+
+  // ── Address ────────────────────────────────────────────────────────────────
+
+  /** Changing list goes through the address, so Back returns to the previous one. */
+  protected setTab(tab: PeopleTab): void {
+    this.navigate({ tab: tab === 'friends' ? null : tab });
+  }
+
+  protected toggleAdd(): void {
+    this.onSearch('');
+    this.navigate({ tab: this.adding() ? null : 'suggestions' });
+  }
+
+  protected select(userId: string): void {
+    this.navigate({ person: userId });
+  }
+
+  protected closeProfile(): void {
+    this.navigate({ person: null });
+  }
+
+  private navigate(queryParams: Record<string, string | null>): void {
+    this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
   }
 
   // ── Data ───────────────────────────────────────────────────────────────────
 
-  /** Changing section goes through the URL, so Back returns to the previous one. */
-  setTab(tab: FriendTab) {
-    this.openMenuId.set(null);
-    const query: Record<FriendTab, string | null> = {
-      home: null, pending: 'requests', suggestions: 'suggestions', friends: 'friends', sent: 'sent',
-      blocked: 'blocked'
-    };
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { tab: query[tab] },
-      queryParamsHandling: 'merge'
-    });
-  }
-
-  loadData() {
-    this.loading.set(true);
-    this.errorMessage.set('');
+  protected loadData(quiet = false): void {
+    if (!quiet) this.loading.set(true);
+    this.error.set('');
 
     let failed = 0;
     const safe = <T>(request: Observable<T[]>) =>
@@ -212,16 +250,19 @@ export class FriendsPage implements OnInit {
       sent: safe(this.friendService.getSentRequests())
     }).subscribe(result => {
       this.suggestions.set(result.suggestions
-        .filter(user => user.id !== this.currentUserId)
+        .filter(user => user.id !== this.myId)
         .map(user => this.fromUser(user)));
-      this.requests.set(result.requests.map(row => this.fromFriendship(row, 'request')));
-      this.friends.set(result.friends.map(row => this.fromFriendship(row, 'friend')));
-      this.sent.set(result.sent.map(row => this.fromFriendship(row, 'sent')));
+      this.requests.set(this.keepAnswered(result.requests.map(row => this.fromFriendship(row, true))));
+      this.friends.set(result.friends
+        .map(row => this.fromFriendship(row, row.senderId !== this.myId))
+        .sort((a, b) => a.name.localeCompare(b.name)));
+      this.sent.set(result.sent.map(row => this.fromFriendship(row, false)));
 
-      if (failed === 4) this.errorMessage.set('Could not load your friends. Check your connection and try again.');
-      else if (failed) this.errorMessage.set('Some of this page could not be loaded.');
+      if (failed === 4) this.error.set(t('Could not load your people. Check your connection and try again.'));
+      else if (failed) this.error.set(t('Some of this page could not be loaded.'));
 
       this.loading.set(false);
+      this.loadAvailability();
       this.loadMutuals([...this.requests(), ...this.suggestions()]);
     });
 
@@ -230,21 +271,51 @@ export class FriendsPage implements OnInit {
 
   /**
    * Loaded on its own: the page is complete without it, so a failure here must
-   * not count against the four lists above or raise their error banner.
+   * not count against the lists above or raise their error line.
    */
-  private loadBlocked() {
+  private loadBlocked(): void {
     this.friendService.getBlockedUsers().subscribe({
-      next: users => this.blocked.set(users.map(user => this.fromUser(user))),
+      next: users => {
+        const listed = users.map(user => this.fromUser(user));
+        const ids = new Set(listed.map(card => card.userId));
+        // Someone unblocked this visit stays on the list, with "Block again".
+        const kept = this.blocked().filter(card => this.unblocked().has(card.userId) && !ids.has(card.userId));
+        this.blocked.set([...listed, ...kept]);
+      },
       error: () => this.blocked.set([])
     });
   }
 
+  /** A request answered this visit is no longer pending on the server; its card stays. */
+  private keepAnswered(pending: PersonCard[]): PersonCard[] {
+    const ids = new Set(pending.map(card => card.userId));
+    const kept = this.requests().filter(card => this.answered().has(card.userId) && !ids.has(card.userId));
+    return [...pending, ...kept];
+  }
+
   /**
-   * "2 mutual friends" under a name is what makes a suggestion mean something.
-   * The lists do not carry it, so the first cards each ask for the person's
-   * profile, which does. A failed lookup just leaves that card without the line.
+   * One call for every friend: their time zone (for the local time and city) and
+   * when they are busy today (for "in a meeting"). Friends only, so the server
+   * never refuses the list as a whole.
    */
-  private loadMutuals(cards: FriendCard[]) {
+  private loadAvailability(): void {
+    const ids = this.friends().map(card => card.userId);
+    if (!ids.length) return;
+
+    const now = new Date();
+    this.schedule.getAvailability(ids, now, new Date(now.getTime() + DAY_MS)).subscribe({
+      next: rows => this.availability.set(new Map(rows.map(row => [row.userId, row]))),
+      // An API build without scheduling: the rows then show no time or city.
+      error: () => this.availability.set(new Map())
+    });
+  }
+
+  /**
+   * "2 mutual friends" is what makes a request or a suggestion mean something.
+   * The lists do not carry it, so the first people each ask for their profile,
+   * which does. A failed lookup just leaves that person without it.
+   */
+  private loadMutuals(cards: PersonCard[]): void {
     const known = this.mutuals();
     const wanted = cards.filter(card => !known.has(card.userId)).slice(0, MUTUALS_LIMIT);
     if (!wanted.length) return;
@@ -254,71 +325,58 @@ export class FriendsPage implements OnInit {
     )).subscribe(profiles => {
       const next = new Map(this.mutuals());
       profiles.forEach((profile, index) => {
-        if (!profile) return;
-        next.set(wanted[index].userId, {
-          count: profile.mutualFriendsCount ?? 0,
-          people: (profile.mutualFriends ?? []).slice(0, 3)
-        });
+        if (profile) next.set(wanted[index].userId, profile.mutualFriendsCount ?? 0);
       });
       this.mutuals.set(next);
     });
   }
 
-  /** Suggestions and search results come back as plain users. */
-  private fromUser(user: UserDto): FriendCard {
+  /** Suggestions, search results and blocked people come back as plain users. */
+  private fromUser(user: UserDto): PersonCard {
     return {
       userId: user.id,
       name: user.fullName || user.email,
       avatarUrl: user.profilePictureUrl,
-      subtitle: user.country || undefined
+      country: user.country || null
     };
   }
 
   /**
    * The API returns both sides of a friendship. Current builds also say which
    * side is the other person (`friendId` / `friendName`); older ones do not, so
-   * it is worked out from the list the row came from.
+   * the caller says which side that is.
    */
-  private fromFriendship(row: FriendshipDto, kind: CardKind): FriendCard {
-    const useSender = kind === 'request' || (kind === 'friend' && row.senderId !== this.currentUserId);
-
-    const subtitle = kind === 'request' ? `Sent ${this.ago(row.createdAt)}`
-      : kind === 'sent' ? `Requested ${this.ago(row.createdAt)}`
-      : this.since(row.updatedAt || row.createdAt);
-
+  private fromFriendship(row: FriendshipDto, useSender: boolean): PersonCard {
+    const other = useSender ? row.sender : row.receiver;
     return {
       userId: row.friendId || (useSender ? row.senderId : row.receiverId),
       friendshipId: row.id,
       name: row.friendName
         || (useSender ? row.senderName : row.receiverName)
-        || (useSender ? row.sender?.fullName : row.receiver?.fullName)
-        || 'Unknown',
+        || other?.fullName
+        || t('Unknown@@person'),
       avatarUrl: row.friendProfilePictureUrl
         ?? (useSender ? row.senderProfilePictureUrl : row.receiverProfilePictureUrl),
-      subtitle
+      country: row.friendUser?.country || other?.country || null,
+      since: row.updatedAt || row.createdAt
     };
   }
 
   // ── Search ─────────────────────────────────────────────────────────────────
 
-  onSearch(value: string) {
-    this.searchText.set(value);
+  protected onSearch(value: string): void {
+    this.query.set(value);
     this.searchQuery.next(value);
   }
 
-  clearSearch() {
-    this.onSearch('');
-  }
-
   /**
-   * The friend lists are filtered as you type. Finding *new* people needs the
-   * directory, so a search also asks the server and shows the answer under
-   * Suggestions.
+   * The lists are filtered as you type. Finding new people needs the directory,
+   * so with "Add friend" open a search asks the server.
    */
-  private runSearch(query: string) {
-    const term = query.trim();
-    if (term.length < 2) {
-      this.searchResults.set(null);
+  private runSearch(text: string): void {
+    const term = text.trim();
+    if (!this.adding() || term.length < 2) {
+      this.found.set(null);
       this.searching.set(false);
       return;
     }
@@ -327,119 +385,98 @@ export class FriendsPage implements OnInit {
     this.userService.searchUsers(term).subscribe({
       next: users => {
         const known = new Set([...this.friends(), ...this.requests(), ...this.sent()].map(card => card.userId));
+        // People who are already friends, or already asked, are not people to add.
         const cards = (users ?? [])
-          // People who are already friends, or already asked, are not suggestions.
-          .filter(user => user.id !== this.currentUserId && !known.has(user.id))
+          .filter(user => user.id !== this.myId && !known.has(user.id))
           .map(user => this.fromUser(user));
-        this.searchResults.set(cards);
+        this.found.set(cards);
         this.searching.set(false);
-        // Typing a name is asking to see people, so show them.
-        if (this.activeTab() === 'home' && !this.visibleRequests().length) this.setTab('suggestions');
         this.loadMutuals(cards);
       },
       error: err => {
         this.searching.set(false);
-        this.errorMessage.set(apiErrorMessage(err, 'Search failed.'));
+        this.error.set(apiErrorMessage(err, t('Search failed.')));
       }
     });
   }
 
-  private filterByName(cards: FriendCard[]): FriendCard[] {
-    const term = this.searchText().trim().toLowerCase();
-    return term ? cards.filter(card => card.name.toLowerCase().includes(term)) : cards;
-  }
-
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  sendRequest(card: FriendCard) {
+  protected sendRequest(card: PersonCard): void {
     this.act(card.userId, this.friendService.sendRequest(card.userId), () => {
       this.requestedIds.update(set => new Set(set).add(card.userId));
-      // So it is listed under "Sent requests" without a reload.
+      // So it is listed under Requests without a reload.
       this.friendService.getSentRequests().subscribe({
-        next: rows => this.sent.set(rows.map(row => this.fromFriendship(row, 'sent'))),
+        next: rows => this.sent.set(rows.map(row => this.fromFriendship(row, false))),
         error: () => {}
       });
-    }, 'Could not send that friend request.');
+    }, t('Could not send that friend request.'));
   }
 
-  /** "Remove" on a suggestion: takes it off the page; nothing is sent anywhere. */
-  removeSuggestion(card: FriendCard) {
-    this.removedIds.update(set => new Set(set).add(card.userId));
+  /** Takes a suggestion off the list; nothing is sent anywhere. */
+  protected hide(card: PersonCard): void {
+    this.hiddenIds.update(set => new Set(set).add(card.userId));
   }
 
-  accept(card: FriendCard) {
+  protected accept(card: PersonCard): void {
     if (!card.friendshipId) return;
     this.act(card.userId, this.friendService.acceptRequest(card.friendshipId), () => {
-      this.requests.update(list => list.filter(c => c.userId !== card.userId));
-      this.friends.update(list => [{ ...card, subtitle: 'Friends since today' }, ...list]);
-    }, 'Could not accept that request.');
+      this.answer(card.userId, 'accepted');
+      this.friends.update(list => [...list, { ...card, since: new Date().toISOString() }]
+        .sort((a, b) => a.name.localeCompare(b.name)));
+      this.loadAvailability();
+    }, t('Could not accept that request.'));
   }
 
-  reject(card: FriendCard) {
+  protected decline(card: PersonCard): void {
     if (!card.friendshipId) return;
     this.act(card.userId, this.friendService.rejectRequest(card.friendshipId),
-      () => this.requests.update(list => list.filter(c => c.userId !== card.userId)),
-      'Could not decline that request.');
+      () => this.answer(card.userId, 'declined'), t('Could not decline that request.'));
   }
 
-  cancelSent(card: FriendCard) {
+  private answer(userId: string, result: 'accepted' | 'declined'): void {
+    this.answered.update(map => new Map(map).set(userId, result));
+  }
+
+  protected cancelSent(card: PersonCard): void {
     if (!card.friendshipId) return;
     this.act(card.userId, this.friendService.unfriend(card.friendshipId), () => {
       this.sent.update(list => list.filter(c => c.userId !== card.userId));
       this.requestedIds.update(set => { const next = new Set(set); next.delete(card.userId); return next; });
-    }, 'Could not cancel that request.');
-  }
-
-  /** Opens the pop-up chat with a friend. */
-  message(card: FriendCard) {
-    this.chat.openWith(card.userId).subscribe({
-      error: err => this.errorMessage.set(err?.error?.message || 'Could not open the chat.')
-    });
-  }
-
-  unfriend(card: FriendCard) {
-    if (!card.friendshipId) return;
-    if (!confirm(`Remove ${card.name} from your friends?`)) return;
-    this.act(card.userId, this.friendService.unfriend(card.friendshipId),
-      () => this.friends.update(list => list.filter(c => c.userId !== card.userId)),
-      'Could not remove that friend.');
-  }
-
-  block(card: FriendCard) {
-    this.openMenuId.set(null);
-    if (!confirm(`Block ${card.name}? They will no longer be able to reach you.`)) return;
-    this.act(card.userId, this.friendService.blockUser(card.userId), () => {
-      const without = (list: FriendCard[]) => list.filter(c => c.userId !== card.userId);
-      this.suggestions.update(without);
-      this.requests.update(without);
-      this.friends.update(without);
-      this.sent.update(without);
-      this.searchResults.update(list => (list ? without(list) : list));
-      // Listed under "Blocked" straight away, so the way back is visible.
-      this.blocked.update(list => [{ userId: card.userId, name: card.name, avatarUrl: card.avatarUrl }, ...without(list)]);
-    }, 'Could not block that person.');
+    }, t('Could not cancel that request.'));
   }
 
   /**
    * Unblocking does not restore a friendship that existed before the block; the
    * person simply becomes someone who can be found and added again.
    */
-  unblock(card: FriendCard) {
-    this.act(card.userId, this.friendService.unblockUser(card.userId), () => {
-      this.blocked.update(list => list.filter(c => c.userId !== card.userId));
-      // They may be a suggestion again now.
-      this.friendService.getSuggestions().subscribe({
-        next: users => this.suggestions.set(users
-          .filter(user => user.id !== this.currentUserId)
-          .map(user => this.fromUser(user))),
-        error: () => {}
-      });
-    }, 'Could not unblock that person.');
+  protected unblock(card: PersonCard): void {
+    this.act(card.userId, this.friendService.unblockUser(card.userId),
+      () => this.unblocked.update(set => new Set(set).add(card.userId)),
+      t('Could not unblock that person.'));
   }
 
-  private act(id: string, request: Observable<unknown>, onSuccess: () => void, failureMessage: string) {
+  protected blockAgain(card: PersonCard): void {
+    this.act(card.userId, this.friendService.blockUser(card.userId),
+      () => this.unblocked.update(set => { const next = new Set(set); next.delete(card.userId); return next; }),
+      t('Could not block that person.'));
+  }
+
+  /** The profile on the right changed a relationship: the lists follow. */
+  protected onRelationChange(change: RelationChange): void {
+    const id = this.selectedId();
+    if (id && change === 'blocked') {
+      this.unblocked.update(set => { const next = new Set(set); next.delete(id); return next; });
+    }
+    if (id && (change === 'accepted' || change === 'declined')) this.answer(id, change);
+    // Someone removed or blocked leaves the friends list; their profile stays open.
+    if (id && !this.personParam()) this.select(id);
+    this.loadData(true);
+  }
+
+  private act(id: string, request: Observable<unknown>, onSuccess: () => void, failureMessage: string): void {
     this.setBusy(id, true);
-    this.errorMessage.set('');
+    this.error.set('');
     request.subscribe({
       next: () => {
         this.setBusy(id, false);
@@ -447,12 +484,12 @@ export class FriendsPage implements OnInit {
       },
       error: err => {
         this.setBusy(id, false);
-        this.errorMessage.set(apiErrorMessage(err, failureMessage));
+        this.error.set(apiErrorMessage(err, failureMessage));
       }
     });
   }
 
-  private setBusy(id: string, busy: boolean) {
+  private setBusy(id: string, busy: boolean): void {
     this.busyIds.update(current => {
       const next = new Set(current);
       if (busy) next.add(id); else next.delete(id);
@@ -460,114 +497,115 @@ export class FriendsPage implements OnInit {
     });
   }
 
-  isBusy(id: string): boolean { return this.busyIds().has(id); }
-  isRequested(id: string): boolean { return this.requestedIds().has(id); }
-
-  viewProfile(card: FriendCard) {
-    this.openMenuId.set(null);
-    if (card.userId) this.router.navigate(['/profile', card.userId]);
+  protected isBusy(id: string): boolean { return this.busyIds().has(id); }
+  protected isRequested(id: string): boolean {
+    return this.requestedIds().has(id) || this.sent().some(card => card.userId === id);
   }
 
-  toggleMenu(card: FriendCard, event: Event) {
-    event.stopPropagation();
-    this.openMenuId.update(current => (current === card.userId ? null : card.userId));
+  // ── Groups ─────────────────────────────────────────────────────────────────
+
+  /** The dialog itself is drawn by the chat corner, which is on every page. */
+  protected newGroup(): void {
+    this.chat.creatingGroup.set(true);
   }
 
-  @HostListener('document:click')
-  @HostListener('document:keydown.escape')
-  closeMenu() {
-    if (this.openMenuId()) this.openMenuId.set(null);
+  protected openGroup(group: ChatConversation): void {
+    this.chat.open(group.id);
   }
 
-  // ── Display helpers ────────────────────────────────────────────────────────
+  /** Under a group's name: a call going on, otherwise its size and newest message. */
+  protected groupLine(group: ChatConversation): string {
+    if (group.activeCall) return t('Call in progress');
 
-  count(tab: FriendTab): number {
-    switch (tab) {
-      case 'pending': return this.requests().length;
-      case 'friends': return this.friends().length;
-      case 'sent':    return this.sent().length;
-      case 'blocked': return this.blocked().length;
-      default:        return 0;
+    const members = tCount(group.participants?.length ?? 0, '{n} member', '{n} members');
+    const last = previewText(group, this.myId);
+    return last ? `${members} · ${last}` : members;
+  }
+
+  /** What a screen reader says for a group's row. */
+  protected groupLabel(group: ChatConversation): string {
+    const name = group.name ?? '';
+    return group.unreadCount
+      ? t('Open the group {name}, {n} unread', { name, n: group.unreadCount })
+      : t('Open the group {name}', { name });
+  }
+
+  protected unreadBadge(count: number): string {
+    return num(count > 9 ? '9+' : count);
+  }
+
+  // ── What a row says ────────────────────────────────────────────────────────
+
+  private zone(userId: string): string | null {
+    const zone = this.availability().get(userId)?.timeZone;
+    return isValidTimeZone(zone) ? zone : null;
+  }
+
+  protected city(userId: string): string {
+    const zone = this.zone(userId);
+    return zone ? zoneCity(zone) : '';
+  }
+
+  /** The time on their clock right now. */
+  protected localTime(userId: string): string {
+    const zone = this.zone(userId);
+    return zone ? formatTimeInZone(this.now(), zone, this.calendarData.use24HourClock()) : '';
+  }
+
+  /** The end of a meeting of theirs that is going on now, when free / busy says so. */
+  private busyUntil(userId: string): Date | null {
+    const at = this.now().getTime();
+    const slot = this.availability().get(userId)?.busy.find(b =>
+      new Date(b.start).getTime() <= at && at < new Date(b.end).getTime());
+    return slot ? new Date(slot.end) : null;
+  }
+
+  protected presence(userId: string): 'online' | 'busy' | 'away' {
+    if (this.busyUntil(userId)) return 'busy';
+    return this.chat.isOnline(userId) ? 'online' : 'away';
+  }
+
+  /** Under a friend's name: what is really known about them right now. */
+  protected friendLine(card: PersonCard): string {
+    const until = this.busyUntil(card.userId);
+    if (until) {
+      return t('In a meeting until {time}', {
+        time: formatTimeInZone(until, this.userService.timeZone(), this.calendarData.use24HourClock())
+      });
     }
-  }
+    if (this.chat.isOnline(card.userId)) return t('Online');
 
-  mutualsOf(card: FriendCard): Mutuals | null {
-    const found = this.mutuals().get(card.userId);
-    return found && found.count > 0 ? found : null;
-  }
-
-  mutualLabel(mutual: Mutuals): string {
-    return `${mutual.count} mutual ${mutual.count === 1 ? 'friend' : 'friends'}`;
-  }
-
-  /** The card's picture, unless it is missing or failed to load. */
-  avatarOf(card: FriendCard): string | null {
-    return card.avatarUrl && !this.brokenAvatars().has(card.userId) ? card.avatarUrl : null;
-  }
-
-  onAvatarError(card: FriendCard) {
-    this.brokenAvatars.update(set => new Set(set).add(card.userId));
-  }
-
-  initials(name: string): string {
-    return (name || '?').split(' ').filter(Boolean).slice(0, 2)
-      .map(word => word[0]).join('').toUpperCase();
-  }
-
-  /** Stable per-person colour so a card keeps the same tint between renders. */
-  avatarColor(card: { userId?: string; id?: string; name?: string; fullName?: string }): string {
-    const palette = ['#7c8ef5', '#2ec4a0', '#f4a835', '#f4845f', '#ef4444', '#9b6dff'];
-    let hash = 0;
-    for (const char of card.userId || card.id || card.name || card.fullName || '?') {
-      hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    const since = card.since ? new Date(card.since) : null;
+    if (since && !Number.isNaN(since.getTime())) {
+      return t('Friends since {date}', { date: since.toLocaleDateString(locale(), { month: 'long', year: 'numeric' }) });
     }
-    return palette[hash % palette.length];
+    return card.country || t('Friend');
   }
 
-  /** "5h ago", "3d ago", "Nov 2". */
-  private ago(dateStr: string | null | undefined): string {
-    const date = dateStr ? new Date(dateStr) : null;
-    if (!date || Number.isNaN(date.getTime())) return 'recently';
-
-    const minutes = Math.floor((Date.now() - date.getTime()) / 60_000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return `on ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  /** Under the name of someone who is not a friend yet: country and mutual friends. */
+  protected strangerLine(card: PersonCard, extra = ''): string {
+    const mutual = this.mutuals().get(card.userId) ?? 0;
+    return [
+      extra,
+      card.country,
+      mutual ? tCount(mutual, '{n} mutual friend', '{n} mutual friends') : ''
+    ].filter(Boolean).join(' · ');
   }
 
-  private since(dateStr: string | null | undefined): string | undefined {
-    const date = dateStr ? new Date(dateStr) : null;
-    if (!date || Number.isNaN(date.getTime())) return undefined;
-    return `Friends since ${date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+  /** "Requested 3 d ago". */
+  protected requestedLine(card: PersonCard): string {
+    const date = card.since ? new Date(card.since) : null;
+    if (!date || Number.isNaN(date.getTime())) return this.strangerLine(card, t('Waiting for a reply'));
+
+    const minutes = Math.floor((this.now().getTime() - date.getTime()) / 60_000);
+    const requested = minutes < 60 ? t('Requested just now')
+      : minutes < 1440 ? tCount(Math.floor(minutes / 60), 'Requested {n} h ago', 'Requested {n} h ago')
+      : minutes < 10_080 ? tCount(Math.floor(minutes / 1440), 'Requested {n} d ago', 'Requested {n} d ago')
+      : t('Requested on {date}', { date: date.toLocaleDateString(locale(), { day: 'numeric', month: 'long' }) });
+    return this.strangerLine(card, requested);
   }
 
-  emptyTitle(): string {
-    if (this.searchText().trim()) return 'No one matches that search';
-    switch (this.activeTab()) {
-      case 'pending': return 'No friend requests';
-      case 'friends': return 'No friends yet';
-      case 'sent':    return 'No sent requests waiting';
-      case 'blocked': return 'You have not blocked anyone';
-      default:        return 'No suggestions right now';
-    }
-  }
-
-  emptySub(): string {
-    if (this.searchText().trim()) return 'Try a different name or email address.';
-    switch (this.activeTab()) {
-      case 'pending': return 'When someone sends you a request, it will appear here.';
-      case 'friends': return 'Find people under Suggestions and send them a request.';
-      case 'sent':    return 'Requests you send are listed here until they are answered.';
-      case 'blocked': return 'People you block are listed here, so you can unblock them later.';
-      default:        return 'Check back later for new people to connect with.';
-    }
-  }
-
-  trackByUser(_index: number, card: FriendCard): string {
-    return card.userId;
+  protected firstName(card: PersonCard): string {
+    return card.name.trim().split(/\s+/)[0] || card.name;
   }
 }

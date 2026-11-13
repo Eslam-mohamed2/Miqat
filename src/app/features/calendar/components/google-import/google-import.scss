@@ -1,0 +1,377 @@
+@use '../../../../../styles/tokens' as *;
+
+// "Import from Google Calendar". No design file draws it, so it takes its look from
+// the design's dialogs (V2-QuickAdd), as "New project" does: a serif title, quiet
+// text, rows on the card surface, and the accent only on the action.
+:host {
+  display: block;
+}
+
+p, h2 {
+  margin: 0;
+}
+
+.import-window {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: min(88dvh, 720px);
+  background: $mq-card-2;
+  color: $mq-text;
+  font-size: 13px;
+  line-height: normal;
+  overflow: hidden;
+
+  @supports not (max-height: 88dvh) { max-height: min(88vh, 720px); }
+}
+
+// ── Head ─────────────────────────────────────────────────────────────────────
+.window-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-block: 18px 16px;
+  padding-inline: 22px 14px;
+  border-bottom: 1px solid $mq-line-b;
+}
+
+.head-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eyebrow {
+  @include mq-eyebrow;
+}
+
+.title {
+  @include mq-serif(28px, 1.15);
+  overflow-wrap: anywhere;
+
+  &:focus { outline: none; }
+}
+
+.icon-btn {
+  @include mq-icon-btn;
+
+  @include touch {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+// ── Body ─────────────────────────────────────────────────────────────────────
+.window-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 22px;
+  @include mq-scroll;
+}
+
+.lead {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: $mq-text-2;
+}
+
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #{$mq-accent} 8%, #{$mq-card});
+  border: 1px solid color-mix(in srgb, #{$mq-accent} 30%, transparent);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $mq-text-2;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: $mq-accent-text;
+  }
+
+  strong {
+    font-weight: 600;
+    color: $mq-text;
+  }
+
+  &.quiet {
+    background: $mq-field;
+    border-color: $mq-line-2;
+    color: $mq-text-3;
+
+    svg { color: $mq-muted; }
+  }
+}
+
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.point {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $mq-text-3;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: $mq-muted;
+  }
+}
+
+.status {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: $mq-accent-text;
+}
+
+.error {
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #{$mq-late} 10%, transparent);
+  border: 1px solid color-mix(in srgb, #{$mq-late} 32%, transparent);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: $mq-late;
+}
+
+.hint {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: $mq-muted;
+}
+
+// The colour is data: Google's own for a calendar to choose, Miqat's once imported.
+.dot {
+  @include mq-dot(10px, 3px);
+}
+
+// ── Choosing ─────────────────────────────────────────────────────────────────
+.calendars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 232px;
+  margin-inline: -8px;
+  overflow-y: auto;
+  @include mq-scroll;
+}
+
+.calendar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  margin: 0;
+  padding: 0 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background $mq-t-press $mq-ease-quick;
+
+  &:hover { background: $mq-hover-2; }
+
+  &:focus-within {
+    outline: 2px solid $mq-accent;
+    outline-offset: -2px;
+  }
+
+  input {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: $mq-accent;
+    cursor: pointer;
+
+    &:focus { outline: none; }
+  }
+
+  @include touch { min-height: 44px; }
+}
+
+.calendar-name {
+  min-width: 0;
+  font-size: 13px;
+  @include mq-ellipsis;
+}
+
+.tag {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: $mq-r-pill;
+  background: $mq-chip;
+  color: $mq-text-4;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  > label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: $mq-text-4;
+  }
+}
+
+.select {
+  position: relative;
+  display: flex;
+
+  select {
+    @include mq-field;
+    flex: 1;
+    min-width: 0;
+    padding-inline: 12px 34px;
+    appearance: none;
+    cursor: pointer;
+
+    @include touch {
+      height: 44px;
+      font-size: 16px;
+    }
+  }
+
+  option { background: $mq-card-5; color: $mq-text; }
+
+  svg {
+    position: absolute;
+    inset-inline-end: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $mq-muted;
+    pointer-events: none;
+  }
+}
+
+// ── Copying, and what happened ───────────────────────────────────────────────
+.rows {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: $mq-card;
+  border: 1px solid $mq-line;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid $mq-hover;
+
+  &:last-child { border-bottom: 0; }
+
+  .dot { margin-top: 4px; }
+}
+
+.row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.row-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.row-state {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: $mq-text-4;
+  font-variant-numeric: tabular-nums;
+
+  .row.active & { color: $mq-accent-text; }
+  &.failed { color: $mq-late; }
+}
+
+.row-note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: $mq-muted;
+  overflow-wrap: anywhere;
+}
+
+.tick {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: $mq-green;
+}
+
+.spinner {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid $mq-line-4;
+  border-top-color: $mq-accent;
+  animation: google-import-turn 800ms linear infinite;
+}
+
+@keyframes google-import-turn {
+  to { transform: rotate(360deg); }
+}
+
+// ── Foot ─────────────────────────────────────────────────────────────────────
+.window-foot {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid $mq-line-b;
+}
+
+.btn-quiet {
+  @include mq-btn-outline;
+}
+
+.btn-main {
+  @include mq-btn-primary;
+  min-width: 132px;
+}
+
+@include touch {
+  .btn-quiet, .btn-main { height: 44px; }
+}
+
+@include below($bp-phone) {
+  .window-head { padding-inline: 18px 10px; }
+  .window-body { padding: 16px 18px; }
+  .window-foot { padding: 12px 18px; }
+  .title { font-size: 25px; }
+}
